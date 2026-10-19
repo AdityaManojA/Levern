@@ -6,6 +6,7 @@ export const mascot = {
   get ready() { return !!m; },
   react: (name, text, mad) => call('react', name, text, mad),
   celebrate: text => call('celebrate', text),
+  notify: count => call('notify', count),
   grumpy: text => call('grumpy', text),
   say: (text, ms, mad) => call('say', text, ms, mad),
   enterPage: page => call('enterPage', page),
@@ -14,6 +15,7 @@ export const mascot = {
   setVisible: on => call('setVisible', on),
   settingsChanged: () => call('settingsChanged'),
   raise: on => call('raise', on),
+  away: on => call('away', on),
   rect: () => call('rect'),
   el: () => m && m.el,
 };

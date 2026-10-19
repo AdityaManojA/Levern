@@ -18,7 +18,8 @@ Service workers need `localhost` or HTTPS, so open it through the server rather 
 |---|---|---|
 | Onboarding | first run | Matches the Figma frames: Welcome, What's a quest?, How will you use TaskFlow?, How many quests a day?, Make it yours (calendars, sounds, voice), and Mochi's tour prompt. Shown once. Reopen it from Settings → You. |
 | Guided tour | "Show me around", or Settings → You → Quick tour | 9 steps: the real screen dimmed, a spotlight, and a card from Mochi. Tap Mochi to finish. |
-| Mochi | nav bar | Breathes, blinks, idles, walks and naps. Tap, double tap, long press, and pointer play. Reacts to quests done, the daily target, new quests, errors and the add sheet, and sleeps while you focus. Settings → Mochi: show, roam, speed, sounds, patience. |
+| Mochi | nav bar | Breathes and blinks, and picks idles from a large weighted pool (never the same as the last few, with random pauses). Walks and naps after a long quiet spell. A tap gives a random reaction. Long press shows heart eyes. Drag to pick him up, and he falls back onto the bar when you let go. Reacts to quests, the daily target, errors, the add sheet and reminders (walks to the Quests tab to catch them), and sleeps while you focus. Settings → Mochi. |
+| Pull to refresh | Home, Quests, Calendar, Stats | Pull down from the top. Mochi stretches as you pull and spins while it re-checks reminders, re-syncs calendars and looks for an app update. |
 | Saved quests and reminders | everywhere | Saved on the device through `js/storage.js`. Settings → Your data exports and imports a JSON backup. |
 | Voice entry | + button → mic | Web Speech API (Chrome, Edge, Safari). Firefox has none, so the button explains that and you type instead. |
 | Due dates from your words | + button | "Dentist Friday at 4pm", "tonight", "in 3 days", "25 Oct", "next week", "every Monday", "p1", "urgent". It sets the date, time, repeat and priority, and you can change any of them before saving. |

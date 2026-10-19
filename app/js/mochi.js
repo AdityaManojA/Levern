@@ -87,8 +87,14 @@ export function createMochi(env) {
     flip.style.transform = mirrored(a, M.fi) ? 'scaleX(-1)' : '';
     el.style.clipPath = (M.perch === 'sheet' && a.edge != null) ? `inset(0 0 ${Math.max(0, a.h - a.edge + M.lift)}px 0)` : '';
     if (Date.now() < M.bubbleUntil) {
-      const w = bub.offsetWidth, bx = Math.max(8, Math.min(innerWidth - 8 - w, M.cx - w / 2));
-      bub.style.transform = `translate(${bx}px, ${y + a.gy - V.sit - 44}px)`;
+      const w = bub.offsetWidth, h = bub.offsetHeight || 26, by = y + a.gy - V.sit - 44;
+      let bx = Math.max(8, Math.min(innerWidth - 8 - w, M.cx - w / 2));
+      // never cover a red count badge (Quests tab, bell)
+      for (const b of document.querySelectorAll('[data-rcount]:not([hidden])')) {
+        const r = b.getBoundingClientRect();
+        if (r.width && bx < r.right + 6 && bx + w > r.left - 6 && by < r.bottom + 6 && by + h > r.top - 6) bx = r.left - 6 - w > 8 ? r.left - 6 - w : r.right + 6;
+      }
+      bub.style.transform = `translate(${bx}px, ${by}px)`;
     } else bub.classList.remove('show');
   }
   let ghostEl = null;
@@ -180,10 +186,25 @@ export function createMochi(env) {
   }
 
   /* deciding */
-  const IDLES = [['ear-twitch', 14], ['look-around', 12], ['yawn', 6], ['sneeze', 3], ['sniff', 4], ['face-wash', 4], ['groom', 4], ['scratch', 3], ['spot', 3],
-    ['stretch', 3], ['back-stretch', 2], ['tail-wrap', 3], ['look-back', 3], ['sitting-pretty', 3]]
-    .filter(([n]) => has(n)).map(([n, w]) => { const j = A[n].join || []; return [n, j[0] === 'R' && j[1] === 'R' ? w : w * 0.5]; });
-  function pickIdle() { let r = Math.random() * IDLES.reduce((s, [, w]) => s + w, 0); for (const [n, w] of IDLES) { r -= w; if (r <= 0) return n; } return IDLES[0][0]; }
+  // Idles and tap reactions are drawn from weighted pools, never repeating any of the last few,
+  // so he doesn't fall into a visible cycle. Seamless ones (start and end on the resting pose) are favoured.
+  const pool = list => list.filter(([n]) => has(n)).map(([n, w]) => { const j = A[n].join || []; return [n, j[0] === 'R' && j[1] === 'R' ? w * 1.5 : w]; });
+  const IDLES = pool([['ear-twitch', 8], ['look-around', 8], ['yawn', 5], ['sneeze', 3], ['sniff', 4], ['face-wash', 4], ['groom', 4], ['scratch', 3], ['spot', 3],
+    ['stretch', 3], ['back-stretch', 2], ['tail-wrap', 3], ['look-back', 3], ['sitting-pretty', 3], ['happy-wiggle', 3], ['confused', 2], ['eat', 2],
+    ['tail-chase', 2], ['cursor-swipe', 2], ['follow-finger', 2], ['excited', 1.5], ['sad', 0.6], ['wave', 1.5]]);
+  const TAPS = pool([['boop', 5], ['happy-wiggle', 3], ['excited', 2.5], ['confused', 2], ['wave', 2], ['surprised', 1.5], ['cursor-swipe', 1.5],
+    ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 1], ['heart-eyes', 1.5]]);
+  const TAP_LINES = { boop: ['boop', 'mrp!', ':3'], 'happy-wiggle': ['♪', 'hehe'], excited: ['!!', 'ooh!'], confused: ['?', 'huh?'], wave: ['hi!', 'hello!'],
+    surprised: ['!', 'oh!'], 'cursor-swipe': ['gotcha', 'swipe!'], 'sitting-pretty': ['ta-da'], sneeze: ['achoo!'], celebrate: ['yay!'], 'heart-eyes': ['♥', 'purr…'] };
+  const recent = [];
+  function pickFrom(list, avoid = 3) {
+    const blocked = new Set(recent.slice(-avoid));
+    const ok = list.filter(([n]) => !blocked.has(n)), use = ok.length ? ok : list;
+    let r = Math.random() * use.reduce((t, [, w]) => t + w, 0);
+    for (const [n, w] of use) { r -= w; if (r <= 0) { recent.push(n); if (recent.length > 8) recent.shift(); return n; } }
+    return use[0][0];
+  }
+  const pickIdle = () => pickFrom(IDLES, 3);
   const canMove = () => !reduced() && !M.hidden && !env.paused();
   function decide() {
     if (M.busy || M.held || M.asleep || M.state !== 'idle' || M.perch !== 'nav' || !canMove()) return;
@@ -193,13 +214,19 @@ export function createMochi(env) {
     if (Math.random() < walkP) { const x = randomX(); walkTo(x, { sprint: page !== 'focus' && Math.abs(x - M.cx) > 130 && Math.random() < 0.15 }); }
     else schedule(3, 7);
   }
-  const sleepAfter = () => (env.current() === 'focus' ? 9000 : 25000);
-  setInterval(() => {
-    if (M.state !== 'idle' || M.busy || M.held || M.asleep || M.perch !== 'nav' || !canMove()) return;
-    if (Date.now() - M.lastActive > sleepAfter()) return fallAsleep();
-    if (!resting() || M.pending || !S().roam) return;
-    if (Math.random() < 0.45) idle(pickIdle());
-  }, 2200);
+  const sleepAfter = () => (env.current() === 'focus' ? 9000 : 90000);   // plenty of idling before a nap
+  // idle beat: a random hold (sometimes long) between idles, so the rhythm never settles into a loop
+  (function idleLoop() {
+    let hold = 3000 + Math.random() * 5000;
+    if (Math.random() < 0.15) hold += 5000 + Math.random() * 6000;   // now and then he just sits
+    setTimeout(() => {
+      idleLoop();
+      if (M.state !== 'idle' || M.busy || M.held || M.asleep || M.perch !== 'nav' || !canMove()) return;
+      if (Date.now() - M.lastActive > sleepAfter()) return fallAsleep();
+      if (!resting() || M.pending || !S().roam) return;
+      idle(pickIdle());
+    }, hold);
+  })();
   (function blinkLoop() { if (resting() && !M.pending && M.perch === 'nav' && canMove()) idle('blink'); setTimeout(blinkLoop, 3200 + Math.random() * 3200); })();
 
   function fallAsleep() {
@@ -241,27 +268,77 @@ export function createMochi(env) {
     mew(0.95 + Math.random() * 0.15);
     const r = el.getBoundingClientRect(), a = A[M.anim];
     const headLine = r.top + (a.gy - V.sit * 0.55) * (r.height / a.h);
-    if (e && e.clientY && e.clientY < headLine) return strike('head-bonk', Math.random() < 0.5 ? 'ow!' : '');
-    strike('boop', Math.random() < 0.4 ? ['mrp!', 'boop', ':3'][Math.floor(Math.random() * 3)] : '');
+    if (e && e.clientY && e.clientY < headLine && Math.random() < 0.6 && recent[recent.length - 1] !== 'head-bonk') { recent.push('head-bonk'); return strike('head-bonk', Math.random() < 0.5 ? 'ow!' : ''); }
+    const pick = pickFrom(TAPS, 2), lines = TAP_LINES[pick];
+    strike(pick, lines && Math.random() < 0.55 ? lines[Math.floor(Math.random() * lines.length)] : '');
   }
-  let pressT = null;
-  el.addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    if (Date.now() < M.annoyedUntil || M.perch !== 'nav') return;
-    try { el.setPointerCapture(e.pointerId); } catch (err) {}
-    pressT = setTimeout(() => {
-      pressT = null;
-      if (M.state === 'walk' || M.state === 'prep' || M.asleep) return;
-      Object.assign(M, { held: true, busy: true, pending: null, slide: null });
-      const a = A['heart-eyes']; play('heart-eyes', { to: a.loop[1], loop: a.loop }); mew(1.1); say('purr…', 1400);
-    }, 450);
-  });
-  el.addEventListener('pointerup', e => {
-    if (pressT) { clearTimeout(pressT); pressT = null; tap(e); return; }
+  // pointer on Mochi: a tap (moved < 6px), a long press (heart eyes while held), or a drag (pick him up)
+  const DRAG_START = 6, GRAVITY = 2600;
+  let press = null;
+  function endHeld() {
     if (!M.held) return;
     M.held = false; M.lastActive = Date.now();
     const a = A['heart-eyes']; play('heart-eyes', { from: a.loop[1], to: a.frames, then: () => { goRest(); schedule(2, 4); } });
+  }
+  function startDrag(e) {
+    clearTimeout(press.t);
+    stop(); stopLook();
+    Object.assign(M, { held: false, busy: true, pending: null, slide: null, state: 'drag', asleep: false, perch: 'nav', fall: null });
+    // dangling: the long stretch frame, held by the scruff
+    play('stretch', { from: 3, to: 3, hold: true });
+    M.dragTo = { x: e.clientX, y: e.clientY, vx: 0, vy: 0, t: performance.now() };
+    press.drag = true;
+    mew(1.15); say(['wheee', 'hey!', 'mrrp?!'][Math.floor(Math.random() * 3)], 1100);
+  }
+  function drop() {
+    const d = M.dragTo; M.dragTo = null;
+    M.state = 'fall';
+    M.fall = { vx: Math.max(-600, Math.min(600, d.vx)), vy: Math.max(-900, Math.min(600, d.vy)) };
+    if (reduced()) { M.lift = 0; land(); }
+  }
+  function land() {
+    M.fall = null; M.lift = 0; M.liftTo = 0;
+    const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx));
+    if (!reduced()) act.animate([{ transform: 'scale(1.14, .82)' }, { transform: 'scale(.96, 1.05)', offset: .55 }, { transform: 'none' }], { duration: 320, easing: 'ease-out' });
+    M.lastActive = Date.now();
+    M.state = 'idle'; M.busy = true;
+    say(['oof!', 'mrp.', 'again?', '*lands*'][Math.floor(Math.random() * 4)], 1100);
+    // lands crouched (startled frames 4–6 end on the resting pose)
+    play('startled', { from: 4, to: A.startled.frames, then: () => { goRest(); schedule(2.5, 5); } });
+  }
+  el.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    if (e.button > 0 || M.perch !== 'nav' || M.state === 'fall') return;
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    press = { x: e.clientX, y: e.clientY, id: e.pointerId, drag: false, t: null };
+    if (Date.now() < M.annoyedUntil) return;
+    press.t = setTimeout(() => {
+      if (!press || press.drag || M.state === 'walk' || M.state === 'prep' || M.asleep) return;
+      Object.assign(M, { held: true, busy: true, pending: null, slide: null });
+      const a = A['heart-eyes']; play('heart-eyes', { to: a.loop[1], loop: a.loop }); mew(1.1); say('purr…', 1400);
+      press.t = setTimeout(endHeld, 6000);   // never loops forever
+    }, 450);
   });
+  el.addEventListener('pointermove', e => {
+    if (!press || e.pointerId !== press.id) return;
+    if (!press.drag) {
+      if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < DRAG_START || Date.now() < M.annoyedUntil) return;
+      startDrag(e);
+    }
+    const d = M.dragTo, now = performance.now(), dt = Math.max(1, now - d.t) / 1000;
+    d.vx = d.vx * 0.6 + ((e.clientX - d.x) / dt) * 0.4; d.vy = d.vy * 0.6 + ((e.clientY - d.y) / dt) * 0.4;
+    d.x = e.clientX; d.y = e.clientY; d.t = now;
+  });
+  const release = (e, cancelled) => {
+    if (!press || (e && e.pointerId !== press.id)) return;
+    const p = press; press = null; clearTimeout(p.t);
+    if (p.drag) { drop(); return; }
+    if (M.held) { endHeld(); return; }
+    if (!cancelled) tap(e);
+  };
+  el.addEventListener('pointerup', e => release(e, false));
+  el.addEventListener('pointercancel', e => release(e, true));
+  el.addEventListener('lostpointercapture', e => { if (press && press.drag) release(e, true); else if (M.held && !press) endHeld(); });
   el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } });
   el.addEventListener('click', e => e.stopPropagation());
 
@@ -308,13 +385,27 @@ export function createMochi(env) {
   let last = performance.now();
   function tick(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (M.state === 'walk' && !M.held) {
+    if (M.state === 'drag' || M.state === 'fall') { /* positioned below */ }
+    else if (M.state === 'walk' && !M.held) {
       const sp = M.sprint ? SPRINT : SPEED[S().speed || 'slow'], dx = M.target - M.cx;
       if (Math.abs(dx) < 1.5) { M.cx = M.target; arrive(); } else M.cx += Math.sign(dx) * Math.min(Math.abs(dx), sp * dt);
     } else if (now > M.next) decide();
     if (M.slide) {
       const k = Math.min(1, (now - M.slide.t0) / M.slide.ms), ease = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
       M.cx = M.slide.from + (M.slide.to - M.slide.from) * ease; if (k >= 1) M.slide = null;
+    }
+    if (M.state === 'drag' && M.dragTo) {
+      const a = A[M.anim];
+      M.cx = Math.max(24, Math.min(innerWidth - 24, M.dragTo.x));
+      M.lift = (Math.max(8, M.dragTo.y) - 12) - (groundY() - a.gy);   // the top of his head just under the finger
+      M.liftTo = M.lift;
+    } else if (M.state === 'fall' && M.fall) {
+      M.fall.vy += GRAVITY * dt; M.lift += M.fall.vy * dt;
+      M.cx += M.fall.vx * dt; M.fall.vx *= 0.96;
+      const [lo, hi] = bounds();
+      if (M.cx < lo) { M.cx = lo; M.fall.vx = Math.abs(M.fall.vx) * 0.3; } else if (M.cx > hi) { M.cx = hi; M.fall.vx = -Math.abs(M.fall.vx) * 0.3; }
+      M.liftTo = M.lift;
+      if (M.lift >= 0) land();
     }
     if (M.lift !== M.liftTo) { const d = M.liftTo - M.lift; M.lift = Math.abs(d) < 0.5 ? M.liftTo : M.lift + d * Math.min(1, dt * (M.liftRate || 12)); }
     if (!M.hidden) render();
@@ -323,7 +414,7 @@ export function createMochi(env) {
   addEventListener('resize', () => { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); });
 
   const LINES = { home: 'hi again!', quests: 'so many quests', calendar: 'what’s coming up?', focus: 'shh… focusing', stats: 'look at you go', settings: 'make it cozy' };
-  const busyMoving = () => M.state === 'walk' || M.state === 'prep';
+  const busyMoving = () => M.state === 'walk' || M.state === 'prep' || M.state === 'drag' || M.state === 'fall';
   const api = {
     el, say,
     setVisible(on) { M.hidden = !on; el.hidden = !on; bub.hidden = !on; if (on) { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); goRest(); } },
@@ -369,9 +460,23 @@ export function createMochi(env) {
       strike(name, text, mad);
     },
     celebrate(text) { this.react('celebrate', text || 'yay!'); },
+    notify(count) {
+      if (M.hidden) return;
+      const text = count > 1 ? `${count} reminders!` : 'reminder!';
+      if (M.asleep) { M.asleep = false; M.busy = false; }
+      const tab = nav().querySelector('.tab[href="#/quests"]');
+      if (!tab || !S().roam || reduced() || M.held || M.state === 'drag' || M.state === 'fall' || M.perch !== 'nav' || Date.now() < M.annoyedUntil) return this.react('notify', text);
+      const r = tab.getBoundingClientRect(), [lo, hi] = bounds();
+      const x = Math.max(lo, Math.min(hi, r.left - 4));   // just left of the Quests tab: badge and + stay clear
+      if (Math.abs(x - M.cx) < 30 || busyMoving()) return this.react('notify', text);
+      M.onArrive = () => { M.busy = false; strike('notify', text); };
+      walkTo(x);
+    },
     grumpy(text) { this.react('grumpy', text, true); mew(0.8); },
     rect: () => el.getBoundingClientRect(),
     raise(on) { el.classList.toggle('raised', on); bub.classList.toggle('raised', on); },
+    // pull to refresh borrows him as its indicator; the one on the bar steps out meanwhile
+    away(on) { el.style.visibility = on ? 'hidden' : ''; if (on) bub.classList.remove('show'); },
     settingsChanged() { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); if (!M.busy && !M.asleep && M.state === 'idle') goRest(); schedule(0.5, 1.5); },
     debug: () => ({ cx: Math.round(M.cx), anim: M.anim, fi: M.fi, state: M.state, busy: M.busy, perch: M.perch, asleep: M.asleep, hidden: M.hidden }),
     show(name, fi) { if (!has(name)) return false; stop(); stopLook(); M.busy = true; M.anim = name; M.fi = fi || 1; render(); return true; },

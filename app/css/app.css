@@ -311,11 +311,11 @@ input[type=range] { accent-color: #7DBB95; width: 130px; }
 
 
 /* ---------- Mochi (art moves only by its own frames: no CSS animation or transition on him) ---------- */
-.mochi { position: fixed; left: 0; top: 0; z-index: 31; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; outline: none; }
+.mochi { position: fixed; left: 0; top: 0; z-index: 31; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; outline: none; }
 .mochi.over { z-index: 42; }
 .mochi.raised { z-index: 82; }
 .mochi .flip, .mochi .act { width: 100%; height: 100%; }
-.mochi .act { background-repeat: no-repeat; }
+.mochi .act { background-repeat: no-repeat; transform-origin: 50% 100%; }
 .mochi:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 12px; }
 .mochi.ghost { pointer-events: none; z-index: 32; transition: opacity .11s linear; }
 .mochi.ghost.raised { z-index: 83; }
@@ -416,6 +416,16 @@ body.ob-lock { overflow: hidden; }
 body.touring .nav, body.touring .top { pointer-events: none; }
 .empty-mochi { display: block; margin: 0 auto 6px; }
 @media (prefers-reduced-motion: reduce) { .onboard, .onboard *, .tour, .tour * { transition: none !important; animation: none !important; } }
+
+/* pull to refresh: Mochi hangs from the top */
+.ptr { position: fixed; left: 50%; top: 60px; z-index: 19; opacity: 0; pointer-events: none; transform: translate(-50%, -30px); display: grid; place-items: center; }
+.ptr .ptr-ring { display: none; width: 30px; height: 30px; border-radius: 50%; border: 3px solid #E6DDCF; border-top-color: #8FC9A5; transform: rotate(calc(var(--k, 0) * 300deg)); }
+body:has(.mochi[hidden]) .ptr .ptr-ring { display: block; }
+body:has(.mochi[hidden]) .ptr .ptr-cat { display: none; }
+.ptr.spinning .ptr-ring { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ptr.spinning { transition: transform .35s var(--ease); }
+body.ptr-drag { user-select: none; cursor: grabbing; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after, ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { transition: none !important; animation: none !important; }

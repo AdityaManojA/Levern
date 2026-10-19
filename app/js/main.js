@@ -20,6 +20,9 @@ import { startCalendars, onCalendarChange } from './calendars.js';
 import { createMochi, sprite } from './mochi.js';
 import { mascot, setMascot } from './mascot.js';
 import * as tour from './views/tour.js';
+import { setupPullToRefresh } from './ptr.js';
+import { check as checkReminders } from './reminders.js';
+import { syncGoogle, googleState, hasToken } from './calendars.js';
 
 store.init();
 
@@ -139,6 +142,15 @@ const mochi = createMochi({
 setMascot(mochi);
 mochi.start();
 mascot.setVisible(store.getState().settings.mochi !== false);
+setupPullToRefresh({
+  current: () => route.name,
+  refresh: async () => {
+    await checkReminders();
+    if (googleState().connected && hasToken()) await syncGoogle({ interactive: false }).catch(() => {});
+    try { const reg = await navigator.serviceWorker?.getRegistration(); await reg?.update(); } catch (e) {}
+    render({ keepScroll: true });
+  },
+});
 document.addEventListener('sheet:open', () => mascot.setPerch('sheet'));
 document.addEventListener('sheet:close', () => mascot.setPerch('nav'));
 if (!store.getState().onboarded) onboarding.open(() => tour.start());

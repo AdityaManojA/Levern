@@ -5,6 +5,7 @@ import { getState, subscribe, markFired, dueReminders, upcomingReminders, findQu
 import * as N from './notify.js';
 import { toast, play } from './ui.js';
 import { dueLabel } from './dates.js';
+import { mascot } from './mascot.js';
 
 const baseTitle = document.title;
 let lastSchedule = '';
@@ -15,7 +16,7 @@ export function body(q, count) {
   return parts.join(' · ') + (count > 1 ? `\n${count} reminders due in TaskFlow` : '');
 }
 
-async function check() {
+export async function check() {
   const st = getState(), now = Date.now();
   const fresh = st.quests.filter(q => q.remind && !q.remind.fired && !q.done && q.remind.at <= now);
   if (!fresh.length) return;
@@ -33,6 +34,7 @@ async function check() {
     }
   }
   toast(fresh.length > 1 ? `🔔 ${fresh.length} reminders due` : `🔔 Reminder: ${fresh[0].title}`, 'remind');
+  mascot.notify(count);
   play('click', 0.8);
   document.querySelectorAll('.bell').forEach(b => { b.classList.remove('ring'); void b.offsetWidth; b.classList.add('ring'); });
 }
