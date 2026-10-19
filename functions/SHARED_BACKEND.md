@@ -37,7 +37,7 @@ Solodesk deploys the rules (`Solodesk-MVP/firestore.rules`). TaskFlow's `firebas
 ```
 
 - `quests`: open quests only. `tier` 0–5 is priority P1–P6. `due` is a local date, `time` a local time (both may be null). `repeat` is `daily`, `weekdays`, `weekly`, `monthly` or null.
-- `events`: the person's upcoming Google Calendar events (primary calendar, a week back to two months ahead), present only if they connected Google Calendar in TaskFlow. Each event also has 	ier (0-5 = P1-P6, or null): the priority the person gave it in TaskFlow.
+- `events`: the person's upcoming Google Calendar events (primary calendar, a week back to two months ahead), present only if they connected Google Calendar in TaskFlow. Each event also has `tier` (0–5 = P1–P6, or null): the priority the person gave it in TaskFlow.
 
 To use it in Solodesk, sign in with the same Firebase config, then `onSnapshot(doc(db, 'taskflowUsers', uid, 'share', 'open'), ...)` for live updates.
 
