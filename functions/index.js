@@ -1,4 +1,4 @@
-// TaskFlow server on Firebase (Cloud Functions + Firestore). Firebase Hosting sends /api/** and /feed/**
+// TaskFlow server on Firebase (Cloud Functions + Firestore, asia-south2 next to the database). Firebase Hosting sends /api/** and /feed/**
 // here (see firebase.json), so the app calls it on its own address.
 //
 //   /api/...           the app, signed in with Google (Firebase ID token): sync, calendar feed link,
@@ -10,9 +10,9 @@
 // Firestore (only this server can read it; firestore.rules denies the app):
 //   users/{uid}                  rev, chunk count, time zone, feed token, Google Calendar status
 //   users/{uid}/chunks/{i}       the person's TaskFlow data, deflated (lib/blob.js)
-//   users/{uid}/private/google   Google refresh token, TaskFlow calendar id, quest → event mapping
+//   users/{uid}/private/google   Google refresh token, TaskFlow calendar id, quest â†’ event mapping
 //   users/{uid}/private/events   their upcoming Google events, as shown in the app
-//   feeds/{token}                feed token → uid
+//   feeds/{token}                feed token â†’ uid
 //   oauthStates/{state}          short-lived, links Google's redirect back to the person who started it
 import { onRequest } from 'firebase-functions/v2/https';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
@@ -28,7 +28,7 @@ import { mergeDocs } from './shared/syncmerge.js';
 import { buildICS } from './shared/ics.js';
 import * as G from './lib/google.js';
 
-setGlobalOptions({ region: 'asia-south1', maxInstances: 10, memory: '256MiB' });
+setGlobalOptions({ region: 'asia-south2', maxInstances: 10, memory: '256MiB' });
 initializeApp();
 const db = getFirestore();
 const CLIENT_ID = defineString('GOOGLE_CLIENT_ID', { description: 'OAuth web client ID (ends in .apps.googleusercontent.com)' });
@@ -206,7 +206,7 @@ export const feed = onRequest({ cors: false }, async (req, res) => {
   const m = /^\/feed\/([A-Za-z0-9_-]{20,64})\.ics$/.exec(req.path);
   if (!m) return res.status(404).send('Not found');
   const f = await db.collection('feeds').doc(m[1]).get();
-  if (!f.exists) return res.status(404).send('This calendar link was replaced or removed. Get the new one in TaskFlow → Settings → Calendars.');
+  if (!f.exists) return res.status(404).send('This calendar link was replaced or removed. Get the new one in TaskFlow â†’ Settings â†’ Calendars.');
   const { doc } = await loadDoc(f.get('uid'));
   res.set('Cache-Control', 'private, max-age=300').type('text/calendar; charset=utf-8').send(buildICS(doc?.quests || []));
 });

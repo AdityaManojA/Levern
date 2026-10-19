@@ -3,8 +3,8 @@
     "public": "app",
     "ignore": ["firebase.json", "**/.*", "tests/**", "**/*.md"],
     "rewrites": [
-      { "source": "/api/**", "function": { "functionId": "api", "region": "asia-south1" } },
-      { "source": "/feed/**", "function": { "functionId": "feed", "region": "asia-south1" } }
+      { "source": "/api/**", "function": { "functionId": "api", "region": "asia-south2" } },
+      { "source": "/feed/**", "function": { "functionId": "feed", "region": "asia-south2" } }
     ],
     "headers": [
       { "source": "sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
