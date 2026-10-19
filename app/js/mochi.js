@@ -274,6 +274,9 @@ export function createMochi(env) {
   /* touch */
   // his voice: the signature "mrrp" for affection, a "hey" meow for surprises and reminders, a grumpy one when annoyed
   const voice = (kind, o) => sfx(kind, o);
+  // taps: his voice on every second tap at most, and never within 1.5 s of the last one, so it never gets spammy
+  let tapCount = 0, lastTapVoice = 0;
+  const tapVoice = (kind, o) => { const now = Date.now(); if (tapCount % 2 !== 0 || now - lastTapVoice < 1500) return; lastTapVoice = now; sfx(kind, o); };
   const AFFECTION = new Set(['boop', 'happy-wiggle', 'heart-eyes', 'wave', 'sitting-pretty', 'celebrate', 'excited', 'cursor-swipe']);
   function getAnnoyed() {
     M.busy = true; M.clicks = []; M.state = 'sulk';
@@ -287,6 +290,7 @@ export function createMochi(env) {
   function tap(e) {
     const now = Date.now(); M.lastActive = now;
     if (env.onTap && env.onTap()) return;   // the tour's last step finishes on a tap
+    tapCount++;
     if (M.holding) { env.onHoldTap && env.onHoldTap(); return; }
     if (now < M.annoyedUntil) { say('…', 800, true); return; }
     if (M.asleep) { wakeUp('!!'); return; }
@@ -295,15 +299,15 @@ export function createMochi(env) {
     const n = M.clicks.length, limit = S().annoy || 5;
     if (n > limit) return getAnnoyed();
     M.busy = false;
-    if (n === limit - 1) { voice('grumpy', { vol: 0.7, rate: 1.1 }); return strike('stomp', 'hey!', true); }
-    if (n === limit) { voice('grumpy'); return strike('grumpy', 'stop it…', true); }
-    if (now - M.lastTap < 320) { M.lastTap = 0; voice('hey', { rate: 1.12 }); return strike('startled', 'eep!'); }
+    if (n === limit - 1) { tapVoice('grumpy', { vol: 0.7, rate: 1.1 }); return strike('stomp', 'hey!', true); }
+    if (n === limit) { tapVoice('grumpy'); return strike('grumpy', 'stop it…', true); }
+    if (now - M.lastTap < 320) { M.lastTap = 0; tapVoice('hey', { rate: 1.12 }); return strike('startled', 'eep!'); }
     M.lastTap = now;
     const r = el.getBoundingClientRect(), a = A[M.anim];
     const headLine = r.top + (a.gy - V.sit * 0.55) * (r.height / a.h);
-    if (e && e.clientY && e.clientY < headLine && Math.random() < 0.6 && recent[recent.length - 1] !== 'head-bonk') { recent.push('head-bonk'); voice('hey', { vol: 0.7, rate: 1.2 }); return strike('head-bonk', Math.random() < 0.5 ? 'ow!' : ''); }
+    if (e && e.clientY && e.clientY < headLine && Math.random() < 0.6 && recent[recent.length - 1] !== 'head-bonk') { recent.push('head-bonk'); tapVoice('hey', { vol: 0.7, rate: 1.2 }); return strike('head-bonk', Math.random() < 0.5 ? 'ow!' : ''); }
     const pick = pickFrom(TAPS, 2), lines = TAP_LINES[pick];
-    if (AFFECTION.has(pick)) voice('mrrp'); else if (pick === 'confused' || pick === 'surprised') voice('hey', { vol: 0.8 });
+    if (AFFECTION.has(pick)) tapVoice('mrrp'); else if (pick === 'confused' || pick === 'surprised') tapVoice('hey', { vol: 0.8 });
     strike(pick, lines && Math.random() < 0.55 ? lines[Math.floor(Math.random() * lines.length)] : '');
   }
   // pointer on Mochi: a tap (moved < 6px), a long press (heart eyes while held), or a drag (pick him up)
