@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mochi Character Sheet</title>
+<style>
+  body { margin: 0; padding: 24px 16px 48px; background: #F7F5F2; font-family: Inter, "Segoe UI", system-ui, sans-serif; color: #141416; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 20px; color: #6E6A66; font-size: 14px; }
+  section { border-radius: 18px; padding: 14px; margin-bottom: 16px; }
+  h2 { display: inline-block; font-size: 15px; margin: 0 0 12px; padding: 4px 12px; border-radius: 999px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+  .cell { background: #FFF8EE; border-radius: 14px; padding: 12px 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+  .cell.alt { background: #FFD66B; }
+  .art { height: 120px; display: flex; align-items: flex-end; justify-content: center; }
+  .art img { max-height: 120px; max-width: 120px; }
+  .cell b { font-size: 12px; text-align: center; }
+  .cell small { font-size: 11px; color: #6E6A66; text-align: center; }
+</style>
+</head>
+<body>
+<h1>Mochi · character sheet</h1>
+<p class="sub">Cut straight from design/mochi design.png by design/mochi/extract.py. Odd cells sit on butter yellow to check the edges.</p>
+<div id="root"></div>
+<script>
+  const SECTIONS = [
+    ['Main poses', '#EDEBE7', '#E1DED8', [['sit', 'Sitting (front)'], ['sitside', 'Sitting (side)'], ['stand', 'Standing'], ['walk', 'Walking'], ['lookup', 'Looking up'], ['lookback', 'Looking back']]],
+    ['Idle & ambient', '#FCE7EC', '#F8C9D4', [['blink', 'Idle (blink)'], ['twitch', 'Ear twitch'], ['lookaround', 'Look around'], ['track', 'Track cursor / scroll'], ['melt', 'Sleep mode (melt)']]],
+    ['Touch interactions', '#FFF4D6', '#FFE3A1', [['boop', 'Single tap (boop)'], ['squish', 'Double tap (squish)'], ['pickup', 'Long press (pick up)']]],
+    ['Functional feedback', '#E3F5E7', '#BFE8C9', [['celebrate', 'Success (celebrate)'], ['grumpy', 'Error (grumpy)']]],
+    ['UI integrations', '#ECE8FA', '#D8D0F5', [['stretch', 'Pull-to-refresh'], ['chase', 'Loading'], ['box', 'Empty state'], ['helper', 'Floating helper'], ['toast-success', 'Toast: success'], ['toast-error', 'Toast: error']]],
+    ['Separate assets (for rigging)', '#E4EEFB', '#C7DBF6', [['part-head', 'Head (base)'], ['part-eyes-1', 'Eyes'], ['part-eyes-2', 'Eyes'], ['part-eyes-3', 'Eyes'], ['part-eyes-closed', 'Eyes (closed)'], ['part-ears', 'Ears'], ['part-tail', 'Tail'], ['part-front-legs', 'Front legs'], ['part-back-legs', 'Back legs'], ['part-paw', 'Paw']]],
+  ];
+  const root = document.getElementById('root');
+  let i = 0;
+  for (const [title, bg, pill, items] of SECTIONS) {
+    const s = document.createElement('section'); s.style.background = bg;
+    s.innerHTML = `<h2 style="background:${pill}">${title}</h2><div class="grid"></div>`;
+    for (const [k, label] of items) {
+      s.querySelector('.grid').insertAdjacentHTML('beforeend',
+        `<div class="cell${i++ % 2 ? ' alt' : ''}"><div class="art"><img src="png/${k}.png" alt="${label}"></div><b>${label}</b><small>${k}</small></div>`);
+    }
+    root.appendChild(s);
+  }
+</script>
+</body>
+</html>

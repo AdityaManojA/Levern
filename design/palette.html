@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskFlow Palette</title>
+<style>
+  :root {
+    --bg: #FFF8EE;
+    --ink: #1E1B18;
+    --card: #FFFFFF;
+    --muted: #7A7068;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 48px;
+    background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 32px 0 12px; letter-spacing: .02em; }
+  p.sub { color: var(--muted); margin: 0 0 8px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .swatch {
+    border: 2.5px solid var(--ink); border-radius: 18px;
+    overflow: hidden; background: var(--card);
+  }
+  .chip { height: 84px; }
+  .meta { padding: 8px 10px; font-size: 12px; line-height: 1.4; }
+  .meta b { display: block; font-size: 13px; }
+  .pri {
+    border: 2.5px solid var(--ink); border-radius: 18px;
+    padding: 14px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .pri .label { font-weight: 700; font-size: 15px; }
+  .pri .desc { font-size: 13px; color: #3c3530; }
+  .demo {
+    margin-top: 18px; border: 2.5px solid var(--ink); border-radius: 18px;
+    padding: 14px; background: var(--card);
+  }
+  .row {
+    display: flex; align-items: center; gap: 10px;
+    border: 2.5px solid var(--ink); border-radius: 14px;
+    padding: 10px 12px; margin-bottom: 10px;
+  }
+  .row .title { flex: 1; font-weight: 600; font-size: 14px; }
+  .tag { border: 2px solid var(--ink); border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+  .dot { width: 18px; height: 18px; border: 2px solid var(--ink); border-radius: 50%; }
+  button.play {
+    font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    border: 2.5px solid var(--ink); border-radius: 12px; padding: 8px 12px;
+    background: #FFE08A; color: var(--ink);
+  }
+  button.play:active { transform: translateY(2px); }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #FFF8EE; --ink: #1E1B18; }
+  }
+</style>
+</head>
+<body>
+  <h1>TaskFlow colour palette</h1>
+  <p class="sub">Light mode first. Thick ink outlines, pastel fills, soft cream background.</p>
+
+  <h2>Base and ink</h2>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#FFF8EE"></div><div class="meta"><b>Cream</b>#FFF8EE · background</div></div>
+    <div class="swatch"><div class="chip" style="background:#1E1B18"></div><div class="meta"><b>Ink</b>#1E1B18 · outlines and text</div></div>
+    <div class="swatch"><div class="chip" style="background:#FFFFFF"></div><div class="meta"><b>Card</b>#FFFFFF · surfaces</div></div>
+    <div class="swatch"><div class="chip" style="background:#7A7068"></div><div class="meta"><b>Muted</b>#7A7068 · secondary text</div></div>
+  </div>
+
+  <h2>Pastel accents (from references 2 and 3)</h2>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#A8D8B9"></div><div class="meta"><b>Mint</b>#A8D8B9 · completed, growth</div></div>
+    <div class="swatch"><div class="chip" style="background:#F4A59A"></div><div class="meta"><b>Coral</b>#F4A59A · streak, warmth</div></div>
+    <div class="swatch"><div class="chip" style="background:#C9B8E8"></div><div class="meta"><b>Lavender</b>#C9B8E8 · stats, calm</div></div>
+    <div class="swatch"><div class="chip" style="background:#FFD66B"></div><div class="meta"><b>Butter</b>#FFD66B · XP, coins, nav</div></div>
+    <div class="swatch"><div class="chip" style="background:#A9D6F0"></div><div class="meta"><b>Sky</b>#A9D6F0 · info, timetable</div></div>
+  </div>
+
+  <h2>Priority colours (six tiers, large pastel cards)</h2>
+  <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+    <div class="pri" style="background:#F4918A">
+      <span class="label">P1 · Critical</span>
+      <span class="desc">Coral-red #F4918A · due today, blocking</span>
+    </div>
+    <div class="pri" style="background:#F9B77E">
+      <span class="label">P2 · High</span>
+      <span class="desc">Peach #F9B77E · due in 1–2 days</span>
+    </div>
+    <div class="pri" style="background:#FFE08A">
+      <span class="label">P3 · Medium</span>
+      <span class="desc">Butter #FFE08A · planned this week</span>
+    </div>
+    <div class="pri" style="background:#B9E7CC">
+      <span class="label">P4 · Normal</span>
+      <span class="desc">Mint #B9E7CC · default for new tasks</span>
+    </div>
+    <div class="pri" style="background:#A9D6F0">
+      <span class="label">P5 · Low</span>
+      <span class="desc">Sky #A9D6F0 · nice to do</span>
+    </div>
+    <div class="pri" style="background:#D4C4F2">
+      <span class="label">P6 · Someday</span>
+      <span class="desc">Lilac #D4C4F2 · ideas, no deadline</span>
+    </div>
+  </div>
+
+  <h2>In context</h2>
+  <div class="demo">
+    <div class="row" style="background:#F4918A"><span class="dot" style="background:#F4918A"></span><span class="title">Submit lab report</span><span class="tag">P1</span></div>
+    <div class="row" style="background:#F9B77E"><span class="dot" style="background:#F9B77E"></span><span class="title">Book dentist</span><span class="tag">P2</span></div>
+    <div class="row" style="background:#FFE08A"><span class="dot" style="background:#FFE08A"></span><span class="title">Read chapter 4</span><span class="tag">P3</span></div>
+    <div class="row" style="background:#B9E7CC"><span class="dot" style="background:#B9E7CC"></span><span class="title">Organise notes folder</span><span class="tag">P4</span></div>
+    <div class="row" style="background:#A9D6F0"><span class="dot" style="background:#A9D6F0"></span><span class="title">Tidy desktop</span><span class="tag">P5</span></div>
+    <div class="row" style="background:#D4C4F2"><span class="dot" style="background:#D4C4F2"></span><span class="title">Learn to bake sourdough</span><span class="tag">P6</span></div>
+    <div class="row" style="background:#A8D8B9"><span class="dot" style="background:#A8D8B9"></span><span class="title">Done: morning review</span><span class="tag">Done</span></div>
+  </div>
+
+  <h2>Sound preview</h2>
+  <div class="demo">
+    <p class="sub">Tap to hear each sound (same files saved in design/sounds).</p>
+    <button class="play" onclick="new Audio('sounds/key_click_brown.wav').play()">Key click</button>
+    <button class="play" style="background:#C9B8E8" onclick="new Audio('sounds/mascot_pop.wav').play()">Mascot pop</button>
+    <button class="play" style="background:#A8D8B9" onclick="new Audio('sounds/coin_questline_complete.wav').play()">Questline coin</button>
+  </div>
+</body>
+</html>

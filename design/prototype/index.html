@@ -1,0 +1,1229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskFlow Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1E1B18; --cream: #FFF8EE; --card: #FFFFFF; --muted: #7A7068;
+    --mint: #A8D8B9; --coral: #F4A59A; --lav: #C9B8E8; --butter: #FFD66B; --sky: #A9D6F0;
+    --line: 2.5px solid var(--ink);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #EFE7DA; color: var(--ink);
+    font-family: Inter, "Segoe UI", system-ui, sans-serif;
+    display: flex; justify-content: center; overflow: hidden;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  .stage { position: relative; width: 390px; height: 844px; transform-origin: top center; margin-top: 16px; flex: none; }
+  .phone { position: absolute; inset: 0; background: var(--cream); border: 3px solid var(--ink); border-radius: 46px; overflow: hidden; }
+  .status { height: 44px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; font-weight: 700; font-size: 14px; }
+  .status .dots { display: flex; gap: 5px; }
+  .status .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink); display: block; }
+
+  .pages { position: absolute; top: 44px; left: 0; right: 0; bottom: 0; }
+  .page { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; padding: 6px 20px 190px; display: none; scrollbar-width: none; }
+  .page::-webkit-scrollbar { display: none; }
+  .page.active { display: block; }
+  .h-sub { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .h-title { font-size: 28px; font-weight: 700; margin: 2px 0 14px; }
+  .sec { font-size: 13px; font-weight: 700; margin: 18px 0 8px; }
+
+  .card { background: var(--card); border: var(--line); border-radius: 20px; padding: 14px 16px; margin-bottom: 12px; min-width: 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .stat { border: var(--line); border-radius: 20px; padding: 12px 14px; min-width: 0; }
+  .stat .k { font-size: 12px; font-weight: 600; }
+  .stat .v { font-size: 26px; font-weight: 700; line-height: 1.2; }
+  .stat .s { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar { height: 18px; border: var(--line); border-radius: 10px; background: var(--cream); overflow: hidden; margin-top: 10px; }
+  .bar > i { display: block; height: 100%; background: var(--mint); border-right: var(--line); transition: width .4s; }
+  .small { font-size: 12px; color: var(--muted); }
+  .week { display: flex; align-items: flex-end; gap: 8px; height: 100px; margin-top: 10px; }
+  .week b { flex: 1; border: var(--line); border-radius: 10px; background: var(--mint); }
+  .wk-l { display: flex; gap: 8px; margin-top: 4px; }
+  .wk-l span { flex: 1; text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); }
+
+  .seg { display: flex; gap: 6px; margin-bottom: 14px; }
+  .seg button { flex: 1; border: var(--line); border-radius: 14px; padding: 8px 0; background: #fff; font-weight: 600; font-size: 12px; }
+  .seg button.on { background: var(--ink); color: #fff; }
+
+  .list { position: relative; }
+  .q { display: flex; align-items: center; gap: 12px; border: var(--line); border-radius: 20px; padding: 12px 8px 12px 14px; margin-bottom: 10px; background: var(--c); min-width: 0; }
+  .q.done { opacity: .55; }
+  .q.done .qt { text-decoration: line-through; }
+  .chk { width: 28px; height: 28px; border-radius: 50%; border: var(--line); background: #fff; flex: none; display: grid; place-items: center; }
+  .q.done .chk { background: var(--ink); }
+  .q.done .chk::after { content: ""; width: 10px; height: 5px; border-left: 2.5px solid #fff; border-bottom: 2.5px solid #fff; transform: translateY(-1px) rotate(-45deg); }
+  .qb { flex: 1; min-width: 0; }
+  .qt { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qm { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .handle { flex: none; width: 30px; height: 38px; display: grid; place-items: center; border-radius: 10px; cursor: grab; touch-action: none; }
+  .handle:hover { background: rgba(30,27,24,.08); }
+  .q.dragging { position: absolute; z-index: 5; box-shadow: 0 8px 0 -2px rgba(30,27,24,.25); transform: rotate(-1.5deg); cursor: grabbing; }
+  .ph { border: 2.5px dashed var(--ink); border-radius: 20px; margin-bottom: 10px; opacity: .45; }
+  .line-card .bar > i { background: var(--butter); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 2px solid var(--ink); border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; line-height: 1.4; }
+
+  /* nav */
+  .nav { position: absolute; left: 16px; right: 16px; bottom: 16px; height: 68px; background: var(--butter); border: var(--line); border-radius: 34px;
+    display: flex; align-items: center; padding: 0 6px; z-index: 20; transition: left .25s, right .25s, bottom .25s, border-radius .25s, height .25s, background .25s; }
+  .nav.docked { left: -3px; right: -3px; bottom: -3px; height: 84px; border-radius: 28px 28px 0 0; padding-bottom: 14px; }
+  .tab { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; font-weight: 600; font-size: 10px; }
+  .tab .ic { width: 46px; height: 30px; border-radius: 15px; display: grid; place-items: center; border: 2px solid transparent; transition: background .2s, border-color .2s; }
+  .tab.on .ic { background: #fff; border-color: var(--ink); }
+  .nav.nolabels .tab span { display: none; }
+  .nav.nolabels .tab .ic { height: 36px; }
+  .add { flex: none; width: 60px; height: 60px; border-radius: 50%; background: var(--ink); border: none; display: grid; place-items: center;
+    margin: -30px 4px 0; box-shadow: 0 0 0 5px var(--cream); transition: transform .15s; }
+  .add:active { transform: scale(.92); }
+
+  /* sheet */
+  .scrim { position: absolute; inset: 0; background: rgba(30,27,24,.35); z-index: 25; opacity: 0; pointer-events: none; transition: opacity .3s; }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 620px; background: var(--cream); border-top: var(--line); border-radius: 30px 30px 0 0;
+    z-index: 30; transform: translateY(105%); transition: transform .35s cubic-bezier(.2,.8,.2,1); padding: 12px 20px 24px; overflow-y: auto; scrollbar-width: none; }
+  .sheet.open { transform: none; }
+  .grab { width: 44px; height: 5px; border-radius: 3px; background: var(--ink); opacity: .3; margin: 0 auto 12px; }
+  .field { width: 100%; border: var(--line); border-radius: 16px; padding: 14px 16px; background: #fff; font-size: 15px; outline: none; }
+  .mic { width: 100%; margin: 12px 0; border: var(--line); border-radius: 22px; background: var(--sky); padding: 16px; display: flex; align-items: center; gap: 14px; text-align: left; }
+  .mic .orb { width: 56px; height: 56px; border-radius: 50%; border: var(--line); background: #fff; flex: none; display: grid; place-items: center; }
+  .mic.listening .orb { animation: pulse .8s ease-in-out infinite alternate; background: var(--butter); }
+  @keyframes pulse { to { transform: scale(1.12); } }
+  .mic b { display: block; font-size: 15px; }
+  .mic small { font-size: 12px; }
+  .pick { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .pick button { border: var(--line); border-radius: 12px; height: 40px; font-weight: 700; font-size: 13px; background: var(--c); }
+  .pick button.on { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .subrow { display: flex; gap: 8px; }
+  .subrow .field { padding: 10px 14px; font-size: 14px; }
+  .btn { width: 100%; border: var(--line); border-radius: 28px; height: 54px; font-weight: 700; font-size: 16px; background: var(--butter); }
+  .btn.ghost { background: transparent; }
+  .mini { border: var(--line); border-radius: 14px; padding: 0 14px; background: #fff; font-weight: 700; flex: none; }
+
+  /* plan */
+  .days { display: flex; gap: 6px; margin-bottom: 12px; }
+  .days button { flex: 1; border: var(--line); border-radius: 16px; height: 36px; background: #fff; font-weight: 600; font-size: 12px; }
+  .days button.on { background: var(--ink); color: #fff; }
+  .blk { border: var(--line); border-radius: 16px; padding: 10px 14px; margin-bottom: 8px; background: var(--c); }
+  .blk b { font-size: 14px; display: block; }
+  .blk span { font-size: 11px; }
+  .blk.free { background: transparent; border-style: dashed; display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; }
+
+  /* customise */
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 2px solid rgba(30,27,24,.08); min-width: 0; }
+  .row:first-of-type { border-top: none; }
+  .row .lbl { flex: 1; min-width: 0; }
+  .row .lbl b { display: block; font-size: 14px; }
+  .row .lbl small { font-size: 11px; color: var(--muted); }
+  .tog { width: 52px; height: 30px; border-radius: 15px; border: var(--line); background: #fff; position: relative; flex: none; transition: background .2s; }
+  .tog::after { content: ""; position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; transition: left .2s, background .2s; }
+  .tog.on { background: var(--mint); }
+  .tog.on::after { left: 24px; background: var(--ink); }
+  .seg2 { display: flex; border: var(--line); border-radius: 14px; overflow: hidden; flex: none; }
+  .seg2 button { border: none; background: #fff; padding: 6px 10px; font-size: 12px; font-weight: 600; }
+  .seg2 button + button { border-left: 2px solid var(--ink); }
+  .seg2 button.on { background: var(--ink); color: #fff; }
+  .sw { display: flex; gap: 6px; flex: none; }
+  .sw button { width: 26px; height: 26px; border-radius: 50%; border: var(--line); background: var(--c); }
+  .sw button.on { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .order { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .order div { display: flex; align-items: center; gap: 8px; border: var(--line); border-radius: 14px; padding: 6px 8px 6px 12px; background: var(--cream); font-weight: 600; font-size: 13px; }
+  .order div span { flex: 1; }
+  .order button { width: 30px; height: 28px; border: 2px solid var(--ink); border-radius: 10px; background: #fff; font-weight: 700; }
+  .order button:disabled { opacity: .3; cursor: default; }
+  .tier { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .tier i { width: 34px; height: 30px; border-radius: 10px; border: var(--line); background: var(--c); display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 12px; flex: none; }
+  .tier input { flex: 1; min-width: 0; border: 2px solid var(--ink); border-radius: 10px; padding: 6px 10px; background: #fff; font-size: 13px; font-weight: 600; outline: none; }
+  .step { display: flex; align-items: center; gap: 8px; flex: none; }
+  .step button { width: 30px; height: 30px; border-radius: 50%; border: var(--line); background: #fff; font-weight: 700; }
+  .step b { min-width: 22px; text-align: center; }
+  input[type=range] { accent-color: var(--ink); width: 120px; }
+  .play { border: 2px solid var(--ink); border-radius: 12px; background: #fff; padding: 5px 10px; font-size: 12px; font-weight: 600; }
+
+  /* Mochi */
+  .mochi { position: absolute; left: 0; top: 0; z-index: 40; cursor: pointer; will-change: transform; touch-action: manipulation; }
+  .mochi .flip { width: 100%; height: 100%; }   /* no transition: a facing change is instant, the turn frames do the turning */
+  .mochi .act { width: 100%; height: 100%; transform-origin: 50% 100%; }
+  .mochi.ghost { pointer-events: none; z-index: 41; transition: opacity .11s linear; }
+  .mochi svg, .mochi img { display: block; transform-origin: 50% 100%; user-select: none; -webkit-user-drag: none; }
+  .mochi .eyes, .mochi .pupils { transform-box: fill-box; transform-origin: center; transition: transform .2s; }
+  .mochi.blink .eyes, .mochi.blink .pupils { animation: blink .2s ease-in-out; }
+  @keyframes blink { 50% { transform: scaleY(.08); } }
+  .mochi .tail { transform-box: view-box; }
+  .mochi.flick .tail { animation: flick .5s ease-in-out 2; }
+  .mochi .ear-l, .mochi .ear-r { transform-box: fill-box; transform-origin: 50% 100%; }
+  .mochi.twitch .ear-l { animation: twitch .32s ease-in-out 2; }
+  @keyframes twitch { 50% { transform: rotate(-16deg); } }
+  .mochi .pupils { transition: transform .12s; }
+  .r-flat { animation: flat .5s cubic-bezier(.3,1.5,.5,1); }
+  @keyframes flat { 0% { transform: scale(.7, 1.3); } 60% { transform: scale(1.12, .88); } 100% { transform: none; } }
+  .mochi.sulking .tail { animation: flick 1s ease-in-out infinite; }
+  @keyframes flick { 50% { transform: rotate(-16deg); } }
+  @keyframes breathe { 50% { transform: scaleY(1.035); } }
+
+  @keyframes waddle { from { transform: translateY(0) rotate(-2deg); } to { transform: translateY(-3px) rotate(2deg); } }
+  @keyframes bob { to { transform: translateY(-2px); } }
+  .mochi.walking .leg-a { animation: step .28s ease-in-out infinite alternate; }
+  .mochi.walking .leg-b { animation: step .28s ease-in-out infinite alternate-reverse; }
+  @keyframes step { to { transform: translateY(-6px); } }
+  .mochi .zzz { transform-box: fill-box; animation: zz 2.2s ease-in-out infinite; }
+  @keyframes zz { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(6px, -10px); } }
+  .r-jump { animation: jump .55s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes jump { 30% { transform: translateY(-34px) scaleY(1.05); } 62% { transform: scale(1.12, .85); } 100% { transform: none; } }
+  .r-spin { animation: spin .6s ease-in-out; transform-origin: 50% 55% !important; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .r-purr { animation: purr .07s linear 12; }
+  @keyframes purr { 50% { transform: translateX(1.6px); } }
+  .r-squish { animation: squish .45s ease-out; }
+  @keyframes squish { 30% { transform: scale(1.18, .78); } 60% { transform: scale(.92, 1.1); } 100% { transform: none; } }
+  .r-shake { animation: shake .4s ease-in-out; }
+  @keyframes shake { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+  .r-hop { animation: hop .4s ease-out; }
+  @keyframes hop { 40% { transform: translateY(-22px); } 100% { transform: none; } }
+
+  .bubble { position: absolute; left: 0; top: 0; z-index: 41; background: #fff; border: var(--line); border-radius: 14px; padding: 5px 10px; font-weight: 700; font-size: 12px;
+    white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .2s; }
+  .bubble.show { opacity: 1; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -8px; width: 10px; height: 10px; background: #fff; border-right: var(--line); border-bottom: var(--line); transform: translateX(-50%) rotate(45deg); }
+  .bubble.mad { background: var(--coral); }
+  .bubble.mad::after { background: var(--coral); }
+  .fx { position: absolute; z-index: 42; pointer-events: none; animation: fxUp 1s ease-out forwards; }
+  @keyframes fxUp { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: 1; transform: translateY(-6px) scale(1); } 100% { opacity: 0; transform: translateY(-46px) scale(.9); } }
+  .fx.pop { animation: fxPop .7s ease-out forwards; }
+  @keyframes fxPop { 0% { transform: scale(0); } 40% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 0; } }
+
+  .toast { position: absolute; left: 50%; top: 52px; transform: translate(-50%, -12px); z-index: 50; background: var(--ink); color: #fff; border-radius: 14px;
+    padding: 8px 14px; font-weight: 600; font-size: 13px; opacity: 0; transition: .25s; pointer-events: none; white-space: nowrap; max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.success, .toast.error { display: flex; align-items: center; gap: 10px; color: var(--ink); border: var(--line); padding: 6px 14px 6px 6px; text-align: left; white-space: normal; width: 320px; }
+  .toast.success { background: #DDF3E4; }
+  .toast.error { background: #FBE1E4; }
+  .toast .tm { width: 42px; height: 42px; flex: none; display: grid; place-items: end center; overflow: hidden; }
+  .toast .tm img { width: 46px; height: 46px; object-fit: contain; display: block; }
+  .toast b { display: block; font-size: 13px; }
+  .toast small { font-size: 11px; font-weight: 500; }
+
+  .loading { position: absolute; inset: 0; z-index: 60; background: var(--cream); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; transition: opacity .35s; }
+  .loading.done { opacity: 0; pointer-events: none; }
+  .loading .chaser { width: 110px; height: 125px; display: flex; align-items: flex-end; }
+  .loading .chaser img { width: 100%; height: 100%; display: block; }
+  @keyframes dot { to { transform: translateX(6px) translateY(-6px); } }
+  .loading b { font-size: 15px; }
+  .loading .lbar { width: 160px; height: 8px; border-radius: 4px; background: #E9E1D3; overflow: hidden; }
+  .loading .lbar i { display: block; height: 100%; width: 0; background: var(--sky); border-radius: 4px; animation: lbar 1.3s ease-out forwards; }
+  @keyframes lbar { to { width: 100%; } }
+
+  #p-quests { transition: transform .2s; }
+  .ptr { position: absolute; left: 50%; top: 44px; z-index: 15; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .ptr.on { opacity: 1; }
+  .ptr img { width: 100%; height: 100%; display: block; }
+
+  .empty { text-align: center; padding: 18px 16px 20px; }
+  .empty .art { width: 92px; height: 110px; margin: 0 auto 6px; display: flex; align-items: flex-end; justify-content: center; }
+  .empty .art img { width: 100%; height: auto; display: block; }
+  .empty b { display: block; font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="phone" id="phone">
+    <div class="status"><span>9:41</span><span class="dots"><i></i><i></i><i></i></span></div>
+
+    <div class="pages">
+      <!-- HOME -->
+      <section class="page" id="p-home">
+        <div class="h-sub">Good morning</div>
+        <div class="h-title">Your progress</div>
+        <div class="grid2">
+          <div class="stat" style="background:var(--mint)"><div class="k">Tasks done</div><div class="v" id="s-total">128</div><div class="s">all time</div></div>
+          <div class="stat" style="background:var(--coral)"><div class="k">Streak</div><div class="v" id="s-streak">12</div><div class="s" id="s-streak-sub">days in a row</div></div>
+          <div class="stat" style="background:var(--sky)"><div class="k">Today</div><div class="v" id="s-today">0 / 5</div><div class="s">daily quests</div></div>
+          <div class="stat" style="background:var(--butter)"><div class="k">EXP</div><div class="v" id="s-exp">1,240</div><div class="s" id="s-exp-sub">+0 today</div></div>
+        </div>
+        <div class="card">
+          <b style="font-size:14px">Daily target · October</b>
+          <div class="small" id="s-month">22 of 30 days kept</div>
+          <div class="bar"><i id="s-month-bar" style="width:73%"></i></div>
+        </div>
+        <div class="card">
+          <b style="font-size:14px">Up next</b>
+          <div id="upnext" style="margin-top:8px"></div>
+        </div>
+        <div class="card">
+          <b style="font-size:14px">Quests per day</b>
+          <div class="week"><b style="height:55%"></b><b style="height:80%"></b><b style="height:40%"></b><b style="height:95%;background:var(--coral)"></b><b style="height:70%"></b><b style="height:30%"></b><b style="height:85%"></b></div>
+          <div class="wk-l"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+        </div>
+      </section>
+
+      <!-- QUESTS -->
+      <section class="page" id="p-quests">
+        <div class="h-sub">Your tasks. Drag ⋮⋮ to change priority.</div>
+        <div class="h-title">Quests</div>
+        <div class="seg"><button class="on">Today</button><button>This week</button><button>Questlines</button></div>
+        <div class="list" id="qlist"></div>
+        <div class="card line-card" id="line">
+          <b style="font-size:15px">Questline · Exam week</b>
+          <div class="small" id="line-sub">2 of 5 quests complete</div>
+          <div class="bar"><i id="line-bar" style="width:40%"></i></div>
+        </div>
+      </section>
+
+      <!-- PLAN -->
+      <section class="page" id="p-plan">
+        <div class="h-sub">Week of 19 Oct · student</div>
+        <div class="h-title">Plan</div>
+        <div class="days" id="days"></div>
+        <div id="blocks"></div>
+      </section>
+
+      <!-- ME / CUSTOMISE -->
+      <section class="page" id="p-me">
+        <div class="h-sub">Make TaskFlow yours</div>
+        <div class="h-title">Customise</div>
+        <div id="custom"></div>
+      </section>
+    </div>
+
+    <nav class="nav" id="nav"></nav>
+
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" id="sheet">
+      <div class="grab"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <b style="font-size:22px">New quest</b>
+        <button class="mini" id="sheet-close" style="height:34px">Close</button>
+      </div>
+      <input class="field" id="q-title" placeholder="What do you need to do?" autocomplete="off">
+      <button class="mic" id="mic">
+        <span class="orb"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E1B18" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+        <span><b id="mic-t">Tap and speak</b><small id="mic-s">Say it like you'd tell a friend</small></span>
+      </button>
+      <div class="sec" style="margin-top:4px">Detected from your words</div>
+      <div class="chips" id="detect"><span class="small">Nothing yet. Try "due Friday" or "exam".</span></div>
+      <div class="sec">Priority</div>
+      <div class="pick" id="pick"></div>
+      <div class="small" id="pick-name" style="margin-top:6px"></div>
+      <div class="sec">Subtasks</div>
+      <div class="subrow"><input class="field" id="sub-in" placeholder="Add a subtask"><button class="mini" id="sub-add">Add</button></div>
+      <div class="chips" id="subs" style="margin-top:8px"></div>
+      <div style="height:16px"></div>
+      <button class="btn" id="save">Save quest</button>
+    </div>
+
+    <div class="ptr" id="ptr"><img alt="" draggable="false"></div>
+    <div class="loading" id="loading"><div class="chaser walking"></div><b>Loading…</b><div class="lbar"><i></i></div></div>
+    <div class="mochi idle" id="mochi"><div class="flip"><div class="act"></div></div></div>
+    <div class="bubble" id="bubble"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<script src="mochi.js"></script>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const INK = '#1E1B18';
+  const TIER_COLORS = ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'];
+  const NAV_COLORS = ['#FFD66B', '#A8D8B9', '#A9D6F0', '#C9B8E8', '#F4A59A'];
+  const DEFAULTS = {
+    labels: true, navStyle: 'float', navColor: '#FFD66B', tabOrder: ['home', 'quests', 'plan', 'me'],
+    roam: true, speed: 'slow', mochiSound: true, annoy: 5, volume: 0.7, tabClick: true, target: 5,
+    tierNames: ['Critical', 'High', 'Medium', 'Normal', 'Low', 'Someday'],
+  };
+  let S = JSON.parse(JSON.stringify(DEFAULTS));
+  try { const saved = JSON.parse(localStorage.getItem('taskflow-settings') || 'null'); if (saved) S = Object.assign(S, saved);
+    // v2: slow walk became the default, so older saved settings start on slow once
+    if (saved && !saved.v) S.speed = 'slow';
+  } catch (e) {}
+  S.v = 2;
+  const save = () => { try { localStorage.setItem('taskflow-settings', JSON.stringify(S)); } catch (e) {} };
+
+  /* ---------- sounds ---------- */
+  const SND = { click: '../sounds/key_click_brown.wav', mew: '../sounds/mascot_pop.wav', coin: '../sounds/coin_questline_complete.wav' };
+  const audio = {};
+  for (const k in SND) { audio[k] = new Audio(SND[k]); audio[k].preload = 'auto'; }
+  function play(name, { rate = 1, vol = 1 } = {}) {
+    if (name === 'mew' && !S.mochiSound) return;
+    const a = audio[name].cloneNode();
+    a.volume = Math.max(0, Math.min(1, S.volume * vol));
+    a.preservesPitch = false; a.playbackRate = rate;
+    a.play().catch(() => {});
+  }
+
+  /* ---------- data ---------- */
+  let quests = [
+    { id: 1, title: 'Submit lab report', tier: 0, meta: 'due today', done: false, line: true },
+    { id: 2, title: 'Book dentist', tier: 1, meta: 'due in 2 days', done: false, line: false },
+    { id: 3, title: 'Read chapter 4', tier: 2, meta: 'this week', done: false, line: true },
+    { id: 4, title: 'Revise flashcards', tier: 2, meta: 'this week', done: false, line: true },
+    { id: 5, title: 'Organise notes folder', tier: 3, meta: 'no date', done: false, line: false },
+    { id: 6, title: 'Tidy desktop', tier: 4, meta: 'when free', done: false, line: false },
+    { id: 7, title: 'Learn to bake sourdough', tier: 5, meta: 'ideas', done: false, line: false },
+  ];
+  let lineCelebrated = false, bonusExp = 0;
+  const tierLabel = t => `P${t + 1} · ${S.tierNames[t]}`;
+
+  /* ---------- icons ---------- */
+  const ic = p => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const TABS = {
+    home: { label: 'Home', icon: ic('<path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>') },
+    quests: { label: 'Quests', icon: ic('<rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8 12 3 3 5-6"/>') },
+    plan: { label: 'Plan', icon: ic('<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>') },
+    me: { label: 'Customise', icon: ic('<path d="M5 7h8M17 7h2M5 17h2M11 17h8"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>') },
+  };
+  const HANDLE = `<svg width="14" height="20" viewBox="0 0 14 20" fill="${INK}"><circle cx="4" cy="4" r="2"/><circle cx="10" cy="4" r="2"/><circle cx="4" cy="10" r="2"/><circle cx="10" cy="10" r="2"/><circle cx="4" cy="16" r="2"/><circle cx="10" cy="16" r="2"/></svg>`;
+
+  /* ---------- fit to window ---------- */
+  let scale = 1;
+  function fit() {
+    scale = Math.min(1, (innerHeight - 32) / 844, (innerWidth - 32) / 390);
+    $('#stage').style.transform = `scale(${scale})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  /* ---------- toast ---------- */
+  let toastT;
+  // kind: 'info' (plain), 'success' (Mochi celebrating) or 'error' (grumpy Mochi)
+  function toast(msg, kind = 'info', sub = '') {
+    const t = $('#toast');
+    t.className = 'toast' + (kind === 'info' ? '' : ' ' + kind);
+    if (kind === 'info') t.textContent = msg;
+    else {
+      t.innerHTML = `<span class="tm"><img alt=""></span><span><b>${msg}</b>${sub ? `<small>${sub}</small>` : ''}</span>`;
+      clearInterval(toast.loop);
+      toast.loop = frameLoop(t.querySelector('img'), kind === 'success' ? 'toast-celebrate' : 'toast-grumpy', 9);
+    }
+    void t.offsetWidth; t.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(() => { t.classList.remove('show'); clearInterval(toast.loop); }, kind === 'info' ? 1700 : 2400);
+  }
+
+  /* ---------- nav ---------- */
+  let current = 'home';
+  function renderNav() {
+    const nav = $('#nav');
+    nav.className = 'nav' + (S.navStyle === 'dock' ? ' docked' : '') + (S.labels ? '' : ' nolabels');
+    nav.style.background = S.navColor;
+    const tab = k => `<button class="tab${k === current ? ' on' : ''}" data-tab="${k}"><span class="ic">${TABS[k].icon}</span><span>${TABS[k].label}</span></button>`;
+    const o = S.tabOrder;
+    nav.innerHTML = tab(o[0]) + tab(o[1]) +
+      `<button class="add" id="add" aria-label="New quest"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>` +
+      tab(o[2]) + tab(o[3]);
+  }
+  $('#nav').addEventListener('click', e => {
+    const t = e.target.closest('[data-tab]');
+    if (t) return go(t.dataset.tab);
+    if (e.target.closest('#add')) openSheet();
+  });
+  function go(page) {
+    if (page === current) return;
+    current = page;
+    document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'p-' + page));
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === page));
+    if (S.tabClick) play('click', { vol: 0.6 });
+    Mochi.enterPage(page);
+  }
+
+  /* ---------- home ---------- */
+  function renderHome() {
+    const done = quests.filter(q => q.done).length;
+    const daily = Math.round(20 * Math.min(1, done / S.target)) + (done >= S.target ? 10 : 0);
+    $('#s-total').textContent = 128 + done;
+    $('#s-today').textContent = `${done} / ${S.target}`;
+    $('#s-exp').textContent = (1240 + daily + bonusExp).toLocaleString();
+    $('#s-exp-sub').textContent = `+${daily + bonusExp} points today`;
+    const kept = done >= S.target;
+    $('#s-streak').textContent = 12 + (kept ? 1 : 0);
+    $('#s-streak-sub').textContent = kept ? 'kept today!' : `${S.target - done} more quests to keep it`;
+    const days = 22 + (kept ? 1 : 0);
+    $('#s-month').textContent = `You hit your ${S.target}-a-day target on ${days} of 30 days`;
+    $('#s-month-bar').style.width = (days / 30 * 100) + '%';
+    const next = quests.filter(q => !q.done).slice(0, 3);
+    $('#upnext').innerHTML = next.length ? next.map(q =>
+      `<div style="display:flex;align-items:center;gap:8px;margin-top:6px;min-width:0"><span class="chip" style="background:${TIER_COLORS[q.tier]}">P${q.tier + 1}</span><span style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${q.title}</span></div>`
+    ).join('') : '<div class="small">All clear. Mochi approves.</div>';
+  }
+
+  /* ---------- quests ---------- */
+  function renderQuests() {
+    const emptyCard = quests.some(q => !q.done) ? '' :
+      `<div class="card empty"><div class="art"><img class="boxpop" alt=""></div><b>No quests left</b><span class="small">Add one with the + button.</span></div>`;
+    $('#qlist').innerHTML = emptyCard + quests.map(q => `
+      <div class="q${q.done ? ' done' : ''}" data-id="${q.id}" style="--c:${TIER_COLORS[q.tier]}">
+        <button class="chk" aria-label="Complete"></button>
+        <div class="qb"><div class="qt">${q.title}</div><div class="qm">${tierLabel(q.tier)} · ${q.meta}</div></div>
+        <div class="handle" aria-label="Drag">${HANDLE}</div>
+      </div>`).join('');
+    const lineDone = 2 + quests.filter(q => q.line && q.done).length;
+    $('#line-sub').textContent = `${Math.min(5, lineDone)} of 5 quests complete${lineDone >= 5 ? ' · +50 EXP' : ''}`;
+    $('#line-bar').style.width = Math.min(100, lineDone / 5 * 100) + '%';
+    if (lineDone >= 5 && !lineCelebrated) { lineCelebrated = true; celebrate(); }
+  }
+  $('#qlist').addEventListener('click', e => {
+    const c = e.target.closest('.chk'); if (!c) return;
+    const q = quests.find(x => x.id === +c.closest('.q').dataset.id);
+    q.done = !q.done;
+    play('click');
+    renderQuests(); renderHome();
+    const doneCount = quests.filter(x => x.done).length;
+    if (q.done && doneCount === S.target) { Mochi.react('button', 0, 'target hit!'); toast('Daily target hit!', 'success', 'Your streak is safe for today.'); }
+    else if (q.done && !quests.some(x => !x.done)) Mochi.react('wipe', 0, 'all clean!', null);
+    else if (q.done) Mochi.celebrate(['nice!', 'yay!', 'one down'][Math.floor(Math.random() * 3)]);
+    else Mochi.react('suspicious', 0, 'hmm… sure?', null);
+  });
+  function celebrate() {
+    bonusExp += 50;
+    play('coin');
+    const r = $('#line').getBoundingClientRect(), p = $('#phone').getBoundingClientRect();
+    for (let i = 0; i < 7; i++) {
+      setTimeout(() => fx(`<svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="#FFD66B" stroke="${INK}" stroke-width="2.5"/><path d="M11 6v10" stroke="${INK}" stroke-width="2"/></svg>`,
+        (r.left - p.left) / scale + 40 + Math.random() * 240, (r.top - p.top) / scale + 10), i * 70);
+    }
+    toast('Questline complete!', 'success', '+50 EXP added to today.');
+    Mochi.celebrate('questline done!');
+    renderHome();
+  }
+
+  // drag to reorder; the card takes the priority of the card it lands above
+  $('#qlist').addEventListener('pointerdown', e => {
+    const h = e.target.closest('.handle'); if (!h) return;
+    e.preventDefault();
+    const list = $('#qlist'), card = h.closest('.q');
+    const top0 = card.offsetTop, y0 = e.clientY;
+    const ph = document.createElement('div'); ph.className = 'ph'; ph.style.height = card.offsetHeight + 'px';
+    card.style.width = card.offsetWidth + 'px'; card.style.left = '0px'; card.style.top = top0 + 'px';
+    list.insertBefore(ph, card); card.classList.add('dragging');
+    h.setPointerCapture(e.pointerId);
+    play('click', { vol: 0.5, rate: 1.1 });
+    Mochi.react('track', 1200, '', null);
+    const move = ev => {
+      const top = top0 + (ev.clientY - y0) / scale;
+      card.style.top = top + 'px';
+      const mid = top + card.offsetHeight / 2;
+      let before = null;
+      for (const c of list.querySelectorAll('.q:not(.dragging)')) { if (mid < c.offsetTop + c.offsetHeight / 2) { before = c; break; } }
+      if (before) { if (ph.nextSibling !== before) list.insertBefore(ph, before); } else if (list.lastElementChild !== ph) list.appendChild(ph);
+    };
+    const up = () => {
+      h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up);
+      list.insertBefore(card, ph); ph.remove();
+      card.classList.remove('dragging'); card.style.cssText = card.style.cssText.replace(/(width|left|top):[^;]+;?/g, '');
+      const ids = [...list.querySelectorAll('.q')].map(c => +c.dataset.id);
+      const q = quests.find(x => x.id === +card.dataset.id);
+      const idx = ids.indexOf(q.id);
+      const nb = quests.find(x => x.id === (ids[idx + 1] ?? ids[idx - 1]));
+      const old = q.tier;
+      if (nb) q.tier = nb.tier;
+      quests.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+      play('click');
+      renderQuests(); renderHome();
+      if (q.tier !== old) toast(`Moved to ${tierLabel(q.tier)}`);
+      if (old === 0 && q.tier > 1) Mochi.grumpy('eek, that was urgent');
+    };
+    h.addEventListener('pointermove', move); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
+  });
+
+  /* ---------- add sheet ---------- */
+  let pickTier = 3, pickedByHand = false, subs = [];
+  const RULES = [
+    [/\b(today|tonight|now|urgent|asap)\b/i, 0],
+    [/\b(tomorrow|due (mon|tues|wednes|thurs|fri|satur|sun)day|by (mon|tues|wednes|thurs|fri|satur|sun)day|friday|monday)\b/i, 1],
+    [/\b(this week|exam|test|quiz|revise|read)\b/i, 2],
+    [/\b(tidy|clean|organi[sz]e|sort out)\b/i, 4],
+    [/\b(someday|maybe|idea|learn|try)\b/i, 5],
+  ];
+  function detect() {
+    const txt = $('#q-title').value;
+    const chips = []; let tier = null;
+    for (const [re, t] of RULES) { const m = txt.match(re); if (m) { chips.push([m[0], t]); if (tier === null) tier = t; } }
+    $('#detect').innerHTML = chips.length
+      ? chips.map(([w, t]) => `<span class="chip" style="background:${TIER_COLORS[t]}">${w}</span>`).join('') + `<span class="chip" style="background:#fff">suggests ${tierLabel(tier)}</span>`
+      : '<span class="small">Nothing yet. Try "due Friday" or "exam".</span>';
+    if (!pickedByHand) { pickTier = tier ?? 3; renderPick(); }
+  }
+  function renderPick() {
+    $('#pick').innerHTML = TIER_COLORS.map((c, i) => `<button data-t="${i}" class="${i === pickTier ? 'on' : ''}" style="--c:${c}">P${i + 1}</button>`).join('');
+    $('#pick-name').textContent = tierLabel(pickTier);
+  }
+  $('#pick').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; pickTier = +b.dataset.t; pickedByHand = true; play('click', { vol: .6 }); renderPick(); });
+  $('#q-title').addEventListener('input', detect);
+  $('#mic').addEventListener('click', () => {
+    const m = $('#mic'); if (m.classList.contains('listening')) return;
+    m.classList.add('listening'); $('#mic-t').textContent = 'Listening…'; $('#mic-s').textContent = 'Speak now';
+    Mochi.react('lookup', 1600, 'ooh, listening', null);
+    setTimeout(() => {
+      m.classList.remove('listening'); $('#mic-t').textContent = 'Got it'; $('#mic-s').textContent = '"Renew passport, due Friday"';
+      $('#q-title').value = 'Renew passport, due Friday'; detect(); play('click', { vol: .6 });
+    }, 1600);
+  });
+  function renderSubs() { $('#subs').innerHTML = subs.map((s, i) => `<span class="chip" style="background:#fff">${s} <b data-i="${i}" style="cursor:pointer">×</b></span>`).join(''); }
+  $('#sub-add').addEventListener('click', () => { const v = $('#sub-in').value.trim(); if (!v) return; subs.push(v); $('#sub-in').value = ''; play('click', { vol: .6 }); renderSubs(); });
+  $('#subs').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (!b) return; subs.splice(+b.dataset.i, 1); renderSubs(); });
+  function openSheet(prefill) {
+    $('#q-title').value = prefill || ''; pickedByHand = false; subs = []; renderSubs(); detect();
+    $('#mic').classList.remove('listening'); $('#mic-t').textContent = 'Tap and speak'; $('#mic-s').textContent = "Say it like you'd tell a friend";
+    $('#sheet').classList.add('open'); $('#scrim').classList.add('on');
+    play('click', { vol: .6 });
+    Mochi.setPerch('sheet');
+  }
+  function closeSheet() { $('#sheet').classList.remove('open'); $('#scrim').classList.remove('on'); Mochi.setPerch('nav'); }
+  $('#sheet-close').addEventListener('click', () => { closeSheet(); setTimeout(() => Mochi.react('lookback', 1200, 'pfft', null), 380); });
+  $('#scrim').addEventListener('click', closeSheet);
+  $('#save').addEventListener('click', () => {
+    const title = $('#q-title').value.trim();
+    if (!title) { toast('Your quest needs a name', 'error', 'Type it or tap the mic.'); Mochi.grumpy('name it first!'); return; }
+    const due = ($('#q-title').value.match(RULES[1][0]) || $('#q-title').value.match(RULES[0][0]) || [])[0];
+    quests.push({ id: Date.now(), title, tier: pickTier, meta: due ? due.toLowerCase() : (subs.length ? `${subs.length} subtasks` : 'new'), done: false, line: false });
+    quests.sort((a, b) => a.tier - b.tier);
+    play('click'); closeSheet(); renderQuests(); renderHome();
+    if (current !== 'quests') go('quests');
+    toast('Quest added!', 'success', `Saved to ${tierLabel(pickTier)}.`);
+    // once he has ducked back down onto the nav, he catches the new quest's badge
+    setTimeout(() => Mochi.react('notify', 0, 'new quest!'), 700);
+  });
+
+  /* ---------- plan ---------- */
+  const PLAN = {
+    Mon: [['Maths', '08:30 – 10:00', '#A9D6F0'], ['English', '10:15 – 11:45', '#C9B8E8'], ['free', '12:00 – 14:00'], ['Chemistry', '14:00 – 15:30', '#A8D8B9']],
+    Tue: [['Physics', '09:00 – 10:30', '#FFD66B'], ['free', '10:30 – 12:00'], ['Maths', '12:00 – 13:30', '#A9D6F0']],
+    Wed: [['Maths', '08:30 – 10:00', '#A9D6F0'], ['Biology lab', '10:15 – 11:45', '#A8D8B9'], ['Lunch', '12:00 – 13:00', '#FFD66B'], ['free', '13:00 – 13:30'], ['History', '13:30 – 15:00', '#C9B8E8'], ['Study group', '15:15 – 16:00', '#F4A59A']],
+    Thu: [['Art', '09:00 – 11:00', '#F9B77E'], ['free', '11:00 – 13:00'], ['History', '13:30 – 15:00', '#C9B8E8']],
+    Fri: [['Biology', '08:30 – 10:00', '#A8D8B9'], ['free', '10:00 – 16:00']],
+  };
+  let day = 'Wed';
+  function renderPlan() {
+    $('#days').innerHTML = Object.keys(PLAN).map(d => `<button class="${d === day ? 'on' : ''}" data-d="${d}">${d}</button>`).join('');
+    $('#blocks').innerHTML = PLAN[day].map(([n, t, c]) => n === 'free'
+      ? `<button class="blk free" data-free="${t}"><span><b>Free</b><span>${t}</span></span><span class="chip" style="background:#fff">+ quest</span></button>`
+      : `<div class="blk" style="--c:${c}"><b>${n}</b><span>${t}</span></div>`).join('');
+  }
+  $('#days').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; day = b.dataset.d; play('click', { vol: .5 }); renderPlan(); });
+  $('#blocks').addEventListener('click', e => { const b = e.target.closest('[data-free]'); if (b) openSheet(''); });
+
+  /* ---------- customise ---------- */
+  function renderCustom() {
+    const tog = (k, on) => `<button class="tog${on ? ' on' : ''}" data-tog="${k}" aria-pressed="${on}"></button>`;
+    const seg = (k, opts) => `<div class="seg2" data-seg="${k}">${opts.map(([v, l]) => `<button data-v="${v}" class="${S[k] === v ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+    const o = S.tabOrder;
+    $('#custom').innerHTML = `
+      <div class="sec" style="margin-top:0">Navigation</div>
+      <div class="card">
+        <div class="row"><div class="lbl"><b>Bar style</b><small>Floating pill or docked to the edge</small></div>${seg('navStyle', [['float', 'Float'], ['dock', 'Dock']])}</div>
+        <div class="row"><div class="lbl"><b>Show labels</b><small>Text under each icon</small></div>${tog('labels', S.labels)}</div>
+        <div class="row"><div class="lbl"><b>Click on tab</b><small>Key click when switching tabs</small></div>${tog('tabClick', S.tabClick)}</div>
+        <div class="row"><div class="lbl"><b>Bar colour</b></div><div class="sw" data-sw="navColor">${NAV_COLORS.map(c => `<button data-v="${c}" class="${S.navColor === c ? 'on' : ''}" style="--c:${c}"></button>`).join('')}</div></div>
+        <div class="row" style="display:block"><div class="lbl"><b>Tab order</b><small>The + button always stays in the middle</small></div>
+          <div class="order">${o.map((k, i) => `<div><span>${i + 1}. ${TABS[k].label}</span><button data-up="${i}" ${i === 0 ? 'disabled' : ''}>↑</button><button data-down="${i}" ${i === o.length - 1 ? 'disabled' : ''}>↓</button></div>`).join('')}</div>
+        </div>
+      </div>
+      <div class="sec">Priorities</div>
+      <div class="card">
+        <div class="small">Rename any tier. Colours stay fixed so P1 always reads as urgent.</div>
+        ${S.tierNames.map((n, i) => `<div class="tier"><i style="--c:${TIER_COLORS[i]}">P${i + 1}</i><input data-tier="${i}" value="${n}" maxlength="14"></div>`).join('')}
+      </div>
+      <div class="sec">Mochi</div>
+      <div class="card">
+        <div class="row"><div class="lbl"><b>Roam around</b><small>Walks along the nav bar. Off: sits in the corner.</small></div>${tog('roam', S.roam)}</div>
+        <div class="row"><div class="lbl"><b>Walk speed</b></div>${seg('speed', [['slow', 'Slow'], ['normal', 'Normal'], ['zoomy', 'Zoomy']])}</div>
+        <div class="row"><div class="lbl"><b>Mochi sounds</b><small>The little "mrp" on tap</small></div>${tog('mochiSound', S.mochiSound)}</div>
+        <div class="row"><div class="lbl"><b>Patience</b><small>Taps before Mochi gets annoyed</small></div><div class="step"><button data-step="annoy:-1">−</button><b>${S.annoy}</b><button data-step="annoy:1">+</button></div></div>
+      </div>
+      <div class="sec">Goals and sound</div>
+      <div class="card">
+        <div class="row"><div class="lbl"><b>Daily quest target</b><small>Hit this to keep your streak</small></div><div class="step"><button data-step="target:-1">−</button><b>${S.target}</b><button data-step="target:1">+</button></div></div>
+        <div class="row"><div class="lbl"><b>Volume</b></div><input type="range" min="0" max="1" step="0.05" value="${S.volume}" id="vol"></div>
+        <div class="row"><div class="lbl"><b>Preview</b></div><div style="display:flex;gap:6px"><button class="play" data-play="click">Key</button><button class="play" data-play="mew">Mochi</button><button class="play" data-play="coin">Coin</button></div></div>
+        <div class="row"><div class="lbl"><b>Theme</b><small>Dark mode comes after light is signed off</small></div><div class="seg2"><button class="on">Light</button><button disabled style="opacity:.4">Dark</button></div></div>
+      </div>
+      <button class="btn ghost" id="reset" style="margin-top:4px">Reset to defaults</button>`;
+  }
+  function apply() { save(); renderNav(); renderQuests(); renderHome(); renderCustom(); renderPick(); Mochi.settingsChanged(); }
+  $('#custom').addEventListener('click', e => {
+    const t = e.target.closest('[data-tog]'); if (t) { S[t.dataset.tog] = !S[t.dataset.tog]; play('click', { vol: .6 }); return apply(); }
+    const sb = e.target.closest('[data-seg] button'); if (sb && !sb.disabled && sb.dataset.v) { S[sb.parentElement.dataset.seg] = sb.dataset.v; play('click', { vol: .6 }); return apply(); }
+    const sw = e.target.closest('[data-sw] button'); if (sw) { S[sw.parentElement.dataset.sw] = sw.dataset.v; play('click', { vol: .6 }); return apply(); }
+    const up = e.target.closest('[data-up]'), dn = e.target.closest('[data-down]');
+    if (up || dn) { const i = +(up ? up.dataset.up : dn.dataset.down), j = up ? i - 1 : i + 1; [S.tabOrder[i], S.tabOrder[j]] = [S.tabOrder[j], S.tabOrder[i]]; play('click', { vol: .6 }); return apply(); }
+    const st = e.target.closest('[data-step]');
+    if (st) { const [k, d] = st.dataset.step.split(':'); const lim = k === 'annoy' ? [3, 10] : [1, 10]; S[k] = Math.max(lim[0], Math.min(lim[1], S[k] + +d)); play('click', { vol: .6 }); return apply(); }
+    const pl = e.target.closest('[data-play]'); if (pl) return play(pl.dataset.play);
+    if (e.target.closest('#reset')) { S = JSON.parse(JSON.stringify(DEFAULTS)); play('click'); apply(); Mochi.react('cry', 0, 'my settings…'); return toast('Settings reset', 'success', 'Everything is back to default.'); }
+  });
+  $('#custom').addEventListener('input', e => {
+    if (e.target.id === 'vol') { S.volume = +e.target.value; save(); return; }
+    if (e.target.dataset.tier) { S.tierNames[+e.target.dataset.tier] = e.target.value || `P${+e.target.dataset.tier + 1}`; save(); renderQuests(); renderHome(); renderPick(); }
+  });
+
+  /* ---------- effects ---------- */
+  function fx(html, x, y, cls = '') {
+    const d = document.createElement('div'); d.className = 'fx ' + cls; d.innerHTML = html;
+    d.style.left = x + 'px'; d.style.top = y + 'px';
+    $('#phone').appendChild(d); setTimeout(() => d.remove(), 1100);
+  }
+  const HEART = `<svg width="20" height="18" viewBox="0 0 20 18"><path d="M10 16 C3 11 1 8 1 5 a4.5 4.5 0 0 1 9 -1 a4.5 4.5 0 0 1 9 1 c0 3 -2 6 -9 11z" fill="#F4918A" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  const ANGER = `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#E0453A" stroke-width="2.6" stroke-linecap="round"><path d="M8 3c0 3 -2 5 -5 5M14 3c0 3 2 5 5 5M8 19c0 -3 -2 -5 -5 -5M14 19c0 -3 2 -5 5 -5"/></svg>`;
+
+  /* ---------- Mochi ---------- */
+  // Art and frames come straight from design/mochi design.png and the two animation sheets.
+  //   moving: stand up -> (turn) -> walk cycle (hops over +) -> sit down; storms off when annoyed
+  //   idle: breathing loop, blink, ear twitch, look around, tracks your finger, melts asleep
+  //   touch: tap = boop, double tap = squish, long press = pick up (drag him, let go to drop)
+  //   feedback: celebrate on success, grumpy on errors and when tapped too much
+  const Mochi = (() => {
+    const P = window.MOCHI, A = window.MOCHI_ANIMS;
+    const el = $('#mochi'), flip = el.querySelector('.flip'), act = el.querySelector('.act'), bub = $('#bubble');
+    const SPEED = { slow: 28, normal: 50, zoomy: 95 };
+    // playback speed per animation (frames per second)
+    const FPS = { blink: 16, twitch: 12, lookaround: 8, track: 12, boop: 13, squish: 14, celebrate: 12, grumpy: 11, melt: 8, pickup: 13,
+      walk: 11, stormoff: 15, turn: 9, standup: 13, sitdown: 13, hop: 12, sulk: 6, turnback: 10, breathe: 5, 'helper-idle': 4, 'peek-rise': 13, 'peek-duck': 14,
+      yawn: 9, loaf: 8, pounce: 13, 'cursor-chase': 12, bonk: 12, sprint: 14, balance: 9, cry: 10, suspicious: 8,
+      stomp: 11, notify: 11, button: 11, wipe: 11 };
+    const M = { cx: 300, dir: -1, pose: '', state: 'idle', target: 0, perch: 'nav', clicks: [], annoyedUntil: 0,
+      busy: false, fast: false, angry: false, after: null, onArrive: null, next: 0, lastActive: Date.now(), bubbleUntil: 0, bubbleW: 0,
+      held: false, holdY: 0, lastTap: 0, p1Seen: 0, lastTrack: 0, asleep: false, timer: null, size: null, hopping: false, seated: true };
+
+    // preload every frame so playback never flickers
+    for (const a of Object.values(A)) for (let i = 1; i <= a.frames; i++) { const im = new Image(); im.src = a.src(i); }
+
+    const img = () => act.querySelector('img');
+    // hand-off crossfade: each sheet draws his resting pose a little differently, so a hard cut from one
+    // animation to the next pops. A copy of the outgoing frame sits on top and fades out over 110ms.
+    let ghostEl = null;
+    function ghost() {
+      if (!img() || !img().src || M.sprint) return;   // no ghost trail at sprint speed
+      if (ghostEl) ghostEl.remove();
+      const g = el.cloneNode(true);
+      g.removeAttribute('id'); g.className = 'mochi ghost';
+      el.after(g); ghostEl = g;
+      requestAnimationFrame(() => { g.style.opacity = '0'; });
+      setTimeout(() => { g.remove(); if (ghostEl === g) ghostEl = null; }, 160);
+    }
+    function stopAnim() { clearInterval(M.timer); M.timer = null; }
+    function setPose(p) {
+      stopAnim(); M.hover = false;
+      M.pose = p; M.size = P[p];
+      act.innerHTML = P[p].svg;
+      el.style.width = P[p].w + 'px'; el.style.height = P[p].h + 'px';
+    }
+    // play frames [from..to] (to < from plays backwards), then optionally hold a loop [loopFrom..loopTo]
+    function playAnim(name, o = {}) {
+      const a = A[name];
+      if (M.pose !== name) ghost();
+      stopAnim(); M.hover = false;
+      M.pose = name; M.size = o.face ? Object.assign({}, a, { face: o.face }) : a;
+      el.style.width = a.w + 'px'; el.style.height = a.h + 'px';
+      if (!img()) act.innerHTML = `<img alt="" draggable="false" style="width:100%;height:100%;display:block">`;
+      const from = o.from ?? 1, to = o.to ?? a.frames, step = to >= from ? 1 : -1;
+      const show = i => { M.fi = i; img().src = a.src(i); if (o.at && o.at[i]) o.at[i](); place(); };   // image and position change together
+      let f = from;
+      show(f);
+      M.timer = setInterval(() => {
+        if (f !== to) { f += step; show(f); return; }
+        if (o.loopFrom) {
+          clearInterval(M.timer);
+          let g = o.loopFrom;
+          M.timer = setInterval(() => { g = g >= o.loopTo ? o.loopFrom : g + 1; show(g); }, 1000 / (o.loopFps || FPS[name] || 2));
+          return;
+        }
+        stopAnim();
+        if (o.then) o.then();
+      }, 1000 / (o.fps || FPS[name] || 12));
+    }
+    const loop = (name, fps) => playAnim(name, { loopFrom: 1, loopTo: A[name].frames, loopFps: fps || FPS[name] });
+    // the walk cycle plays in step with his speed so his paws don't skate (normal = 11 fps)
+    const walkLoop = angry => angry ? loop('stormoff') : loop('walk', Math.max(5, Math.round(FPS.walk * SPEED[S.speed] / SPEED.normal)));
+
+    // resting: breathing on the nav, idling in the corner, or peeking over the add sheet
+    function goRest() {
+      M.busy = false; M.seated = true; M.dir = -1; setState('idle');   // rest art faces left
+      if (M.perch === 'sheet') playAnim('peek-rise', { from: 5, to: 5, loopFrom: 5, loopTo: 5, loopFps: 1 });
+      else if (!S.roam) loop('helper-idle');
+      else loop('breathe');
+    }
+    const resting = () => M.pose === 'breathe' || M.pose === 'helper-idle';
+    M.hover = false;
+    const navEl = () => $('#nav');
+    function ground() { return M.perch === 'sheet' ? $('#sheet').offsetTop : navEl().offsetTop; }
+    function bounds() {
+      const half = 44;
+      if (M.perch === 'sheet') return [210, 390 - 22 - half];
+      const n = navEl();
+      return [n.offsetLeft + 12 + half, n.offsetLeft + n.offsetWidth - 12 - half];
+    }
+    const addX = () => { const a = $('#add'); return a ? a.offsetLeft + a.offsetWidth / 2 + navEl().offsetLeft : 195; };
+    function randomX() {
+      const [a, b] = bounds();
+      for (let i = 0; i < 12; i++) { const x = a + Math.random() * (b - a); if (Math.abs(x - addX()) > 72 && Math.abs(x - M.cx) > 40) return x; }
+      return a;
+    }
+    function schedule(a, b) { M.next = performance.now() + (a + Math.random() * (b - a)) * 1000; }
+    function setState(s) { M.state = s; el.classList.toggle('idle', s === 'idle'); }
+    function anim(cls) {
+      act.classList.remove('r-jump', 'r-spin', 'r-purr', 'r-squish', 'r-shake', 'r-hop', 'r-flat');
+      void act.offsetWidth; act.classList.add(cls);
+      act.addEventListener('animationend', () => act.classList.remove(cls), { once: true });
+    }
+    function say(text, ms = 1200, mad = false) {
+      bub.textContent = text; bub.classList.toggle('mad', mad); bub.classList.add('show');
+      M.bubbleW = bub.offsetWidth; M.bubbleUntil = Date.now() + ms;
+    }
+
+    // stand up (if sitting) -> turn (if facing the wrong way) -> walk or storm off
+    function walkTo(x, after = null, angry = false) {
+      M.asleep = false; M.hover = false; M.slide = null; M.target = x; M.after = after; M.angry = angry; M.busy = true; setState('prep');
+      const nd = Math.sign(x - M.cx) || M.dir;
+      const go = () => { M.busy = false; M.dir = nd; setState('walk'); walkLoop(angry); };
+      const stand = () => { M.dir = nd; playAnim('standup', { then: go }); };
+      if (M.seated) {
+        // his seated art faces left, and the turn is drawn seated: so he turns first, then stands up
+        M.seated = false;
+        if (nd > 0) seatedTurn(1, stand); else stand();
+      } else if (nd !== M.dir) {
+        // standing the wrong way round: sit, turn, stand
+        playAnim('sitdown', { then: () => seatedTurn(nd, stand) });
+      } else go();
+    }
+    // zoomies: crouch, dash (frames 2-6 loop), then skid to a stop and sit (7-12)
+    function sprintTo(x) {
+      const [lo, hi] = bounds(); x = Math.max(lo, Math.min(hi, x));
+      M.asleep = false; M.hover = false; M.target = x; M.after = 'sprint'; M.angry = false; M.busy = true; setState('prep');
+      const nd = Math.sign(x - M.cx) || M.dir;
+      const go = () => { M.dir = nd; M.sprint = true; M.busy = false; setState('walk'); playAnim('sprint', { from: 1, to: 2, loopFrom: 2, loopTo: 6 }); };
+      M.seated = false;
+      say('zoomies!', 900);
+      if (nd > 0) seatedTurn(1, go); else go();
+    }
+    // seated turn, drawn right -> left; played backwards for left -> right
+    function seatedTurn(toDir, then) {
+      playAnim('turn', toDir < 0 ? { face: 'C', fps: FPS.turn, then } : { face: 'C', from: A.turn.frames, to: 1, fps: FPS.turn, then });
+    }
+    function arrive() {
+      setState('idle'); M.fast = false;
+      const after = M.after; M.after = null;
+      const done = () => { if (M.onArrive) { const f = M.onArrive; M.onArrive = null; f(); } else { goRest(); schedule(2, 5); } };
+      if (after === 'sulk') return done();
+      M.busy = true;
+      if (after === 'sprint') {
+        // skid and sit; frame 10 shows his back, so that is where he quietly turns to face the rest pose
+        M.sprint = false;
+        return playAnim('sprint', { from: 7, to: 12, at: { 10: () => { M.dir = 1; } }, then: done });
+      }
+      // after walking right he sits facing right; turn back to his left-facing rest pose instead of snapping
+      playAnim('sitdown', { then: () => M.dir > 0 ? seatedTurn(-1, done) : done() });
+    }
+    // play a reaction (frame animation or a held pose), then return to resting
+    function strike(pose, ms = 1300, text = '', cls = null, mad = false) {
+      if (M.hover) { M.hover = false; M.busy = false; }
+      if (M.busy || M.held) return;
+      M.busy = true; M.asleep = false; setState('idle');
+      const done = () => { goRest(); schedule(2, 4); };
+      if (text) say(text, Math.max(900, Math.min(ms || 1400, 1600)), mad);
+      if (A[pose]) playAnim(pose, { then: done });
+      else { setPose(pose); if (cls) anim(cls); setTimeout(() => { if (M.pose === pose) done(); else M.busy = false; }, ms); }
+    }
+    // settles into a loaf for a few seconds, then sits back up
+    function loafNap() {
+      M.busy = true; setState('idle');
+      playAnim('loaf', { to: 9, loopFrom: 8, loopTo: 10, loopFps: 2 });
+      setTimeout(() => {
+        if (M.pose === 'loaf' && M.busy && !M.held) playAnim('loaf', { from: 10, to: 12, then: () => { goRest(); schedule(2, 4); } });
+      }, 4000 + Math.random() * 3000);
+    }
+    // a big yawn first, then he melts into sleep
+    function fallAsleep() {
+      if (M.busy || M.held || M.asleep) return;
+      M.asleep = true; setState('idle');
+      playAnim('yawn', { then: () => { if (M.asleep && M.pose === 'yawn') playAnim('melt', { fps: 8, loopFrom: 9, loopTo: 10, loopFps: 1.5 }); } });
+    }
+    function wakeUp(text) {
+      if (!M.asleep) return;
+      M.asleep = false; M.busy = true;
+      if (text) say(text, 900);
+      playAnim('melt', { from: 8, to: 1, fps: 16, then: () => { goRest(); schedule(2, 4); } });
+    }
+
+    function decide() {
+      if (M.busy || M.held || M.asleep || M.state !== 'idle') return;
+      if (M.perch === 'sheet') { schedule(3, 6); return; }
+      if (!S.roam) {
+        // floating helper: sits quietly in the corner
+        const [, b] = bounds();
+        if (Math.abs(M.cx - b) > 4) { walkTo(b); return; }
+        if (!resting()) goRest();
+        schedule(5, 9); return;
+      }
+      const walkP = { home: 0.5, quests: 0.65, plan: 0.25, me: 0.15 }[current];
+      if (Math.random() < walkP) {
+        const x = randomX();
+        // now and then the walk becomes zoomies (long runs only, never on the calm Plan page)
+        if (current !== 'plan' && Math.abs(x - M.cx) > 130 && Math.random() < 0.18) sprintTo(x); else walkTo(x);
+      }
+      else { if (!resting()) goRest(); schedule(3, 7); }
+    }
+
+    const sleepAfter = () => current === 'plan' ? 9000 : 25000;
+    function idleTick() {
+      if (M.state !== 'idle' || M.busy || M.held || M.asleep || M.perch !== 'nav' || !S.roam) return;
+      if (Date.now() - M.lastActive > sleepAfter()) return fallAsleep();
+      if (!resting()) return;
+      const r = Math.random();
+      if (r < 0.14) strike('twitch');            // ear twitch
+      else if (r < 0.26) strike('lookaround');   // look around
+      else if (r < 0.32) strike('yawn');
+      else if (r < 0.36) strike('suspicious');
+      else if (r < 0.39) loafNap();
+      else if (r < 0.41) strike('balance');
+    }
+    setInterval(idleTick, 1700);
+    (function blinkLoop() {
+      if (M.pose === 'breathe' && !M.busy && M.state === 'idle' && !M.asleep) strike('blink');
+      setTimeout(blinkLoop, 3000 + Math.random() * 3000);
+    })();
+
+    function place() {
+      const p = M.size || A.breathe;
+      const sink = M.perch === 'sheet' && M.pose.startsWith('peek') ? 4 : 2;
+      // anchor on his body, not the frame box: torso centre on M.cx, feet on the ground line.
+      // Every animation's box is a different size, so placing by box centre made him jump between them.
+      const fx = p.face === 'C' ? 1 : M.dir * (p.face === 'L' ? -1 : 1);
+      // every frame is placed by the centre line of his body on that frame (axs), so he never wanders
+      // inside an animation or jumps between two; one-shots slide their feet line from first to last frame
+      let bx = p.ax, by = p.gy;
+      if (M.fi && p.frames > 1) {
+        if (p.axs) bx = p.axs[M.fi - 1];
+        if (p.gy2 != null) by = p.gy + (p.gy2 - p.gy) * (M.fi - 1) / (p.frames - 1);
+      }
+      const ax = bx == null ? p.w / 2 : (fx < 0 ? p.w - bx : bx);
+      const gy = by == null ? p.h : by;
+      const y = M.held ? M.holdY - 14 : ground() - gy + sink;
+      el.style.transform = `translate(${M.cx - ax}px, ${y}px)`;
+      flip.style.transform = `scaleX(${fx})`;
+      if (Date.now() < M.bubbleUntil) {
+        const bx = Math.max(8, Math.min(390 - 8 - M.bubbleW, M.cx - M.bubbleW / 2));
+        bub.style.transform = `translate(${bx}px, ${y - 38}px)`;
+      } else bub.classList.remove('show');
+    }
+
+    let last = performance.now();
+    function tick(now) {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      if (M.state === 'walk' && !M.held) {
+        const sp = M.sprint ? 170 : SPEED[S.speed] * (M.fast ? 2.4 : 1);
+        const dx = M.target - M.cx;
+        if (Math.abs(dx) < 1.5) { M.cx = M.target; M.hopping = false; arrive(); }
+        else {
+          M.dir = Math.sign(dx); M.cx += M.dir * Math.min(Math.abs(dx), sp * dt);
+          // hop over the + button on the way past it
+          const d = M.cx - addX();
+          if (M.perch === 'nav' && !M.hopping && !M.sprint && Math.abs(d) < 52 && Math.sign(-d) === M.dir) {
+            M.hopping = true;
+            playAnim('hop', { then: () => { if (M.state === 'walk') walkLoop(M.angry); } });
+          }
+          if (M.hopping && Math.abs(d) > 60 && Math.sign(d) === M.dir) M.hopping = false;
+        }
+      } else if (now > M.next) decide();
+      if (M.slide) {
+        const k = Math.min(1, (now - M.slide.t0) / M.slide.ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        M.cx = M.slide.from + (M.slide.to - M.slide.from) * e;
+        if (k >= 1) M.slide = null;
+      }
+      place();
+      requestAnimationFrame(tick);
+    }
+
+    function getAnnoyed() {
+      M.busy = true; M.clicks = [];
+      setState('idle'); say('Hmph! Enough.', 1600, true);
+      play('mew', { rate: 0.72, vol: 0.9 });
+      M.annoyedUntil = Date.now() + 9000;
+      playAnim('grumpy', { then: () => {
+        const [a, b] = bounds();
+        const far = M.cx < (a + b) / 2 ? b : a;
+        M.fast = true;
+        M.onArrive = () => {
+          // sulks with his back turned, then turns back: "...fine."
+          M.busy = true; M.seated = true;
+          loop('sulk');
+          setTimeout(() => {
+            playAnim('turnback', { then: () => { say('…fine.', 1400); M.annoyedUntil = 0; goRest(); schedule(3, 6); } });
+          }, 4500);
+        };
+        M.busy = false;
+        walkTo(far, 'sulk', true);
+      } });
+    }
+
+    function tap(e) {
+      const now = Date.now();
+      M.lastActive = now;
+      if (now < M.annoyedUntil) { say('…', 800, true); return; }
+      if (M.asleep) return wakeUp('!!');
+      if (M.state === 'walk' || M.state === 'prep') return;   // let him finish walking
+      M.clicks = M.clicks.filter(t => now - t < 6000); M.clicks.push(now);
+      const n = M.clicks.length;
+      if (n > S.annoy) return getAnnoyed();
+      M.busy = false;
+      if (n === S.annoy - 1) { play('mew', { rate: 0.85 }); return strike('stomp', 0, 'hey!', null, true); }
+      if (n === S.annoy) { play('mew', { rate: 0.85 }); return strike('grumpy', 0, 'stop it…', null, true); }
+      // double tap = squish, single tap = boop
+      if (now - M.lastTap < 320) { M.lastTap = 0; play('mew', { rate: 0.8 }); return strike('squish'); }
+      M.lastTap = now;
+      play('mew', { rate: 0.95 + Math.random() * 0.15 });
+      // a tap on his head is a bonk
+      const r = el.getBoundingClientRect();
+      if (e && e.clientY < r.top + r.height * 0.4) return strike('bonk', 0, Math.random() < 0.5 ? 'ow!' : '');
+      strike('boop', 0, Math.random() < 0.4 ? ['mrp!', 'boop', ':3'][Math.floor(Math.random() * 3)] : '');
+    }
+
+    // long press picks him up (frames 1-5, dangles on 5-6); let go to drop him (frames 7-10)
+    let pressT = null;
+    el.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      if (Date.now() < M.annoyedUntil) return;
+      el.setPointerCapture(e.pointerId);
+      pressT = setTimeout(() => {
+        pressT = null; M.slide = null; M.held = true; M.busy = true; M.asleep = false; M.hopping = false; setState('idle');
+        const r = el.getBoundingClientRect(), ph = $('#phone').getBoundingClientRect();
+        M.holdY = (r.top - ph.top) / scale + 10;
+        playAnim('pickup', { from: 1, to: 5, loopFrom: 5, loopTo: 6, loopFps: 3 });
+        play('mew', { rate: 1.15 }); say('put me down!', 1200);
+      }, 450);
+    });
+    el.addEventListener('pointermove', e => {
+      if (!M.held) return;
+      const r = $('#phone').getBoundingClientRect();
+      M.cx = Math.max(30, Math.min(360, (e.clientX - r.left) / scale));
+      M.holdY = Math.max(60, Math.min(ground() - 70, (e.clientY - r.top) / scale));
+    });
+    el.addEventListener('pointerup', e => {
+      if (pressT) { clearTimeout(pressT); pressT = null; return tap(e); }
+      if (!M.held) return;
+      M.held = false;
+      const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx));
+      play('click', { vol: 0.5 });
+      playAnim('pickup', { from: 7, to: 10, then: () => { goRest(); schedule(2, 4); } });
+      M.lastActive = Date.now();
+    });
+    el.addEventListener('click', e => e.stopPropagation());
+
+    // hover: Mochi follows the pointer one frame at a time. Small offsets move only his eyes
+    // (eyes-lr / eyes-rl); bigger ones turn his head and body (look-lr / look-rl). The left-to-right
+    // strips are used while the pointer moves right and the right-to-left strips while it moves left.
+    // When the pointer rests near him he does the curious head tilt, then eases back to the centre.
+    const HOV = { kind: 'eyes', target: 5, cur: 5, last: 0, near: false, tilted: false, timer: null, rising: true };
+    const EYES_R = 90, LOOK_R = 260;
+    function showFrame(name, i) {
+      const a = A[name];
+      if (M.pose !== name) ghost();
+      stopAnim();
+      M.pose = name; M.size = a;
+      el.style.width = a.w + 'px'; el.style.height = a.h + 'px';
+      if (!img()) act.innerHTML = `<img alt="" draggable="false" style="width:100%;height:100%;display:block">`;
+      M.fi = i; img().src = a.src(i); place();
+    }
+    function hoverStep() {
+      if (!M.hover) { clearInterval(HOV.timer); HOV.timer = null; return; }
+      if (HOV.cur !== HOV.target) { HOV.rising = HOV.target > HOV.cur; HOV.cur += Math.sign(HOV.target - HOV.cur); }
+      // frame i of a left-to-right strip matches frame 11 - i of its right-to-left strip
+      const name = HOV.kind + (HOV.rising ? '-lr' : '-rl');
+      showFrame(name, HOV.rising ? HOV.cur : 11 - HOV.cur);
+      M.hover = true;
+      const still = Date.now() - HOV.last;
+      if (still > 1300 && HOV.near && !HOV.tilted) {
+        HOV.tilted = true; clearInterval(HOV.timer); HOV.timer = null;
+        playAnim('tilt', { fps: 10, then: () => { goRest(); schedule(2, 4); } });
+        return;
+      }
+      if (still > 2600) {
+        HOV.target = 5;                                   // ease back to looking straight ahead
+        if (HOV.cur === 5) { clearInterval(HOV.timer); HOV.timer = null; M.hover = false; goRest(); schedule(2, 4); }
+      }
+    }
+    // pointer play. Wiggling the pointer side to side close to him: he chases it (cursor-chase).
+    // Holding it still on the ground beside him: he pounces on it (pounce). Both hop him toward it.
+    const PLAY = { flips: [], lastX: null, lastSign: 0, stillT: null, lastPlay: 0 };
+    function slideTo(x, ms) {
+      const [a, b] = bounds();
+      M.slide = { from: M.cx, to: Math.max(a, Math.min(b, x)), t0: performance.now(), ms };
+    }
+    function playWith(kind, dx) {
+      if (Date.now() - PLAY.lastPlay < 4000) return;
+      PLAY.lastPlay = Date.now(); PLAY.flips = [];
+      clearInterval(HOV.timer); HOV.timer = null; M.hover = false; M.busy = false;
+      M.dir = Math.sign(dx) || 1;
+      const reach = Math.sign(dx) * Math.min(Math.abs(dx) - 26, kind === 'pounce' ? 70 : 50);
+      if (Math.abs(reach) > 4) slideTo(M.cx + reach, 1000 * A[kind].frames / FPS[kind] * 0.75);
+      strike(kind, 0, kind === 'pounce' ? 'gotcha!' : '');
+    }
+    $('#phone').addEventListener('pointermove', e => {
+      M.lastActive = Date.now();
+      if (M.state !== 'idle' || M.held || M.asleep || M.perch !== 'nav') return;
+      if (!(resting() || M.hover)) return;
+      const r = el.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width / 2)) / scale, dy = (e.clientY - (r.top + r.height / 2)) / scale;
+      // wiggle: four or more direction changes within a second, close to him
+      const now = Date.now();
+      if (PLAY.lastX !== null && Math.abs(dx) < 200 && Math.abs(dy) < 120) {
+        const mv = e.clientX - PLAY.lastX, sg = Math.sign(mv);
+        if (Math.abs(mv) > 3 && sg !== PLAY.lastSign) { PLAY.flips.push(now); PLAY.lastSign = sg; }
+        PLAY.flips = PLAY.flips.filter(t => now - t < 1000);
+        if (PLAY.flips.length >= 4) { PLAY.lastX = e.clientX; return playWith('cursor-chase', dx); }
+      }
+      PLAY.lastX = e.clientX;
+      // pounce: pointer comes to rest low and to the side of him
+      clearTimeout(PLAY.stillT);
+      if (Math.abs(dx) > 50 && Math.abs(dx) < 170 && dy > -20 && dy < 60)
+        PLAY.stillT = setTimeout(() => { if ((resting() || M.hover) && M.state === 'idle' && !M.held) playWith('pounce', dx); }, 900);
+      if (Math.hypot(dx, dy) > 340) return;
+      const kind = Math.abs(dx) < EYES_R ? 'eyes' : 'look';
+      const range = kind === 'eyes' ? EYES_R : LOOK_R;
+      const target = 1 + Math.round((Math.max(-1, Math.min(1, dx / range)) + 1) / 2 * 9);
+      if (!M.hover) { HOV.cur = 5; M.busy = true; }
+      if (kind !== HOV.kind) { HOV.kind = kind; HOV.cur = kind === 'look' ? (dx > 0 ? 6 : 5) : (dx > 0 ? 10 : 1); }
+      HOV.target = target; HOV.last = Date.now();
+      HOV.near = Math.hypot(dx, dy) < 150; HOV.tilted = false;
+      M.hover = true;
+      if (!HOV.timer) HOV.timer = setInterval(hoverStep, 55);
+    });
+    document.querySelectorAll('.page').forEach(pg => {
+      let lastTop = 0;
+      pg.addEventListener('scroll', () => {
+        if (M.busy || M.pose !== 'breathe' || Math.abs(pg.scrollTop - lastTop) < 60 || Date.now() - M.lastTrack < 2000) return;
+        lastTop = pg.scrollTop; M.lastTrack = Date.now();
+        strike('track');
+      }, { passive: true });
+    });
+    $('#phone').addEventListener('pointerdown', () => { M.lastActive = Date.now(); if (M.asleep && !M.busy) wakeUp(); });
+
+    const LINES = { home: 'hi again!', quests: 'so many quests', plan: 'nap time?', me: 'make it cozy' };
+    return {
+      say,
+      enterPage(page) {
+        M.lastActive = Date.now();
+        // a page change interrupts idle poses, but not an annoyed, held or moving Mochi
+        if (Date.now() < M.annoyedUntil || M.held || M.perch !== 'nav' || M.state === 'walk' || M.state === 'prep') return;
+        M.busy = false; M.asleep = false;
+        goRest();
+        const urgent = quests.some(q => q.tier === 0 && !q.done);
+        if (page === 'quests' && urgent) {
+          M.p1Seen++;
+          M.p1Seen > 1 ? strike('grumpy', 0, 'that P1 is STILL open!', null, true) : strike('track', 0, 'a P1 is due today!');
+        } else if (page === 'plan') { say(LINES.plan, 1300); setTimeout(() => { if (current === 'plan' && !M.busy && !M.held) fallAsleep(); }, 1800); }
+        else if (page === 'me') strike('track', 0, LINES.me);
+        else if (Math.random() < 0.6) say(LINES[page], 1300);
+        if (page === 'me') M.dir = M.cx > 195 ? -1 : 1;
+        schedule(1.5, 3);
+      },
+      setPerch(perch) {
+        M.held = false; M.asleep = false; M.hopping = false;
+        if (perch === 'sheet') {
+          // rises up over the edge of the add sheet
+          M.perch = 'sheet'; M.busy = true; setState('idle'); M.cx = 320; M.dir = -1;
+          playAnim('peek-rise', { then: () => goRest() });
+        } else if (M.perch === 'sheet') {
+          // ducks down behind the sheet, then is back on the nav
+          M.busy = true;
+          playAnim('peek-duck', { then: () => { M.perch = 'nav'; const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); goRest(); schedule(1.5, 3); } });
+        } else { M.perch = perch; goRest(); }
+        schedule(1.5, 3);
+      },
+      // app events interrupt idle poses, but never an annoyed, held or moving Mochi
+      react(pose, ms, text, cls, mad) {
+        if (Date.now() < M.annoyedUntil || M.held || M.state === 'walk' || M.state === 'prep') { if (text) say(text, 1200, mad); return; }
+        M.busy = false; M.asleep = false;
+        if (A[pose] && A[pose].face === 'R') M.dir = 1;   // play side-on reactions as drawn, so they end on the rest pose
+        strike(pose, ms, text, cls, mad);
+      },
+      celebrate(text = 'yay!') { this.react('celebrate', 0, text); },
+      grumpy(text) { this.react('grumpy', 0, text, null, true); play('mew', { rate: 0.8 }); },
+      pose: () => M.pose,
+      walk: x => walkTo(x),
+      sprint: x => sprintTo(x),
+      play: (kind, dx) => playWith(kind, dx),
+      debug: () => ({ cx: Math.round(M.cx), hover: M.hover, kind: HOV.kind, cur: HOV.cur, target: HOV.target, state: M.state, busy: M.busy, pose: M.pose }),
+      settingsChanged() { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); if (!M.busy && !M.asleep && M.state === 'idle') goRest(); schedule(0.5, 1.5); },
+      start() { goRest(); schedule(1, 2); requestAnimationFrame(tick); },
+    };
+  })();
+
+  /* ---------- small frame loops outside Mochi (loading, empty state, toasts) ---------- */
+  function frameLoop(imgEl, name, fps, pauseMs = 0) {
+    const a = window.MOCHI_ANIMS[name];
+    let i = 1, wait = 0;
+    imgEl.src = a.src(1);
+    return setInterval(() => {
+      if (wait > 0) { wait -= 1000 / fps; return; }
+      i = i >= a.frames ? 1 : i + 1;
+      imgEl.src = a.src(i);
+      if (i === a.frames) wait = pauseMs;
+    }, 1000 / fps);
+  }
+  setInterval(() => {
+    // empty-state Mochi pops out of his box and ducks back in
+    document.querySelectorAll('img.boxpop:not([data-on])').forEach(im => { im.dataset.on = '1'; frameLoop(im, 'boxpop', 7, 1400); });
+  }, 300);
+
+  /* ---------- pull to refresh (Quests): Mochi stretches down, hangs, then snaps back and spins ---------- */
+  (() => {
+    const page = $('#p-quests'), ptr = $('#ptr'), im = ptr.querySelector('img');
+    const AN = window.MOCHI_ANIMS, FULL = 110;
+    let y0 = null, pull = 0, hangT = null;
+    const size = name => { ptr.style.width = AN[name].w * 1.25 + 'px'; ptr.style.height = AN[name].h * 1.25 + 'px'; };
+    page.addEventListener('pointerdown', e => {
+      if (page.scrollTop > 0 || e.target.closest('.handle, .chk, button')) return;
+      y0 = e.clientY; pull = 0;
+    });
+    page.addEventListener('pointermove', e => {
+      if (y0 === null) return;
+      pull = Math.max(0, Math.min(150, (e.clientY - y0) / scale));
+      if (pull < 6) return;
+      ptr.classList.add('on');
+      page.style.transform = `translateY(${pull * 0.6}px)`;
+      if (pull < FULL) {
+        clearInterval(hangT); hangT = null;
+        size('ptr-stretch');
+        im.src = AN['ptr-stretch'].src(1 + Math.round(pull / FULL * (AN['ptr-stretch'].frames - 1)));
+      } else if (!hangT) {
+        size('ptr-hang');
+        let i = 1; im.src = AN['ptr-hang'].src(1);
+        hangT = setInterval(() => { i = i === 1 ? 2 : 1; im.src = AN['ptr-hang'].src(i); }, 260);
+      }
+    });
+    const end = () => {
+      if (y0 === null) return;
+      y0 = null; page.style.transform = '';
+      clearInterval(hangT); hangT = null;
+      if (pull > 80) {
+        play('click', { vol: 0.6 });
+        size('ptr-snap');
+        let i = 1; im.src = AN['ptr-snap'].src(1);
+        const t = setInterval(() => {
+          if (++i > AN['ptr-snap'].frames) { clearInterval(t); ptr.classList.remove('on'); toast('Quests refreshed', 'success'); return; }
+          im.src = AN['ptr-snap'].src(i);
+        }, 80);
+      } else ptr.classList.remove('on');
+    };
+    page.addEventListener('pointerup', end); page.addEventListener('pointercancel', end); page.addEventListener('pointerleave', end);
+  })();
+
+  /* ---------- start ---------- */
+  renderNav(); renderHome(); renderQuests(); renderPlan(); renderCustom(); renderPick();
+  document.getElementById('p-home').classList.add('active');
+  $('#loading .chaser').innerHTML = '<img alt="">';
+  const chaseLoop = frameLoop($('#loading .chaser img'), 'chase', 11);
+  setTimeout(() => { $('#loading').classList.add('done'); setTimeout(() => clearInterval(chaseLoop), 400); }, 1800);
+  Mochi.start();
+  window.__tf = { go, openSheet, closeSheet, S, mochi: () => Mochi.pose(), debug: () => Mochi.debug(), walk: x => Mochi.walk(x), Mochi };
+})();
+</script>
+</body>
+</html>
