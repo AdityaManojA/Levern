@@ -32,6 +32,13 @@ async function load() {
 }
 
 export const user = () => current;
+// a fresh Firebase ID token for calling the TaskFlow server (null when signed out)
+export async function idToken() {
+  if (!current) return null;
+  const f = await load();
+  await f.auth.authStateReady();
+  return f.auth.currentUser ? f.auth.currentUser.getIdToken() : null;
+}
 export const onAccount = fn => { listeners.add(fn); return () => listeners.delete(fn); };
 
 export async function signIn() {

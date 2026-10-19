@@ -4,7 +4,7 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v18';
+const VERSION = 'taskflow-v19';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
@@ -14,7 +14,7 @@ const SHELL = [
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/badge-96.png', 'icons/icon.svg', 'icons/apple-touch-icon.png',
   'sounds/tap-1.mp3', 'sounds/tap-2.mp3', 'sounds/tap-3.mp3', 'sounds/tab-1.mp3', 'sounds/tab-2.mp3', 'sounds/tick-1.mp3', 'sounds/tick-2.mp3', 'sounds/tick-3.mp3', 'sounds/coin.mp3', 'sounds/chime-1.mp3', 'sounds/chime-2.mp3', 'sounds/mrrp-1.mp3', 'sounds/mrrp-2.mp3', 'sounds/mrrp-3.mp3', 'sounds/meow-sweet-1.mp3', 'sounds/meow-sweet-2.mp3', 'sounds/meow-hey-1.mp3', 'sounds/meow-hey-2.mp3', 'sounds/meow-grumpy-1.mp3', 'sounds/meow-grumpy-2.mp3', 'sounds/step-1.mp3', 'sounds/step-2.mp3', 'sounds/step-3.mp3', 'sounds/land.mp3', 'sounds/meow-1.mp3', 'sounds/meow-2.mp3', 'sounds/meow-3.mp3', 'sounds/pickup-1.mp3', 'sounds/pickup-2.mp3', 'sounds/angry-1.mp3', 'sounds/angry-2.mp3',
   'js/sound.js', 'js/ink.js', 'js/inkpad.js', 'js/handwriting.js', 'js/views/ink.js',
-  'js/controls.js', 'js/menu.js', 'js/account.js', 'privacy.html', 'cookies.html','mochi/strips/happy-wiggle.png', 'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
+  'js/controls.js', 'js/menu.js', 'js/account.js', 'js/cloud.js','privacy.html', 'cookies.html','mochi/strips/happy-wiggle.png', 'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
 ];
 
 self.addEventListener('install', e => {
@@ -27,7 +27,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   const u = new URL(req.url);
-  if (req.method !== 'GET' || u.origin !== location.origin || u.pathname.endsWith('/calendar.ics') || /\/(sync|api)\//.test(u.pathname)) return;   // live data is never cached
+  if (req.method !== 'GET' || u.origin !== location.origin || u.pathname.endsWith('/calendar.ics') || /\/(sync|api|feed)\//.test(u.pathname)) return;   // live data is never cached
   e.respondWith(
     fetch(req).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }

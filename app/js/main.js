@@ -172,6 +172,6 @@ startCalendars();
 // share data with the TaskFlow server (API, webhooks); the app works the same without it
 startSync();
 onSyncStatus(() => { if (route.name === 'developer') render({ keepScroll: true }); });
-onCalendarChange(() => { if (route.name === 'settings') render({ keepScroll: true }); });
+onCalendarChange(() => { if (route.name === 'settings' || route.name === 'calendar') render({ keepScroll: true }); });
 if (new URLSearchParams(location.search).get('add') === '1') openAdd();
 window.TaskFlow = { store, go: h => { location.hash = h; }, mochi, tour, sfxLog, soundsLoaded };   // handy in the console

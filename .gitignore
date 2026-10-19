@@ -2,3 +2,5 @@ graphify-out/
 node_modules/
 .data/
 .firebase/
+functions/shared/
+*.local

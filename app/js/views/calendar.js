@@ -1,7 +1,8 @@
 // Calendar: week and month views of due quests (repeating quests show every occurrence),
 // plus export to Google / Apple / Outlook calendars.
 import { getState, tierLabel, TIER_COLORS, sortQuests } from '../store.js';
-import { todayStr, addDays, startOfWeek, monthGrid, fromStr, WEEKDAYS, MONTHS, fmtDate, fmtTime, addMonths } from '../dates.js';
+import { todayStr, addDays, startOfWeek, monthGrid, fromStr, toStr, WEEKDAYS, MONTHS, fmtDate, fmtTime, addMonths } from '../dates.js';
+import { externalEvents } from '../calendars.js';
 import { occurrences } from '../recur.js';
 import { buildICS } from '../ics.js';
 import { swap } from '../motion.js';
@@ -20,13 +21,31 @@ function byDay(from, to) {
   return map;
 }
 
-function dayList(date, list) {
+// the person's own Google Calendar events (from the TaskFlow server), { 'YYYY-MM-DD': [event, ...] }
+const pad = n => String(n).padStart(2, '0');
+const hhmm = iso => { const d = new Date(iso); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+function eventsByDay(from, to) {
+  const map = {};
+  for (const e of externalEvents()) {
+    if (!e.start) continue;
+    let d = e.allDay ? e.start : toStr(new Date(e.start));
+    const last = e.allDay ? addDays(e.end || addDays(e.start, 1), -1) : toStr(new Date(e.end || e.start));
+    for (let i = 0; d <= last && i < 31; d = addDays(d, 1), i++) if (d >= from && d <= to) (map[d] ||= []).push(e);
+  }
+  for (const k in map) map[k].sort((a, b) => (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) || String(a.start).localeCompare(String(b.start)));
+  return map;
+}
+const evTime = (e, d) => e.allDay ? 'All day' : toStr(new Date(e.start)) === d ? fmtTime(hhmm(e.start)) : 'cont.';
+const evRow = (e, d, cls) => `<a class="${cls} ev" href="${esc(e.url || '#')}" target="_blank" rel="noopener" title="${esc(e.where ? `${e.title} · ${e.where}` : e.title)}"><span class="dotc ev-dot"></span><span class="t">${esc(e.title)}</span><span class="small">${esc(evTime(e, d))}</span></a>`;
+
+function dayList(date, list, evs = []) {
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>${esc(fmtDate(date))}${date !== todayStr() && fmtDate(date) !== 'Tomorrow' && fmtDate(date) !== 'Yesterday' ? '' : ` · ${WEEKDAYS[fromStr(date).getDay()]} ${fromStr(date).getDate()} ${MONTHS[fromStr(date).getMonth()]}`}</h3>
       <button class="mini" data-act="add" data-due="${date}">+ Quest</button></div>
     ${list.length ? list.map(q => `<a data-key="d-${q.id}" class="wday-q wq" href="#/quest/${encodeURIComponent(q.id)}" style="display:flex;align-items:center;gap:8px;margin-top:8px;text-decoration:none;font-weight:600;${q.done ? 'opacity:.55;text-decoration:line-through' : ''}">
         <span class="dotc" style="--c:${TIER_COLORS[q.tier]}"></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.title)}</span>
-        <span class="small">${q.time ? esc(fmtTime(q.time)) : ''}${q.repeat ? ' ↻' : ''}</span></a>`).join('') : '<div class="small" style="margin-top:6px">Nothing due. Tap + Quest to plan something.</div>'}
+        <span class="small">${q.time ? esc(fmtTime(q.time)) : ''}${q.repeat ? ' ↻' : ''}</span></a>`).join('') : `<div class="small" style="margin-top:6px">${evs.length ? 'No quests due.' : 'Nothing due. Tap + Quest to plan something.'}</div>`}
+    ${evs.length ? `<div class="ev-h">From your Google Calendar</div>${evs.map(e => evRow(e, date, 'wday-q wq')).join('')}` : ''}
   </div>`;
 }
 
@@ -34,23 +53,23 @@ export function render() {
   const today = todayStr();
   let head, body;
   if (mode === 'month') {
-    const c = fromStr(cursor), grid = monthGrid(c.getFullYear(), c.getMonth()), map = byDay(grid[0], grid[41]);
+    const c = fromStr(cursor), grid = monthGrid(c.getFullYear(), c.getMonth()), map = byDay(grid[0], grid[41]), evs = eventsByDay(grid[0], grid[41]);
     const mPrefix = cursor.slice(0, 7);
     head = `${MONTHS[c.getMonth()]} ${c.getFullYear()}`;
     body = `<div class="month" data-tour="calendar">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<div class="wd">${d}</div>`).join('')}
-      ${grid.map(d => { const qs = map[d] || [];
-        return `<button class="day${d.slice(0, 7) !== mPrefix ? ' out' : ''}${d === today ? ' today' : ''}${d === selected ? ' sel' : ''}" data-act="pick-day" data-d="${d}" aria-label="${esc(fmtDate(d))}, ${qs.length} quests">
-          ${fromStr(d).getDate()}<span class="dots">${qs.slice(0, 4).map(q => `<i style="--c:${TIER_COLORS[q.tier]}"></i>`).join('')}${qs.length > 4 ? `<span class="more">+${qs.length - 4}</span>` : ''}</span></button>`; }).join('')}
+      ${grid.map(d => { const qs = map[d] || [], es = evs[d] || [], room = Math.max(0, 4 - Math.min(es.length, 1));
+        return `<button class="day${d.slice(0, 7) !== mPrefix ? ' out' : ''}${d === today ? ' today' : ''}${d === selected ? ' sel' : ''}" data-act="pick-day" data-d="${d}" aria-label="${esc(fmtDate(d))}, ${qs.length} quests${es.length ? `, ${es.length} events` : ''}">
+          ${fromStr(d).getDate()}<span class="dots">${qs.slice(0, room).map(q => `<i style="--c:${TIER_COLORS[q.tier]}"></i>`).join('')}${es.length ? '<i class="ev-dot"></i>' : ''}${qs.length > room ? `<span class="more">+${qs.length - room}</span>` : ''}</span></button>`; }).join('')}
     </div>
-    <div style="height:12px"></div>${dayList(selected, map[selected] || byDay(selected, selected)[selected] || [])}`;
+    <div style="height:12px"></div>${dayList(selected, map[selected] || byDay(selected, selected)[selected] || [], evs[selected] || eventsByDay(selected, selected)[selected] || [])}`;
   } else {
-    const start = startOfWeek(cursor), end = addDays(start, 6), map = byDay(start, end);
+    const start = startOfWeek(cursor), end = addDays(start, 6), map = byDay(start, end), evs = eventsByDay(start, end);
     const s = fromStr(start), e = fromStr(end);
     head = `${s.getDate()} ${MONTHS[s.getMonth()]} – ${e.getDate()} ${MONTHS[e.getMonth()]}`;
     body = `<div class="week" data-tour="calendar">${Array.from({ length: 7 }, (_, i) => addDays(start, i)).map(d => { const qs = map[d] || [];
       return `<div class="wday${d === today ? ' today' : ''}">
         <div class="wh"><span>${WEEKDAYS[fromStr(d).getDay()]} ${fromStr(d).getDate()}${d === today ? ' · Today' : ''}</span><button class="mini" data-act="add" data-due="${d}" aria-label="Add quest on ${esc(fmtDate(d))}">+</button></div>
-        ${qs.map(q => `<a data-key="w-${d}-${q.id}" class="wq" href="#/quest/${encodeURIComponent(q.id)}" style="${q.done ? 'opacity:.55;text-decoration:line-through' : ''}"><span class="dotc" style="--c:${TIER_COLORS[q.tier]}"></span><span class="t">${esc(q.title)}</span><span class="small">${q.time ? esc(fmtTime(q.time)) : ''}${q.repeat ? ' ↻' : ''}</span></a>`).join('') || '<div class="small" style="margin-top:4px">Free</div>'}
+        ${qs.map(q => `<a data-key="w-${d}-${q.id}" class="wq" href="#/quest/${encodeURIComponent(q.id)}" style="${q.done ? 'opacity:.55;text-decoration:line-through' : ''}"><span class="dotc" style="--c:${TIER_COLORS[q.tier]}"></span><span class="t">${esc(q.title)}</span><span class="small">${q.time ? esc(fmtTime(q.time)) : ''}${q.repeat ? ' ↻' : ''}</span></a>`).join('')}${(evs[d] || []).map(e => evRow(e, d, 'wq')).join('')}${qs.length || evs[d]?.length ? '' : '<div class="small" style="margin-top:4px">Free</div>'}
       </div>`; }).join('')}</div>`;
   }
   const open = getState().quests.filter(q => q.due && !q.done).length;

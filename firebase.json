@@ -2,11 +2,27 @@
   "hosting": {
     "public": "app",
     "ignore": ["firebase.json", "**/.*", "tests/**", "**/*.md"],
+    "rewrites": [
+      { "source": "/api/**", "function": { "functionId": "api", "region": "asia-south1" } },
+      { "source": "/feed/**", "function": { "functionId": "feed", "region": "asia-south1" } }
+    ],
     "headers": [
       { "source": "sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
       { "source": "**/*.@(html|js|css|webmanifest)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
       { "source": "fonts/**", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
       { "source": "**/*.@(png|svg|mp3|webp)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }] }
     ]
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs22",
+      "ignore": ["node_modules", "test", ".git", "*.log"],
+      "predeploy": ["node scripts/copy-shared.mjs"]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
