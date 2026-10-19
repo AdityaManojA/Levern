@@ -91,7 +91,7 @@ export function render() {
 
     <div class="sec">Your data</div>
     <div class="card">
-      <p class="small" style="margin-bottom:10px">Everything is saved on this device only. Export a backup to move it to another device.</p>
+      <p class="small" style="margin-bottom:10px">${account.user() ? 'Saved on this device and in your account. You can also export a backup file.' : 'Everything is saved on this device only. Sign in to keep it in your account, or export a backup to move it to another device.'}</p>
       <div class="row-btns"><button class="btn white sm" data-act="export">Export backup</button><label class="btn white sm" style="cursor:pointer">Import backup<input type="file" accept="application/json,.json" data-change="import" hidden></label></div>
       <div style="height:8px"></div>
       <div class="row-btns"><button class="btn ghost sm" data-act="clear-done">Clear done quests</button><button class="btn ghost sm" data-act="reset">Reset everything</button></div>
@@ -102,6 +102,8 @@ export function render() {
       <div class="srow"><div class="l"><b>Privacy policy</b><small>What TaskFlow stores and where it goes</small></div><a class="mini" href="privacy.html">Read</a></div>
       <div class="srow"><div class="l"><b>Cookies</b><small>No tracking cookies. What's kept in your browser</small></div><a class="mini" href="cookies.html">Read</a></div>
     </div>
+    ${account.user() ? `<button class="btn block signout" data-act="acct-out" style="margin-top:22px">Sign out</button>
+    <p class="small" style="text-align:center;margin-top:8px">Signed in as ${esc(account.user().email || account.user().name)}</p>` : ''}
     <p class="small" style="text-align:center;margin:16px 0">TaskFlow web 0.1 · light mode</p>`;
 }
 

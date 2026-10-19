@@ -75,6 +75,8 @@ html, .sheet, .rpanel, .clist, .ctime-l, textarea { scrollbar-width: thin; scrol
 .btn.white { background: #fff; }
 .btn.dark { background: var(--ink); color: #fff; }
 .btn.danger { background: var(--p1); }
+.btn.signout { background: var(--red); color: #fff; }
+.btn.signout:hover { background: #B32F26; }
 .btn.sm { min-height: 38px; padding: 0 14px; font-size: 13px; }
 .btn:disabled { opacity: .45; cursor: default; }
 .row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
