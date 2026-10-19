@@ -29,30 +29,43 @@ const buffers = new Map(), last = new Map(), lastAt = new Map();
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const defaultSoundOn = () => !reducedMotion();
 
-function context() {
-  if (ctx) return ctx;
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return null;
-  ctx = new AC({ latencyHint: 'interactive' });
-  master = ctx.createGain(); master.connect(ctx.destination);
-  return ctx;
+// The real AudioContext is only created inside a user gesture (Chrome warns, and keeps it suspended, if
+// it's made earlier). Decoding doesn't need it: an OfflineAudioContext decodes on load, and the decoded
+// buffers play in any context later.
+function decoder() {
+  const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  return OAC ? new OAC(1, 1, 44100) : null;
 }
 
-// fetch and decode everything once; decoding works while the context is still locked
+// fetch and decode everything once, up front
 export async function preloadSounds() {
-  const c = context(); if (!c) return;
+  const d = decoder(); if (!d) return;
   const names = [...new Set(Object.values(GROUPS).flatMap(g => g.files))];
   await Promise.all(names.map(async n => {
     try {
       const data = await (await fetch(`sounds/${n}.mp3`)).arrayBuffer();
-      buffers.set(n, await new Promise((res, rej) => c.decodeAudioData(data, res, rej)));
+      buffers.set(n, await new Promise((res, rej) => d.decodeAudioData(data, res, rej)));
     } catch (e) { /* a missing sound is just silent */ }
   }));
 }
-// browsers only allow audio after a user gesture: resume on the first one
+// Audio starts on the first real activation (click, key press, end of a touch). Idempotent and quiet:
+// once the context is running the listeners remove themselves.
 export function unlockOnGesture() {
-  const unlock = () => { const c = context(); if (c && c.state !== 'running') c.resume().catch(() => {}); };
-  for (const ev of ['pointerdown', 'keydown', 'touchend']) addEventListener(ev, unlock, { capture: true, passive: true });
+  const EVENTS = ['click', 'keydown', 'touchend', 'pointerup'];
+  const done = () => EVENTS.forEach(ev => removeEventListener(ev, unlock, true));
+  function unlock(e) {
+    if (e.type === 'keydown' && ['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'Escape'].includes(e.key)) return;   // not activations
+    if (navigator.userActivation && !navigator.userActivation.isActive) return;
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return done();
+      ctx = new AC({ latencyHint: 'interactive' });
+      master = ctx.createGain(); master.connect(ctx.destination);
+    }
+    if (ctx.state === 'running') return done();
+    ctx.resume().then(() => { if (ctx.state === 'running') done(); }, () => {});
+  }
+  EVENTS.forEach(ev => addEventListener(ev, unlock, { capture: true, passive: true }));
 }
 export const soundReady = () => !!ctx && ctx.state === 'running';
 
