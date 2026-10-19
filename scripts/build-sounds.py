@@ -24,7 +24,9 @@ def copy_sources(new_sounds):
     os.makedirs(SRC, exist_ok=True)
     if new_sounds and os.path.isdir(new_sounds):
         for rel in ['changing tabs.wav', 'simple click.wav', 'mochi sounds/mixkit-angry-cartoon-kitty-meow-94.wav',
-                    'mochi sounds/mixkit-little-cat-attention-meow-86.wav', 'mochi sounds/mixkit-sweet-kitty-meow-93.wav']:
+                    'mochi sounds/mixkit-little-cat-attention-meow-86.wav', 'mochi sounds/mixkit-sweet-kitty-meow-93.wav',
+                    'mochi sounds/angrykitten.wav', 'mochi sounds/cat-being-picked-up.mp3', 'mochi sounds/meow1.wav',
+                    'mochi sounds/meow2.flac']:
             shutil.copyfile(os.path.join(new_sounds, rel), os.path.join(SRC, os.path.basename(rel)))
     for name in ['click.wav', 'coin.wav']:   # the key-click recording and coin already in the app
         p = os.path.join(OUT, name)
@@ -112,6 +114,14 @@ def main():
     derive(s('mixkit-little-cat-attention-meow-86.wav'), o('meow-hey-2.mp3'), 1.06, gain_db=-5)
     derive(s('mixkit-angry-cartoon-kitty-meow-94.wav'), o('meow-grumpy-1.mp3'), 1.00, gain_db=-5)
     derive(s('mixkit-angry-cartoon-kitty-meow-94.wav'), o('meow-grumpy-2.mp3'), 0.94, gain_db=-6)
+    # Mochi's newer picks: two plain meows, being picked up, and a proper angry yowl for when he's had enough
+    derive(s('meow1.wav'), o('meow-1.mp3'), 1.00, gain_db=-4)
+    derive(s('meow2.flac'), o('meow-2.mp3'), 1.00, gain_db=-4)
+    derive(s('meow1.wav'), o('meow-3.mp3'), 1.06, gain_db=-5)
+    derive(s('cat-being-picked-up.mp3'), o('pickup-1.mp3'), 1.00, gain_db=-3)
+    derive(s('cat-being-picked-up.mp3'), o('pickup-2.mp3'), 1.05, gain_db=-4)
+    derive(s('angrykitten.wav'), o('angry-1.mp3'), 1.00, gain_db=-5, max_s=1.3)
+    derive(s('angrykitten.wav'), o('angry-2.mp3'), 0.95, gain_db=-6, max_s=1.3)
     # Mochi's signature "mrrp!" (synthesised): three versions, happy / curious / content
     write_mp3(mrrp(620, 1000, 0.24, 34), o('mrrp-1.mp3'), 0.8)
     write_mp3(mrrp(680, 1120, 0.20, 40, 1.15), o('mrrp-2.mp3'), 0.8)

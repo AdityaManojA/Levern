@@ -19,6 +19,9 @@ const GROUPS = {
   sweet: { files: ['meow-sweet-1', 'meow-sweet-2'], vol: 0.4, mochi: true }, // hello / well done
   hey: { files: ['meow-hey-1', 'meow-hey-2'], vol: 0.38, mochi: true },     // "look!": reminders, surprises
   grumpy: { files: ['meow-grumpy-1', 'meow-grumpy-2'], vol: 0.35, mochi: true }, // annoyed, errors
+  meow: { files: ['meow-1', 'meow-2', 'meow-3'], vol: 0.4, mochi: true },          // a plain meow: everyday taps
+  pickup: { files: ['pickup-1', 'pickup-2'], vol: 0.45, mochi: true },     // being picked up
+  angry: { files: ['angry-1', 'angry-2'], vol: 0.35, mochi: true },        // he's had enough (tapped past his patience)
   step: { files: ['step-1', 'step-2', 'step-3'], vol: 0.1, mochi: true },   // paw steps (purposeful walks only)
   land: { files: ['land'], vol: 0.28, mochi: true },                         // landing after you drop him
 };
