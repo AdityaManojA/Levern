@@ -28,7 +28,7 @@ function subtaskQuest() {
   return (qs.find(q => q.subtasks.length) || qs[0] || getState().quests[0] || {}).id || '';
 }
 
-let i = -1, root = null, raf = 0, stopAvatar = null, lastRect = null;
+let i = -1, root = null, raf = 0, stopAvatar = null, seq = 0, settled = false;
 export const isOpen = () => i >= 0;
 
 function el(sel) {
@@ -38,8 +38,10 @@ function el(sel) {
 
 function build() {
   root = document.getElementById('tour');
-  root.innerHTML = `<div class="tour-spot" aria-hidden="true"><span class="tour-tap">tap!</span></div><div class="tour-card" role="dialog" aria-modal="true" aria-live="polite"></div>`;
+  root.innerHTML = `<div class="tour-spot" aria-hidden="true" style="opacity:0"><span class="tour-tap">tap!</span></div><div class="tour-card" role="dialog" aria-modal="true" aria-live="polite" style="opacity:0"></div>`;
   root.hidden = false;
+  if (root.dataset.bound) return;
+  root.dataset.bound = '1';
   root.addEventListener('click', e => {
     if (e.target.closest('[data-tour-next]')) return next();
     if (e.target.closest('[data-tour-skip]')) return end();
@@ -57,86 +59,143 @@ function card() {
       : `<div class="tour-foot"><button type="button" class="link" data-tour-skip>${s.last ? '' : 'Skip tour'}</button><button type="button" class="btn sm" data-tour-next>${s.last ? 'Finish' : 'Next'}</button></div>`}`;
 }
 
-async function showStep(dir = 1) {
-  const s = STEPS[i];
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const frame = () => new Promise(r => requestAnimationFrame(() => r()));
+// resolves once the element has stopped moving (scrolling, page fade, sheet sliding) for a few frames
+async function settle(target, max = 1200) {
+  const t0 = performance.now(); let last = '', still = 0;
+  while (performance.now() - t0 < max) {
+    await frame();
+    const t = typeof target === 'function' ? target() : target;
+    const r = t && t.getBoundingClientRect();
+    const k = r ? [r.left, r.top, r.width, r.height].map(Math.round).join() : '';
+    still = k && k === last ? still + 1 : 0; last = k;
+    if (still >= 4) return;
+  }
+}
+function fade(elm, to, ms) {
+  elm.getAnimations().forEach(a => a.cancel());
+  const from = +getComputedStyle(elm).opacity;
+  elm.style.opacity = to;
+  if (reduced() || from === to) return Promise.resolve();
+  return elm.animate([{ opacity: from }, { opacity: to }], { duration: ms, easing: to ? EASE : 'ease-in' }).finished.catch(() => {});
+}
+
+// spotlight rect for the current step (a circle round Mochi on the last step)
+function spotRect() {
+  const s = STEPS[i], t = el(s.target);
+  if (!t) return null;
+  let r = t.getBoundingClientRect();
+  const pad = s.last ? 14 : 8;
+  if (s.last) { const cx = r.left + r.width / 2, cy = r.top + r.height / 2, d = Math.max(r.width, r.height) + 10; r = { left: cx - d / 2, top: cy - d / 2, width: d, height: d }; }
+  return { left: r.left - pad, top: r.top - pad, width: r.width + pad * 2, height: r.height + pad * 2 };
+}
+function putSpot(r) {
+  const spot = root.querySelector('.tour-spot');
+  if (!r) { spot.style.opacity = 0; return; }
+  Object.assign(spot.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', opacity: 1 });
+}
+function putCard(r) {
+  const c = root.querySelector('.tour-card'), vw = innerWidth, vh = innerHeight, cw = Math.min(360, vw - 32);
+  c.style.width = cw + 'px';
+  const ch = c.offsetHeight || 220;
+  let top;
+  if (!r) top = (vh - ch) / 2;
+  else if (r.top + r.height + 14 + ch < vh - 12) top = r.top + r.height + 14;
+  else if (r.top - 14 - ch > 12) top = r.top - 14 - ch;
+  else top = Math.max(12, vh - ch - 110);
+  const left = r ? Math.max(16, Math.min(vw - cw - 16, r.left + r.width / 2 - cw / 2)) : (vw - cw) / 2;
+  c.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+}
+
+// One calm sequence per step: card fades out → page/sheet changes and settles → target scrolls into
+// view and settles → spotlight glides to it → card is placed (invisibly) and fades in. A newer step
+// cancels an older one (seq), and Next is ignored until the step has settled.
+async function showStep() {
+  const my = ++seq, s = STEPS[i], c = root.querySelector('.tour-card'), spot = root.querySelector('.tour-spot');
+  const stale = () => my !== seq || i < 0;
+  settled = false;
+  await fade(c, 0, 160);
+  if (stale()) return;
   const route = typeof s.route === 'function' ? s.route() : s.route;
-  if (!s.sheet && sheet.isOpen()) sheet.close();
-  if (location.hash !== route) { location.hash = route; await wait(520); }
+  if (!s.sheet && sheet.isOpen()) { sheet.close(); await wait(reduced() ? 0 : 320); }
+  if (location.hash !== route) { location.hash = route; await wait(reduced() ? 30 : 420); }
+  if (stale()) return;
   if (s.sheet && !sheet.isOpen()) {
     openAdd();
-    await wait(350);
     const t = document.querySelector('#sheet [name=title]');
-    if (t) { t.value = 'Renew passport, due Friday'; t.dispatchEvent(new Event('input', { bubbles: true })); t.blur(); }
-    await wait(250);
+    if (t) { t.value = 'Renew passport, due Friday'; t.dispatchEvent(new Event('input', { bubbles: true })); }
+    await settle(() => document.getElementById('sheet'));
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   }
+  if (stale()) return;
   const target = el(s.target);
-  if (target && s.target !== '#nav' && s.target !== 'mochi') { target.scrollIntoView({ block: 'center', behavior: reduced() ? 'auto' : 'smooth' }); await wait(reduced() ? 0 : 380); }
+  if (target && s.target !== '#nav' && s.target !== 'mochi') {
+    const r = target.getBoundingClientRect();
+    if (r.top < 70 || r.bottom > innerHeight - 110) target.scrollIntoView({ block: 'center', behavior: reduced() ? 'auto' : 'smooth' });
+  }
+  await settle(() => el(s.target), 1500);
+  if (stale()) return;
   root.classList.toggle('round', !!s.last);
   mascot.raise(!!s.last);
-  const c = root.querySelector('.tour-card');
-  const swapIn = () => {
-    c.getAnimations().forEach(a => a.cancel());   // drop the held fade-out
-    stopAvatar && stopAvatar();
-    c.innerHTML = card();
-    stopAvatar = portrait(c.querySelector('[data-av]'), 0.36);
-    place(true);
-    c.querySelector('.tour-title').focus({ preventScroll: true });
-    if (!reduced()) c.animate([{ opacity: 0, transform: `translateY(${10 * dir}px)` }, { opacity: 1, transform: 'none' }], { duration: 420, easing: EASE });
-  };
-  if (c.innerHTML && !reduced()) c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'forwards' }).finished.then(swapIn); else swapIn();
+  const to = spotRect(), from = spot.getBoundingClientRect(), first = +getComputedStyle(spot).opacity === 0;
+  let ms = 0;
+  if (first || !to || reduced()) putSpot(to);   // first step: appear in place, no slide from the corner
+  else {
+    // calm glide: ease-in-out, longer for longer moves, so no frame leaps far
+    const dist = Math.hypot(to.left - from.left, to.top - from.top) + Math.abs(to.width - from.width) + Math.abs(to.height - from.height);
+    ms = Math.round(Math.min(900, Math.max(420, dist * 1.1)));
+    spot.style.setProperty('--glide', ms + 'ms');
+    spot.classList.add('glide');
+    putSpot(to);
+  }
+  await wait(ms);
+  if (stale()) return;
+  spot.classList.remove('glide');
+  if (stopAvatar) stopAvatar();
+  c.innerHTML = card();
+  stopAvatar = portrait(c.querySelector('[data-av]'), 0.36);
+  putCard(spotRect());
+  settled = true;
+  await fade(c, 1, 380);
+  if (stale()) return;
+  const h = c.querySelector('.tour-title'); if (h) h.focus({ preventScroll: true });
   if (s.last) mascot.say('tap me!', 2500);
 }
 
-// keep the spotlight and card on the target while things move (scrolling, Mochi walking)
-function place(force) {
-  if (i < 0) return;
-  const s = STEPS[i], t = el(s.target), spot = root.querySelector('.tour-spot'), c = root.querySelector('.tour-card');
-  const pad = s.last ? 14 : 8;
-  let r = t ? t.getBoundingClientRect() : null;
-  if (r && s.last) { const cx = r.left + r.width / 2, cy = r.top + r.height / 2, d = Math.max(r.width, r.height) + 10; r = { left: cx - d / 2, top: cy - d / 2, width: d, height: d, right: cx + d / 2, bottom: cy + d / 2 }; }
-  const key = r ? [r.left, r.top, r.width, r.height].map(Math.round).join() : 'none';
-  if (key !== lastRect || force) {
-    lastRect = key;
-    if (r) Object.assign(spot.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px', opacity: 1 });
-    else Object.assign(spot.style, { left: '50%', top: '40%', width: '0px', height: '0px', opacity: 0 });
-    const vw = innerWidth, vh = innerHeight, cw = Math.min(360, vw - 32), ch = c.offsetHeight || 220;
-    c.style.width = cw + 'px';
-    let top;
-    if (!r) top = (vh - ch) / 2;
-    else if (r.bottom + pad + 14 + ch < vh - 12) top = r.bottom + pad + 14;
-    else if (r.top - pad - 14 - ch > 12) top = r.top - pad - 14 - ch;
-    else top = Math.max(12, vh - ch - 110);
-    const left = r ? Math.max(16, Math.min(vw - cw - 16, r.left + r.width / 2 - cw / 2)) : (vw - cw) / 2;
-    c.style.transform = `translate(${Math.round(left)}px, ${Math.round(top)}px)`;
+// once a step has settled, the spotlight and card stay on the target if it moves (Mochi walking)
+function follow() {
+  if (i >= 0 && settled) {
+    const r = spotRect(), cur = root.querySelector('.tour-spot').getBoundingClientRect();
+    if (r && (Math.abs(r.left - cur.left) > 1 || Math.abs(r.top - cur.top) > 1)) { putSpot(r); putCard(r); }
   }
+  raf = requestAnimationFrame(follow);
 }
-function loop() { place(); raf = requestAnimationFrame(loop); }
-const wait = ms => new Promise(r => setTimeout(r, ms));
 
 export function start() {
   if (isOpen()) return;
   build();
-  i = 0;
+  i = 0; settled = false;
   document.body.classList.add('touring');
   requestAnimationFrame(() => root.classList.add('open'));
   showStep();
-  cancelAnimationFrame(raf); loop();
+  cancelAnimationFrame(raf); follow();
 }
 function next() {
+  if (!settled) return;   // debounce: one step at a time
   play('click', 0.4);
   if (i >= STEPS.length - 1) return end(true);
-  i++; showStep(1);
+  i++; showStep();
 }
 export function end(finished) {
   if (!isOpen()) return;
-  i = -1;
+  i = -1; seq++; settled = false;
   cancelAnimationFrame(raf);
-  stopAvatar && stopAvatar(); stopAvatar = null;
+  if (stopAvatar) stopAvatar(); stopAvatar = null;
   if (sheet.isOpen()) sheet.close();
   mascot.raise(false);
-  document.body.classList.remove('touring');
   root.classList.remove('open', 'round');
-  setTimeout(() => { if (!isOpen()) { root.hidden = true; root.innerHTML = ''; } }, reduced() ? 0 : 400);
+  setTimeout(() => { if (!isOpen()) { root.hidden = true; root.innerHTML = ''; document.body.classList.remove('touring'); } }, reduced() ? 0 : 400);
   if (finished) { play('coin', 0.7); mascot.react('celebrate', 'you’re all set!'); }
   if (location.hash.startsWith('#/quest/') || location.hash.startsWith('#/settings')) location.hash = '#/home';
 }

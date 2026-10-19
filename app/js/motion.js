@@ -12,12 +12,14 @@ export const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matc
 export function pageTransition(update, dir = 'fade') {
   const view = document.getElementById('view');
   if (reduced()) { update(); return; }
-  if (document.startViewTransition) {
+  // the tour overlay must stay live during screen changes, so no view-transition snapshot then
+  if (document.startViewTransition && !document.body.classList.contains('touring')) {
     document.documentElement.dataset.vt = dir;
     let ran = false;
     const run = () => { if (!ran) { ran = true; update(); } };
     const vt = document.startViewTransition(run);
-    vt.finished.finally(() => { delete document.documentElement.dataset.vt; });
+    vt.ready.catch(() => {}); vt.updateCallbackDone.catch(() => {});
+    vt.finished.catch(() => {}).finally(() => { delete document.documentElement.dataset.vt; });
     // never hold the screen change hostage to a frame that doesn't come (hidden window, busy device)
     setTimeout(() => { if (!ran) { try { vt.skipTransition(); } catch (e) {} run(); } }, 350);
     return;
