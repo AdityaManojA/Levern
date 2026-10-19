@@ -36,6 +36,16 @@ export function at(s, time) {
 // the moment a quest becomes overdue: its time, or the end of its day
 export const dueTimestamp = q => q.due ? (q.time ? at(q.due, q.time) : at(q.due) + DAY_MS - 1) : null;
 
+// typed times for the time picker: "9", "930", "9:30", "9.30pm", "21:05", "9 pm" → 'HH:MM' (null if not a time)
+export function parseTime(s) {
+  const m = String(s ?? '').trim().toLowerCase().replace(/\s+/g, '').match(/^(\d{1,2})(?:[:.h]?(\d{2}))?(a|am|p|pm)?$/);
+  if (!m) return null;
+  let h = +m[1]; const min = m[2] ? +m[2] : 0, ap = m[3] && m[3][0];
+  if (min > 59 || h > 23 || (ap && (h < 1 || h > 12))) return null;
+  if (ap === 'p' && h < 12) h += 12;
+  if (ap === 'a' && h === 12) h = 0;
+  return `${pad(h)}:${pad(min)}`;
+}
 export function fmtTime(t) {
   const [h, m] = t.split(':').map(Number);
   return `${((h + 11) % 12) + 1}${m ? ':' + pad(m) : ''} ${h < 12 ? 'am' : 'pm'}`;

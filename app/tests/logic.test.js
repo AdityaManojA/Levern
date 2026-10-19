@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseQuest } from '../js/parse.js';
-import { addDays, monthGrid, dueStatus, dueLabel, startOfWeek, addMonths } from '../js/dates.js';
+import { addDays, monthGrid, dueStatus, dueLabel, startOfWeek, addMonths, parseTime } from '../js/dates.js';
 import { nextDue, rollForward, occurrences } from '../js/recur.js';
 import { buildICS, googleLink, rrule } from '../js/ics.js';
 import { dayExp, focusExp, streaks, summary, lastDays } from '../js/stats.js';
@@ -121,4 +121,10 @@ test('stats: EXP, streaks and summary', () => {
   assert.equal(sum.keptThisMonth, 4);
   const last = lastDays(hist, [], 2, 7, NOW);
   assert.equal(last.length, 7); assert.equal(last[6].date, T); assert.equal(last[6].count, 1);
+});
+
+test('parseTime reads what people type into the time picker', () => {
+  const cases = { '9': '09:00', '930': '09:30', '9:30': '09:30', '9.30pm': '21:30', '9 pm': '21:00', '21:05': '21:05', '12am': '00:00', '12pm': '12:00', '1230p': '12:30', ' 7:45 AM ': '07:45' };
+  for (const [s, want] of Object.entries(cases)) assert.equal(parseTime(s), want, s);
+  for (const s of ['', 'soon', '25:00', '9:75', '13pm', '0am']) assert.equal(parseTime(s), null, s);
 });

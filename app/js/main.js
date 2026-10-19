@@ -26,6 +26,8 @@ import * as tour from './views/tour.js';
 import { setupPullToRefresh } from './ptr.js';
 import { check as checkReminders } from './reminders.js';
 import { syncGoogle, googleState, hasToken } from './calendars.js';
+import { startControls } from './controls.js';
+import { startMenu } from './menu.js';
 
 store.init();
 
@@ -137,6 +139,8 @@ $('#top-actions').innerHTML = `<button class="iconbtn bell" data-act="bell" aria
   <a class="iconbtn" href="#/stats" aria-label="Stats">${ICON.stats}</a><a class="iconbtn" href="#/settings" aria-label="Settings">${ICON.settings}</a>`;
 unlockOnGesture();
 preloadSounds();
+startControls();
+startMenu();
 go();
 // Mochi lives on the nav bar
 const mochi = createMochi({

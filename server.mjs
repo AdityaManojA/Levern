@@ -21,7 +21,7 @@ const PORT = +(process.argv[2] || process.env.PORT || 5190);
 const HOST = process.env.HOST || '127.0.0.1';
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.wav': 'audio/wav', '.mp3': 'audio/mpeg',
-  '.ics': 'text/calendar; charset=utf-8', '.md': 'text/markdown; charset=utf-8', '.ico': 'image/x-icon', '.webp': 'image/webp' };
+  '.ics': 'text/calendar; charset=utf-8', '.md': 'text/markdown; charset=utf-8', '.ico': 'image/x-icon', '.webp': 'image/webp', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8' };
 const EMPTY = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//TaskFlow//Quests//EN\r\nX-WR-CALNAME:TaskFlow\r\nEND:VCALENDAR\r\n';
 const MAX_FEED = 2 * 1024 * 1024;
 // only the app itself (same machine) may replace the feed
