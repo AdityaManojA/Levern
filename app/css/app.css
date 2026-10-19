@@ -225,17 +225,28 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .srow .l { flex: 1; min-width: 0; }
 .srow .l b { display: block; font-size: 14px; }
 .srow .l small { font-size: 12px; color: var(--muted); }
-.tog { width: 52px; height: 30px; border-radius: 15px; border: var(--line); background: #fff; position: relative; flex: none; }
-.tog::after { content: ""; position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; transition: left .2s; }
-.tog[aria-checked="true"] { background: var(--mint); }
-.tog[aria-checked="true"]::after { left: 24px; background: var(--ink); }
+/* soft switch: no outline, muted track, white knob that glides; 44px tap target via padding */
+.tog { --w: 46px; --h: 26px; --k: 20px; position: relative; flex: none; width: calc(var(--w) + 12px); height: 44px; margin: -9px -6px; padding: 0;
+  border: none; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tog::before { content: ""; position: absolute; left: 6px; top: 50%; width: var(--w); height: var(--h); margin-top: calc(var(--h) / -2); border-radius: 999px;
+  background: #E6DDCF; box-shadow: inset 0 1px 2px rgba(30,27,24,.12); transition: background .3s var(--ease), box-shadow .3s var(--ease); }
+.tog::after { content: ""; position: absolute; left: 9px; top: 50%; width: var(--k); height: var(--k); margin-top: calc(var(--k) / -2); border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(30,27,24,.18), 0 2px 6px rgba(30,27,24,.10); transition: transform .26s var(--ease), box-shadow .26s var(--ease); }
+.tog:hover::before { background: #DDD3C3; }
+.tog[aria-checked="true"]::before { background: #8FC9A5; box-shadow: inset 0 1px 2px rgba(30,60,40,.12); }
+.tog[aria-checked="true"]:hover::before { background: #84C09B; }
+.tog[aria-checked="true"]::after { transform: translateX(calc(var(--w) - var(--k) - 6px)); }
+.tog:active::after { box-shadow: 0 1px 2px rgba(30,27,24,.2), 0 0 0 6px rgba(143,201,165,.18); }
+.tog:focus { outline: none; }
+.tog:focus-visible::before { box-shadow: inset 0 1px 2px rgba(30,27,24,.12), 0 0 0 3px var(--cream), 0 0 0 5px rgba(30,27,24,.45); }
+.tog:disabled { cursor: default; opacity: .45; }
 .step { display: flex; align-items: center; gap: 8px; flex: none; }
 .step button { width: 32px; height: 32px; border-radius: 50%; border: var(--line); background: #fff; font-weight: 700; }
 .step b { min-width: 24px; text-align: center; }
 .tier-in { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .tier-in i { width: 36px; height: 32px; border-radius: 10px; border: var(--line); background: var(--c); display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 12px; flex: none; }
 .tier-in input { flex: 1; min-width: 0; border: 2px solid var(--ink); border-radius: 10px; padding: 6px 10px; background: #fff; font-weight: 600; outline: none; }
-input[type=range] { accent-color: var(--ink); width: 130px; }
+input[type=range] { accent-color: #7DBB95; width: 130px; }
 
 @media (min-width: 700px) {
   .view { padding-left: 24px; padding-right: 24px; }
@@ -268,7 +279,7 @@ input[type=range] { accent-color: var(--ink); width: 130px; }
 .tab.on .ic { animation: pill .45s var(--ease); }
 @keyframes pill { from { transform: scale(.85); background: transparent; } }
 .tab:active .ic, .add:active, .btn:active, .chk:active, .mini:active, .chip-btn:active { transform: scale(.95); }
-.btn, .mini, .chip, .chk, .iconbtn, .seg button, .pick button, .ropts button, .tog { transition: background .3s var(--ease), color .3s var(--ease), transform .2s var(--ease), box-shadow .3s var(--ease), opacity .3s var(--ease); }
+.btn, .mini, .chip, .chk, .iconbtn, .seg button, .pick button, .ropts button { transition: background .3s var(--ease), color .3s var(--ease), transform .2s var(--ease), box-shadow .3s var(--ease), opacity .3s var(--ease); }
 .add { transition: transform .25s var(--ease), box-shadow .3s var(--ease); }
 
 /* charts grow when a screen opens */
@@ -335,7 +346,6 @@ body.ob-lock { overflow: hidden; }
 .ob-nav { display: flex; gap: 10px; }
 .ob-nav .btn { flex: 1; }
 .ob-nav .btn.ghost { flex: 0 0 auto; }
-.tog:disabled { opacity: .4; }
 @media (prefers-reduced-motion: reduce) { .onboard, .onboard * { transition: none !important; animation: none !important; } }
 
 @media (prefers-reduced-motion: reduce) {

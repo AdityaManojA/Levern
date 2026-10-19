@@ -145,7 +145,7 @@ export function open() {
     const tg = t.closest('[data-ob-target]');
     if (tg) { setSetting('target', +tg.dataset.obTarget, { quiet: true }); play('click', 0.4); return draw(); }
     const tog = t.closest('[data-ob-tog]');
-    if (tog) { const k = tog.dataset.obTog; setSetting(k, !getState().settings[k], { quiet: true }); return draw(); }
+    if (tog) { const k = tog.dataset.obTog, on = !getState().settings[k]; tog.setAttribute('aria-checked', on); setSetting(k, on, { quiet: true }); play('click', 0.4); return; }
     if (t.closest('[data-ob-allow]')) { await requestPermission(); return draw(); }
     if (t.closest('[data-ob-install]')) { await install(); return draw(); }
   });

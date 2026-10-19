@@ -77,8 +77,9 @@ export function render() {
 export const actions = {
   tog: async el => {
     const k = el.dataset.k, on = !getState().settings[k];
-    setSetting(k, on); play('click', 0.5);
-    if (k === 'notify' && on) { await requestPermission(); rerender(); }
+    el.setAttribute('aria-checked', on);   // flip in place so the knob glides
+    setSetting(k, on, { quiet: true }); play('click', 0.5);
+    if (k === 'notify') { if (on) await requestPermission(); setTimeout(rerender, 300); }   // its description changes
   },
   step: el => { const k = el.dataset.k, [lo, hi] = LIMITS[k]; setSetting(k, Math.max(lo, Math.min(hi, getState().settings[k] + STEPS[k] * +el.dataset.d))); play('click', 0.4); },
   perm: async () => { const p = await requestPermission(); toast(p === 'granted' ? 'Notifications allowed' : 'Notifications not allowed'); rerender(); },
