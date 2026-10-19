@@ -232,11 +232,12 @@
   .empty .art img { width: 100%; height: auto; display: block; }
   .empty b { display: block; font-size: 15px; }
 </style>
+<link rel="stylesheet" href="reminders.css">
 </head>
 <body>
 <div class="stage" id="stage">
   <div class="phone" id="phone">
-    <div class="status"><span>9:41</span><span class="dots"><i></i><i></i><i></i></span></div>
+    <div class="status"><span>9:41</span><span class="right"><button class="rbtn" id="rbtn" aria-label="Reminders"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1E1B18" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg><b class="rcount" data-rcount hidden>0</b></button><span class="dots"><i></i><i></i><i></i></span></span></div>
 
     <div class="pages">
       <!-- HOME -->
@@ -316,6 +317,8 @@
       <div class="sec">Subtasks</div>
       <div class="subrow"><input class="field" id="sub-in" placeholder="Add a subtask"><button class="mini" id="sub-add">Add</button></div>
       <div class="chips" id="subs" style="margin-top:8px"></div>
+      <div class="sec">Reminder</div>
+      <div id="remind-pick"></div>
       <div style="height:16px"></div>
       <button class="btn" id="save">Save quest</button>
     </div>
@@ -324,11 +327,13 @@
     <div class="loading" id="loading"><div class="chaser walking"></div><b>Loading…</b><div class="lbar"><i></i></div></div>
     <div class="mochi idle" id="mochi"><div class="flip"><div class="act"></div></div></div>
     <div class="bubble" id="bubble"></div>
+    <div class="rpanel" id="rpanel" role="dialog" aria-label="Reminders"></div>
     <div class="toast" id="toast"></div>
   </div>
 </div>
 
 <script src="mochi.js"></script>
+<script src="reminders.js"></script>
 <script>
 (() => {
   const $ = s => document.querySelector(s);
@@ -337,7 +342,7 @@
   const NAV_COLORS = ['#FFD66B', '#A8D8B9', '#A9D6F0', '#C9B8E8', '#F4A59A'];
   const DEFAULTS = {
     labels: true, navStyle: 'float', navColor: '#FFD66B', tabOrder: ['home', 'quests', 'plan', 'me'],
-    roam: true, speed: 'slow', mochiSound: true, annoy: 5, volume: 0.7, tabClick: true, target: 5,
+    roam: true, speed: 'slow', mochiSound: true, annoy: 5, volume: 0.7, tabClick: true, target: 5, notify: true,
     tierNames: ['Critical', 'High', 'Medium', 'Normal', 'Low', 'Someday'],
   };
   let S = JSON.parse(JSON.stringify(DEFAULTS));
@@ -362,8 +367,8 @@
 
   /* ---------- data ---------- */
   let quests = [
-    { id: 1, title: 'Submit lab report', tier: 0, meta: 'due today', done: false, line: true },
-    { id: 2, title: 'Book dentist', tier: 1, meta: 'due in 2 days', done: false, line: false },
+    { id: 1, title: 'Submit lab report', tier: 0, meta: 'due today', done: false, line: true, remind: { at: Date.now() + 30e3, fired: false } },
+    { id: 2, title: 'Book dentist', tier: 1, meta: 'due in 2 days', done: false, line: false, remind: { at: new Date(new Date().setHours(33, 0, 0, 0)).getTime(), fired: false } },
     { id: 3, title: 'Read chapter 4', tier: 2, meta: 'this week', done: false, line: true },
     { id: 4, title: 'Revise flashcards', tier: 2, meta: 'this week', done: false, line: true },
     { id: 5, title: 'Organise notes folder', tier: 3, meta: 'no date', done: false, line: false },
@@ -418,6 +423,7 @@
     nav.innerHTML = tab(o[0]) + tab(o[1]) +
       `<button class="add" id="add" aria-label="New quest"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>` +
       tab(o[2]) + tab(o[3]);
+    if (window.R) R.paint();
   }
   $('#nav').addEventListener('click', e => {
     const t = e.target.closest('[data-tab]');
@@ -458,9 +464,10 @@
     const emptyCard = quests.some(q => !q.done) ? '' :
       `<div class="card empty"><div class="art"><img class="boxpop" alt=""></div><b>No quests left</b><span class="small">Add one with the + button.</span></div>`;
     $('#qlist').innerHTML = emptyCard + quests.map(q => `
-      <div class="q${q.done ? ' done' : ''}" data-id="${q.id}" style="--c:${TIER_COLORS[q.tier]}">
+      <div class="q${q.done ? ' done' : ''}${q.remind && q.remind.fired && !q.done ? ' due' : ''}" data-id="${q.id}" style="--c:${TIER_COLORS[q.tier]}">
         <button class="chk" aria-label="Complete"></button>
-        <div class="qb"><div class="qt">${q.title}</div><div class="qm">${tierLabel(q.tier)} · ${q.meta}</div></div>
+        <div class="qb"><div class="qt">${q.title}</div><div class="qm">${tierLabel(q.tier)} · ${q.meta}${R.chip(q)}</div></div>
+        ${R.bellButton(q)}
         <div class="handle" aria-label="Drag">${HANDLE}</div>
       </div>`).join('');
     const lineDone = 2 + quests.filter(q => q.line && q.done).length;
@@ -469,8 +476,12 @@
     if (lineDone >= 5 && !lineCelebrated) { lineCelebrated = true; celebrate(); }
   }
   $('#qlist').addEventListener('click', e => {
+    const b = e.target.closest('[data-remind]');
+    if (b) { play('click', { vol: .6 }); return R.openFor(quests.find(x => x.id === +b.closest('.q').dataset.id)); }
     const c = e.target.closest('.chk'); if (!c) return;
-    const q = quests.find(x => x.id === +c.closest('.q').dataset.id);
+    toggleDone(quests.find(x => x.id === +c.closest('.q').dataset.id));
+  });
+  function toggleDone(q) {
     q.done = !q.done;
     play('click');
     renderQuests(); renderHome();
@@ -479,7 +490,8 @@
     else if (q.done && !quests.some(x => !x.done)) Mochi.react('wipe', 0, 'all clean!', null);
     else if (q.done) Mochi.celebrate(['nice!', 'yay!', 'one down'][Math.floor(Math.random() * 3)]);
     else Mochi.react('suspicious', 0, 'hmm… sure?', null);
-  });
+    R.paint();
+  }
   function celebrate() {
     bonusExp += 50;
     play('coin');
@@ -569,7 +581,7 @@
   $('#sub-add').addEventListener('click', () => { const v = $('#sub-in').value.trim(); if (!v) return; subs.push(v); $('#sub-in').value = ''; play('click', { vol: .6 }); renderSubs(); });
   $('#subs').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (!b) return; subs.splice(+b.dataset.i, 1); renderSubs(); });
   function openSheet(prefill) {
-    $('#q-title').value = prefill || ''; pickedByHand = false; subs = []; renderSubs(); detect();
+    $('#q-title').value = prefill || ''; pickedByHand = false; subs = []; renderSubs(); detect(); R.resetSheet();
     $('#mic').classList.remove('listening'); $('#mic-t').textContent = 'Tap and speak'; $('#mic-s').textContent = "Say it like you'd tell a friend";
     $('#sheet').classList.add('open'); $('#scrim').classList.add('on');
     play('click', { vol: .6 });
@@ -582,11 +594,14 @@
     const title = $('#q-title').value.trim();
     if (!title) { toast('Your quest needs a name', 'error', 'Type it or tap the mic.'); Mochi.grumpy('name it first!'); return; }
     const due = ($('#q-title').value.match(RULES[1][0]) || $('#q-title').value.match(RULES[0][0]) || [])[0];
-    quests.push({ id: Date.now(), title, tier: pickTier, meta: due ? due.toLowerCase() : (subs.length ? `${subs.length} subtasks` : 'new'), done: false, line: false });
+    const nq = { id: Date.now(), title, tier: pickTier, meta: due ? due.toLowerCase() : (subs.length ? `${subs.length} subtasks` : 'new'), done: false, line: false };
+    quests.push(nq);
+    const remindAt = R.sheetValue();
+    if (remindAt != null) R.set(nq, remindAt);
     quests.sort((a, b) => a.tier - b.tier);
     play('click'); closeSheet(); renderQuests(); renderHome();
     if (current !== 'quests') go('quests');
-    toast('Quest added!', 'success', `Saved to ${tierLabel(pickTier)}.`);
+    toast('Quest added!', 'success', `Saved to ${tierLabel(pickTier)}.` + (nq.remind ? ` Reminder ${R.when(nq.remind.at)}.` : ''));
     // once he has ducked back down onto the nav, he catches the new quest's badge
     setTimeout(() => Mochi.react('notify', 0, 'new quest!'), 700);
   });
@@ -644,11 +659,16 @@
         <div class="row"><div class="lbl"><b>Preview</b></div><div style="display:flex;gap:6px"><button class="play" data-play="click">Key</button><button class="play" data-play="mew">Mochi</button><button class="play" data-play="coin">Coin</button></div></div>
         <div class="row"><div class="lbl"><b>Theme</b><small>Dark mode comes after light is signed off</small></div><div class="seg2"><button class="on">Light</button><button disabled style="opacity:.4">Dark</button></div></div>
       </div>
+      <div class="sec">Reminders</div>
+      <div class="card">
+        <div class="row"><div class="lbl"><b>System notifications</b><small>${{ granted: 'Allowed. Reminders pop up outside the app too.', denied: 'Blocked in your browser. Reminders show in the app.', unsupported: 'Not available here. Reminders show in the app.', default: 'Asked the first time you set a reminder' }[R.permission()]}</small></div>${tog('notify', S.notify)}</div>
+        <div class="row"><div class="lbl"><b>Try it</b><small>Adds a quest with a reminder in 10 seconds</small></div><button class="play" id="r-test">Test reminder</button></div>
+      </div>
       <button class="btn ghost" id="reset" style="margin-top:4px">Reset to defaults</button>`;
   }
   function apply() { save(); renderNav(); renderQuests(); renderHome(); renderCustom(); renderPick(); Mochi.settingsChanged(); }
   $('#custom').addEventListener('click', e => {
-    const t = e.target.closest('[data-tog]'); if (t) { S[t.dataset.tog] = !S[t.dataset.tog]; play('click', { vol: .6 }); return apply(); }
+    const t = e.target.closest('[data-tog]'); if (t) { S[t.dataset.tog] = !S[t.dataset.tog]; play('click', { vol: .6 }); if (t.dataset.tog === 'notify' && S.notify) R.askPermission().then(renderCustom); return apply(); }
     const sb = e.target.closest('[data-seg] button'); if (sb && !sb.disabled && sb.dataset.v) { S[sb.parentElement.dataset.seg] = sb.dataset.v; play('click', { vol: .6 }); return apply(); }
     const sw = e.target.closest('[data-sw] button'); if (sw) { S[sw.parentElement.dataset.sw] = sw.dataset.v; play('click', { vol: .6 }); return apply(); }
     const up = e.target.closest('[data-up]'), dn = e.target.closest('[data-down]');
@@ -656,6 +676,11 @@
     const st = e.target.closest('[data-step]');
     if (st) { const [k, d] = st.dataset.step.split(':'); const lim = k === 'annoy' ? [3, 10] : [1, 10]; S[k] = Math.max(lim[0], Math.min(lim[1], S[k] + +d)); play('click', { vol: .6 }); return apply(); }
     const pl = e.target.closest('[data-play]'); if (pl) return play(pl.dataset.play);
+    if (e.target.closest('#r-test')) {
+      const q = { id: Date.now(), title: 'Test reminder', tier: 3, meta: 'from Customise', done: false, line: false };
+      quests.push(q); quests.sort((a, b) => a.tier - b.tier); R.set(q, Date.now() + 10e3);
+      play('click', { vol: .6 }); return toast('Reminder set · in 10 s');
+    }
     if (e.target.closest('#reset')) { S = JSON.parse(JSON.stringify(DEFAULTS)); play('click'); apply(); Mochi.react('cry', 0, 'my settings…'); return toast('Settings reset', 'success', 'Everything is back to default.'); }
   });
   $('#custom').addEventListener('input', e => {
@@ -1215,6 +1240,14 @@
     page.addEventListener('pointerup', end); page.addEventListener('pointercancel', end); page.addEventListener('pointerleave', end);
   })();
 
+  /* ---------- reminders (reminders.js) ---------- */
+  const R = window.R = window.TaskflowReminders({
+    quests: () => quests, settings: () => S, toggleDone, go, toast, play, Mochi,
+    tierLabel, tierColor: t => TIER_COLORS[t],
+    render: () => { renderQuests(); renderHome(); },
+    onPermission: () => { if (current === 'me') renderCustom(); },
+  });
+
   /* ---------- start ---------- */
   renderNav(); renderHome(); renderQuests(); renderPlan(); renderCustom(); renderPick();
   document.getElementById('p-home').classList.add('active');
@@ -1222,7 +1255,7 @@
   const chaseLoop = frameLoop($('#loading .chaser img'), 'chase', 11);
   setTimeout(() => { $('#loading').classList.add('done'); setTimeout(() => clearInterval(chaseLoop), 400); }, 1800);
   Mochi.start();
-  window.__tf = { go, openSheet, closeSheet, S, mochi: () => Mochi.pose(), debug: () => Mochi.debug(), walk: x => Mochi.walk(x), Mochi };
+  window.__tf = { go, openSheet, closeSheet, S, R, quests: () => quests, mochi: () => Mochi.pose(), debug: () => Mochi.debug(), walk: x => Mochi.walk(x), Mochi };
 })();
 </script>
 </body>

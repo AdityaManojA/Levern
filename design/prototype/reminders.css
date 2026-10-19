@@ -1,0 +1,39 @@
+/* Reminders: bell + count badge, reminder picker, due-reminders panel */
+.status .right { display: flex; align-items: center; gap: 10px; }
+.rbtn { position: relative; width: 32px; height: 28px; border: 2px solid var(--ink); border-radius: 12px; background: #fff; display: grid; place-items: center; }
+.rbtn.ring svg { animation: ring .9s ease-in-out 2; transform-origin: 50% 10%; }
+@keyframes ring { 15%, 45% { transform: rotate(14deg); } 30%, 60% { transform: rotate(-14deg); } 75% { transform: none; } }
+.rcount { position: absolute; top: -8px; right: -9px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; border: 2px solid var(--ink);
+  background: #F4918A; color: var(--ink); font-size: 11px; font-weight: 700; line-height: 15px; text-align: center; pointer-events: none; }
+.rcount[hidden] { display: none; }
+.tab .ic { position: relative; }
+.tab .rcount { top: -6px; right: -4px; }
+
+.q .rbell { flex: none; width: 30px; height: 30px; border-radius: 10px; border: none; background: none; display: grid; place-items: center; }
+.q .rbell:hover { background: rgba(30,27,24,.08); }
+.q .rbell.set svg { fill: var(--butter); }
+.q.due { outline: 3px solid var(--ink); outline-offset: 2px; }
+.rchip { display: inline-block; margin-left: 4px; padding: 0 6px; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; font-weight: 700; }
+.rchip.due { background: #F4918A; }
+
+.ropts { display: flex; flex-wrap: wrap; gap: 6px; }
+.ropts button { border: 2px solid var(--ink); border-radius: 999px; padding: 5px 11px; background: #fff; font-size: 12px; font-weight: 600; }
+.ropts button.on { background: var(--ink); color: #fff; }
+.rcustom { margin-top: 8px; display: none; }
+.rcustom.on { display: block; }
+.rcustom input { border: 2px solid var(--ink); border-radius: 12px; padding: 7px 10px; background: #fff; font-size: 13px; font-weight: 600; width: 100%; }
+.rnote { margin-top: 6px; }
+
+.rpanel { position: absolute; left: 14px; right: 14px; top: 50px; z-index: 45; background: var(--cream); border: var(--line); border-radius: 24px; padding: 14px 16px 16px;
+  max-height: 560px; overflow-y: auto; scrollbar-width: none; opacity: 0; transform: translateY(-8px); pointer-events: none; transition: opacity .2s, transform .2s; }
+.rpanel.open { opacity: 1; transform: none; pointer-events: auto; }
+.rpanel .rhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.rpanel .rhead b { font-size: 18px; }
+.ritem { border: var(--line); border-radius: 18px; padding: 10px 12px; margin-top: 8px; background: var(--c, #fff); }
+.ritem .rt { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ritem .rw { font-size: 11px; font-weight: 600; }
+.ritem .ract { display: flex; gap: 6px; margin-top: 8px; }
+.ritem .ract button { flex: 1; border: 2px solid var(--ink); border-radius: 12px; background: #fff; padding: 5px 0; font-size: 12px; font-weight: 700; }
+.ritem .ract button.pri { background: var(--ink); color: #fff; }
+.ritem.upcoming { background: #fff; }
+.rempty { text-align: center; padding: 16px 0 6px; }

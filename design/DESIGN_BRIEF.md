@@ -156,6 +156,13 @@ Each step is the real screen, duplicated, with a dimmed overlay, a butter-yellow
 | 8 | Customise | Navigation card | Make it yours |
 | 9 | Dashboard | Mochi on the nav (round spotlight, pulse rings, "tap!" badge) | Meet Mochi. There is no Next button: the tour ends when the user taps the cat, which plays the mascot sound |
 
+## Reminders (prototype: `design/prototype/reminders.js`, `reminders.css`)
+- **Set one:** the "Reminder" row in the add sheet (None, In 1 min, In 15 min, In 1 hour, Tonight 8 pm, Tomorrow 9 am, Pick a time), or the bell on any quest card. Cards show "⏰ in 12 min" until it is due.
+- **When it is due:** a system notification (browser Notification API; permission is asked the first time you set a reminder), an in-app toast, Mochi plays "notify" ("reminder!"), and the quest card gets a bold outline and a "due now" chip.
+- **Count badge:** the red number on the bell in the status bar and on the Quests tab is the number of due reminders. It also shows in the tab title ("(2) TaskFlow") and on the app icon where the Badging API exists. A reminder leaves the count when the quest is done, snoozed (10 min) or dismissed in the bell panel.
+- **Fallback:** if notifications are blocked, unsupported, or switched off in Customise → Reminders, everything still works in the app. Customise → Reminders → "Test reminder" fires one in 10 s.
+- Prototype limit: reminders only fire while the page is open; real background delivery needs a service worker and push (or the native app's local notifications).
+
 ## Rules to build
 - **Streak:** a day counts when at least the daily target (default 5) is completed. Missing a day resets it.
 - **Daily tasks over a month:** 5 tasks per day tracked as a 30-day goal; "22 of 30 days kept" on the dashboard is the example.
