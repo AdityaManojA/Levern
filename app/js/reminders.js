@@ -34,14 +34,24 @@ export async function check() {
     }
   }
   toast(fresh.length > 1 ? `🔔 ${fresh.length} reminders due` : `🔔 Reminder: ${fresh[0].title}`, 'remind');
-  mascot.notify(count);
+  mascot.hold({ count, title: fresh[fresh.length - 1].title });
   play('click', 0.8);
   document.querySelectorAll('.bell').forEach(b => { b.classList.remove('ring'); void b.offsetWidth; b.classList.add('ring'); });
 }
 
+let lastCount = null;
 export function paintBadges() {
   const n = dueReminders().length, txt = n > 99 ? '99+' : String(n);
-  document.querySelectorAll('[data-rcount]').forEach(b => { b.textContent = txt; b.hidden = !n; });
+  const grew = lastCount !== null && n > lastCount;
+  lastCount = n;
+  document.querySelectorAll('[data-rcount]').forEach(b => {
+    b.textContent = txt; b.hidden = !n;
+    if (grew) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+  });
+  document.querySelectorAll('.bell').forEach(b => b.classList.toggle('has-due', !!n));
+  // he only holds a card while something is due; keep its count in step
+  if (!n) mascot.release();
+  else if (mascot.holding()) { const d = dueReminders(); mascot.hold({ count: n, title: d[d.length - 1].title }); }
   document.title = n ? `(${txt}) ${baseTitle}` : baseTitle;
   N.setBadge(n);
 }
@@ -76,6 +86,8 @@ export async function startReminders() {
   });
   subscribe(() => { paintBadges(); mirror(); });
   paintBadges(); mirror();
+  // reminders already due when the app opens: he's holding them
+  const due = dueReminders(); if (due.length) setTimeout(() => mascot.hold({ count: due.length, title: due[due.length - 1].title }), 1500);
   check();
   setInterval(check, 1000);
   document.addEventListener('visibilitychange', check);

@@ -138,6 +138,7 @@ const mochi = createMochi({
   quests: () => store.getState().quests,
   paused: () => onboarding.isOpen() || tour.isOpen(),
   onTap: () => tour.mochiTapped(),
+  onHoldTap: () => { if (!remindersPanel.isOpen()) remindersPanel.open(); },
 });
 setMascot(mochi);
 mochi.start();

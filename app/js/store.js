@@ -61,7 +61,7 @@ export function init(customAdapter) {
 }
 function migrate(s) {
   s.settings = { ...DEFAULT_SETTINGS, ...(s.settings || {}) };
-  s.quests ||= []; s.history ||= []; s.sessions ||= []; s.timer ??= null;
+  s.quests ||= []; s.history ||= []; s.sessions ||= []; s.timer ??= null; s.notifs ||= [];
   for (const q of s.quests) { q.subtasks ||= []; q.notes ??= ''; }
   // saves from v1 never had seeded cleared when quests were added, so never swap their quests for starters
   if ((s.v || 1) < 2) s.seeded = false;
@@ -118,6 +118,7 @@ export function toggleDone(id) {
       return { done: false };
     }
     s.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: Date.now() });
+    noteNotif(s, q.id, 'done');
     if (q.repeat && q.due) {
       const next = rollForward(q.due, q.repeat);
       q.due = next;
@@ -155,11 +156,27 @@ export function setReminder(id, spec) {
 export const isReminderDue = q => !!(q.remind && q.remind.fired && !q.remind.dismissed && !q.done);
 export const dueReminders = () => state.quests.filter(isReminderDue).sort((a, b) => a.remind.at - b.remind.at);
 export const upcomingReminders = () => state.quests.filter(q => q.remind && !q.remind.fired && !q.done).sort((a, b) => a.remind.at - b.remind.at);
-export function markFired(ids) { commit(() => { for (const id of ids) { const q = findQuest(id); if (q && q.remind) q.remind.fired = true; } }); }
-export function snooze(id, min = state.settings.snoozeMin) {
-  commit(() => { const q = findQuest(id); if (q) q.remind = { at: Date.now() + min * 60000, offset: null, fired: false, dismissed: false }; });
+export function markFired(ids) {
+  commit(s => {
+    s.notifs ||= [];
+    for (const id of ids) {
+      const q = findQuest(id); if (!q || !q.remind) continue;
+      q.remind.fired = true;
+      s.notifs.push({ id: q.id, title: q.title, tier: q.tier, at: Date.now(), status: 'due' });
+    }
+    if (s.notifs.length > 50) s.notifs.splice(0, s.notifs.length - 50);
+  });
 }
-export function dismissReminder(id) { commit(() => { const q = findQuest(id); if (q && q.remind) q.remind.dismissed = true; }); }
+// what happened to the latest notification for a quest: 'done' | 'snoozed' | 'dismissed'
+function noteNotif(s, id, status) {
+  const n = (s.notifs || []).slice().reverse().find(x => x.id === id && x.status === 'due');
+  if (n) { n.status = status; n.handledAt = Date.now(); }
+}
+export const recentNotifs = () => (state.notifs || []).filter(n => n.status !== 'due').slice(-10).reverse();
+export function snooze(id, min = state.settings.snoozeMin) {
+  commit(s => { const q = findQuest(id); if (q) q.remind = { at: Date.now() + min * 60000, offset: null, fired: false, dismissed: false }; noteNotif(s, id, 'snoozed'); });
+}
+export function dismissReminder(id) { commit(s => { const q = findQuest(id); if (q && q.remind) q.remind.dismissed = true; noteNotif(s, id, 'dismissed'); }); }
 
 /* ---------- focus timer ----------
    timer = { questId, mode: 'focus'|'break', minutes, startedAt, pausedAt, elapsed } (elapsed = ms before the last start) */

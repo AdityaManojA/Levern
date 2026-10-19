@@ -427,6 +427,31 @@ body:has(.mochi[hidden]) .ptr .ptr-cat { display: none; }
 .ptr.spinning { transition: transform .35s var(--ease); }
 body.ptr-drag { user-select: none; cursor: grabbing; }
 
+/* the reminder Mochi holds up: bobs gently above his paw */
+.mcard { position: fixed; left: 0; top: 0; z-index: 34; border: none; background: none; padding: 0; cursor: pointer; }
+.mcard[hidden] { display: none; }
+.mcard-in { display: flex; align-items: center; gap: 7px; max-width: 190px; background: #fff; border: var(--line); border-radius: 14px; padding: 6px 10px 6px 7px;
+  font-weight: 700; font-size: 12.5px; box-shadow: 0 6px 14px -8px rgba(30,27,24,.35); animation: bob 2.6s ease-in-out infinite; }
+.mcard:not(.still) .mcard-in { animation: bob 2.6s ease-in-out infinite; }
+.mcard.still .mcard-in { animation: none; }
+.mcard-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.mcard-bell { width: 22px; height: 22px; border-radius: 50%; background: var(--butter); border: 2px solid var(--ink); flex: none; position: relative; }
+.mcard-bell::after { content: ""; position: absolute; inset: 3px; background: var(--ink);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0' fill='black'/%3E%3C/svg%3E") center / contain no-repeat; }
+.mcard:focus-visible .mcard-in { outline: 3px solid var(--ink); outline-offset: 2px; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+body.ob-lock .mcard { visibility: hidden; }
+/* bell at the top: soft butter when something is due, the badge pops when one arrives */
+.bell.has-due { background: var(--butter); }
+.rcount.pop { animation: badge-pop .5s cubic-bezier(.22,1,.36,1); }
+@keyframes badge-pop { 0% { transform: scale(.4); } 55% { transform: scale(1.25); } 100% { transform: none; } }
+.rpast { display: grid; gap: 6px; margin-top: 4px; }
+.rpast-i { display: flex; align-items: center; gap: 8px; border: 2px solid rgba(30,27,24,.15); border-radius: 12px; background: #fff; padding: 7px 10px; text-align: left; min-width: 0; }
+.rpast-i .dotc { width: 10px; height: 10px; }
+.rpast-i .rt { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (prefers-reduced-motion: reduce) { .mcard-in, .rcount.pop { animation: none !important; } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after, ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { transition: none !important; animation: none !important; }
 }

@@ -5,11 +5,13 @@ import { $, esc, sheet, toast, play, ICON } from '../ui.js';
 import { permission, requestPermission, supported } from '../notify.js';
 import { reminderPicker, bindPicker } from './common.js';
 import { morph } from '../motion.js';
+import { mascot } from '../mascot.js';
+import { recentNotifs } from '../store.js';
 import { completeQuest } from '../complete.js';
 
 const panel = () => $('#rpanel');
 export const isOpen = () => panel().classList.contains('open');
-export function open() { render(); panel().classList.add('open'); }
+export function open() { render(); panel().classList.add('open'); mascot.release(); }
 export function close() { panel().classList.remove('open'); }
 export function toggle() { play('click', 0.5); isOpen() ? close() : open(); }
 
@@ -31,11 +33,14 @@ function draw() {
       <div class="ract">${due ? `<button class="pri" data-act="r-done" data-id="${q.id}">Done</button><button data-act="r-snooze" data-id="${q.id}">Snooze ${snoozeMin} min</button><button data-act="r-dismiss" data-id="${q.id}">Dismiss</button>`
         : `<button data-act="open-r" data-id="${q.id}">Open</button><button data-act="r-remove" data-id="${q.id}">Remove</button>`}</div>
     </div>`;
-  panel().innerHTML = `<div class="rhead"><b>Reminders</b><button class="iconbtn" data-act="r-close" aria-label="Close" style="width:34px;height:34px">${ICON.x}</button></div>
+  const past = recentNotifs(), LABEL = { done: 'Done', snoozed: 'Snoozed', dismissed: 'Dismissed' };
+  panel().innerHTML = `<div class="rhead"><b>Notifications</b><button class="iconbtn" data-act="r-close" aria-label="Close" style="width:34px;height:34px">${ICON.x}</button></div>
     <div class="small">${d.length ? `${d.length} due now` : 'Nothing due right now'}</div>
     ${d.map(q => item(q, true)).join('')}
     ${u.length ? `<div class="sec">Coming up</div>${u.map(q => item(q, false)).join('')}` : ''}
-    ${!d.length && !u.length ? '<p class="small" style="padding:14px 0 4px">No reminders yet. Tap the bell on any quest to add one.</p>' : ''}
+    ${past.length ? `<div class="sec">Earlier</div><div class="rpast">${past.map(n => `<button data-key="p-${n.id}-${n.at}" class="rpast-i" data-act="open-r" data-id="${n.id}" style="--c:${TIER_COLORS[n.tier ?? 3]}">
+        <span class="dotc"></span><span class="rt">${esc(n.title)}</span><span class="small">${LABEL[n.status] || ''} · ${esc(relTime(n.at))}</span></button>`).join('')}</div>` : ''}
+    ${!d.length && !u.length && !past.length ? '<p class="small" style="padding:14px 0 4px">No notifications yet. Tap the bell on any quest to set a reminder.</p>' : ''}
     ${permNote()}`;
 }
 

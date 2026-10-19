@@ -56,12 +56,15 @@ export function createMochi(env) {
   el.innerHTML = '<div class="flip"><div class="act"></div></div>';
   const flip = el.querySelector('.flip'), act = el.querySelector('.act');
   const bub = document.createElement('div'); bub.className = 'mbubble'; bub.setAttribute('aria-live', 'polite');
-  document.body.append(el, bub);
+  // the reminder he holds up: floats just above his raised paw and bobs gently until it's opened
+  const card = document.createElement('button'); card.type = 'button'; card.className = 'mcard'; card.hidden = true;
+  card.innerHTML = '<span class="mcard-in"><span class="mcard-bell" aria-hidden="true"></span><span class="mcard-t"></span><b class="mcard-n"></b></span>';
+  document.body.append(el, bub, card);
   for (const n in A) { const im = new Image(); im.src = stripUrl(n); }
 
   M = { cx: innerWidth / 2 + 120, dir: -1, anim: 'rest', fi: 1, timer: null, state: 'idle', perch: 'nav', busy: false, target: 0, onArrive: null, next: 0,
     lastActive: Date.now(), clicks: [], lastTap: 0, annoyedUntil: 0, bubbleUntil: 0, pending: null, asleep: false, held: false, slide: null,
-    lift: 0, liftTo: 0, sprint: false, p1Seen: 0, homeVisits: 0, hidden: false };
+    lift: 0, liftTo: 0, sprint: false, p1Seen: 0, homeVisits: 0, hidden: false, holding: null };
 
   /* drawing */
   const nav = () => document.getElementById('nav');
@@ -86,7 +89,12 @@ export function createMochi(env) {
     el.style.transform = `translate(${M.cx - a.ax}px, ${y}px)`;
     flip.style.transform = mirrored(a, M.fi) ? 'scaleX(-1)' : '';
     el.style.clipPath = (M.perch === 'sheet' && a.edge != null) ? `inset(0 0 ${Math.max(0, a.h - a.edge + M.lift)}px 0)` : '';
-    if (Date.now() < M.bubbleUntil) {
+    if (M.holding && !M.hidden) {
+      const cw = card.offsetWidth || 150, ch = card.offsetHeight || 40;
+      const pawX = M.cx + (mirrored(a, M.fi) ? -20 : 20), top = y + a.gy - V.sit + 12 - ch;   // resting on his raised paw
+      card.style.transform = `translate(${Math.round(Math.max(8, Math.min(innerWidth - 8 - cw, pawX - cw / 2)))}px, ${Math.round(top)}px)`;
+    }
+    if (Date.now() < M.bubbleUntil && !M.holding) {
       const w = bub.offsetWidth, h = bub.offsetHeight || 26, by = y + a.gy - V.sit - 44;
       let bx = Math.max(8, Math.min(innerWidth - 8 - w, M.cx - w / 2));
       // never cover a red count badge (Quests tab, bell)
@@ -185,6 +193,27 @@ export function createMochi(env) {
     play(g, { dir: M.dir, from: A[g].frames, to: 1, then: done });
   }
 
+  /* holding a reminder */
+  const HOLD = { name: 'wave', frame: 3 };   // paw raised high, nothing drawn in it
+  function holdPose(fromStart) {
+    stop(); stopLook();
+    Object.assign(M, { busy: true, pending: null, state: 'hold', asleep: false });
+    if (fromStart && !reduced()) play(HOLD.name, { from: 1, to: HOLD.frame, hold: true });
+    else { M.anim = HOLD.name; M.fi = HOLD.frame; render(); }
+  }
+  function showCard(info, isNew) {
+    card.querySelector('.mcard-t').textContent = info.count > 1 ? `${info.count} reminders` : info.title;
+    card.querySelector('.mcard-n').textContent = info.count > 1 ? '' : '';
+    card.setAttribute('aria-label', (info.count > 1 ? `${info.count} reminders due` : `Reminder: ${info.title}`) + '. Open notifications.');
+    const appear = card.hidden;
+    card.hidden = false;
+    if (!reduced() && (appear || isNew)) card.querySelector('.mcard-in').animate(appear
+      ? [{ opacity: 0, transform: 'translateY(-14px) scale(.85)' }, { opacity: 1, transform: 'none' }]
+      : [{ transform: 'scale(1)' }, { transform: 'scale(1.12)', offset: .4 }, { transform: 'scale(1)' }], { duration: appear ? 520 : 380, easing: 'cubic-bezier(.22,1,.36,1)' });
+    card.classList.toggle('still', reduced());
+  }
+  card.addEventListener('click', e => { e.stopPropagation(); env.onHoldTap && env.onHoldTap(); });
+
   /* deciding */
   // Idles and tap reactions are drawn from weighted pools, never repeating any of the last few,
   // so he doesn't fall into a visible cycle. Seamless ones (start and end on the resting pose) are favoured.
@@ -254,6 +283,7 @@ export function createMochi(env) {
   function tap(e) {
     const now = Date.now(); M.lastActive = now;
     if (env.onTap && env.onTap()) return;   // the tour's last step finishes on a tap
+    if (M.holding) { env.onHoldTap && env.onHoldTap(); return; }
     if (now < M.annoyedUntil) { say('…', 800, true); return; }
     if (M.asleep) { wakeUp('!!'); return; }
     if (M.state === 'walk' || M.state === 'prep' || M.perch !== 'nav') return;
@@ -302,9 +332,9 @@ export function createMochi(env) {
     if (!reduced()) act.animate([{ transform: 'scale(1.14, .82)' }, { transform: 'scale(.96, 1.05)', offset: .55 }, { transform: 'none' }], { duration: 320, easing: 'ease-out' });
     M.lastActive = Date.now();
     M.state = 'idle'; M.busy = true;
-    say(['oof!', 'mrp.', 'again?', '*lands*'][Math.floor(Math.random() * 4)], 1100);
-    // lands crouched (startled frames 4–6 end on the resting pose)
-    play('startled', { from: 4, to: A.startled.frames, then: () => { goRest(); schedule(2.5, 5); } });
+    if (!M.holding) say(['oof!', 'mrp.', 'again?', '*lands*'][Math.floor(Math.random() * 4)], 1100);
+    // lands crouched (startled frames 4–6 end on the resting pose); still holding a reminder? paw back up
+    play('startled', { from: 4, to: A.startled.frames, then: () => { if (M.holding) holdPose(true); else { goRest(); schedule(2.5, 5); } } });
   }
   el.addEventListener('pointerdown', e => {
     e.stopPropagation();
@@ -313,7 +343,7 @@ export function createMochi(env) {
     press = { x: e.clientX, y: e.clientY, id: e.pointerId, drag: false, t: null };
     if (Date.now() < M.annoyedUntil) return;
     press.t = setTimeout(() => {
-      if (!press || press.drag || M.state === 'walk' || M.state === 'prep' || M.asleep) return;
+      if (!press || press.drag || M.state === 'walk' || M.state === 'prep' || M.asleep || M.holding) return;
       Object.assign(M, { held: true, busy: true, pending: null, slide: null });
       const a = A['heart-eyes']; play('heart-eyes', { to: a.loop[1], loop: a.loop }); mew(1.1); say('purr…', 1400);
       press.t = setTimeout(endHeld, 6000);   // never loops forever
@@ -417,10 +447,10 @@ export function createMochi(env) {
   const busyMoving = () => M.state === 'walk' || M.state === 'prep' || M.state === 'drag' || M.state === 'fall';
   const api = {
     el, say,
-    setVisible(on) { M.hidden = !on; el.hidden = !on; bub.hidden = !on; if (on) { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); goRest(); } },
+    setVisible(on) { M.hidden = !on; el.hidden = !on; bub.hidden = !on; if (!on) card.hidden = true; else if (M.holding) card.hidden = false; if (on) { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); goRest(); } },
     enterPage(page) {
       M.lastActive = Date.now();
-      if (Date.now() < M.annoyedUntil || M.held || M.perch !== 'nav' || busyMoving() || M.hidden || env.paused()) return;
+      if (Date.now() < M.annoyedUntil || M.held || M.perch !== 'nav' || busyMoving() || M.hidden || env.paused() || M.holding) return;
       M.asleep = false; stopLook(); M.busy = false; M.pending = null; goRest();
       const urgent = env.quests().some(q => q.tier === 0 && !q.done);
       if (page === 'quests' && urgent) { M.p1Seen++; if (M.p1Seen > 1 && M.p1Seen % 3 === 0) strike('grumpy', 'that P1 is STILL open!', true); else if (M.p1Seen === 1) strike('surprised', 'a P1 is due!'); }
@@ -432,7 +462,7 @@ export function createMochi(env) {
     },
     // focus timer: he dozes off while you focus, wakes when you stop
     focusMode(on) {
-      if (M.hidden || M.perch !== 'nav') return;
+      if (M.hidden || M.perch !== 'nav' || M.holding) return;
       if (on && !M.asleep && !busyMoving()) { M.busy = false; setTimeout(fallAsleep, 600); }
       if (!on && M.asleep) wakeUp('*stretch*');
     },
@@ -440,6 +470,7 @@ export function createMochi(env) {
       M.held = false; M.asleep = false; stopLook();
       if (M.hidden) { M.perch = perch === 'sheet' ? 'sheet' : 'nav'; return; }
       if (perch === 'sheet') {
+        card.style.visibility = 'hidden';
         Object.assign(M, { perch: 'sheet', busy: true, state: 'idle', dir: -1 });
         const [a, b] = bounds(); M.cx = (a + b) / 2;
         el.classList.add('over');
@@ -449,34 +480,48 @@ export function createMochi(env) {
         M.perchT = setTimeout(() => { M.liftRate = 10; M.liftTo = 0; }, 360);
       } else if (M.perch === 'sheet') {
         clearTimeout(M.perchT); M.liftRate = 24; M.liftTo = A['edge-peek'].h;
-        setTimeout(() => { M.perch = 'nav'; el.classList.remove('over'); M.lift = 0; M.liftTo = 0; const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); goRest(); schedule(1.5, 3); }, 180);
+        setTimeout(() => { M.perch = 'nav'; el.classList.remove('over'); M.lift = 0; M.liftTo = 0; const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); card.style.visibility = '';
+          if (M.holding) holdPose(true); else { goRest(); schedule(1.5, 3); } }, 180);
       }
     },
     react(name, text, mad) {
       if (M.hidden) return;
+      if (M.holding) return;   // busy holding a reminder
       if (Date.now() < M.annoyedUntil || M.held || busyMoving() || M.perch !== 'nav') { if (text) say(text, 1200, mad); return; }
       stopLook(); M.busy = false; M.asleep = false;
       if (A[name] && A[name].face === 'R') M.dir = 1;
       strike(name, text, mad);
     },
     celebrate(text) { this.react('celebrate', text || 'yay!'); },
-    notify(count) {
-      if (M.hidden) return;
-      const text = count > 1 ? `${count} reminders!` : 'reminder!';
-      if (M.asleep) { M.asleep = false; M.busy = false; }
-      const tab = nav().querySelector('.tab[href="#/quests"]');
-      if (!tab || !S().roam || reduced() || M.held || M.state === 'drag' || M.state === 'fall' || M.perch !== 'nav' || Date.now() < M.annoyedUntil) return this.react('notify', text);
-      const r = tab.getBoundingClientRect(), [lo, hi] = bounds();
-      const x = Math.max(lo, Math.min(hi, r.left - 4));   // just left of the Quests tab: badge and + stay clear
-      if (Math.abs(x - M.cx) < 30 || busyMoving()) return this.react('notify', text);
-      M.onArrive = () => { M.busy = false; strike('notify', text); };
-      walkTo(x);
+    // a reminder fired: he stays where he is and holds it up until it's opened
+    hold(info) {
+      if (M.hidden || !info || !info.count) return;
+      const isNew = !M.holding || info.count > M.holding.count;
+      const wasHolding = !!M.holding;
+      M.holding = info;
+      if (M.state === 'drag' || M.state === 'fall') { showCard(info, isNew); return; }   // keeps it while carried; paw goes up on landing
+      if (M.state === 'walk' || M.state === 'prep') { M.state = 'idle'; }   // stops right there
+      if (M.asleep) M.asleep = false;
+      if (M.perch !== 'nav') { showCard(info, isNew); return; }
+      if (!wasHolding) { holdPose(true); mew(1.05, 0.8); }
+      showCard(info, isNew);
     },
+    // the notifications were opened (or everything was handled): he lets go of the card calmly
+    release() {
+      if (!M.holding) return;
+      M.holding = null;
+      const inner = card.querySelector('.mcard-in');
+      const done = () => { card.hidden = true; };
+      if (reduced()) done();
+      else inner.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-18px) scale(.9)' }], { duration: 360, easing: 'cubic-bezier(.55,0,.75,.25)' }).finished.then(done, done);
+      if (M.state === 'hold') { M.busy = true; play(HOLD.name, { from: HOLD.frame, to: A[HOLD.name].frames, then: () => { goRest(); schedule(2, 4); } }); }
+    },
+    holding: () => !!M.holding,
     grumpy(text) { this.react('grumpy', text, true); mew(0.8); },
     rect: () => el.getBoundingClientRect(),
     raise(on) { el.classList.toggle('raised', on); bub.classList.toggle('raised', on); },
     // pull to refresh borrows him as its indicator; the one on the bar steps out meanwhile
-    away(on) { el.style.visibility = on ? 'hidden' : ''; if (on) bub.classList.remove('show'); },
+    away(on) { el.style.visibility = on ? 'hidden' : ''; card.style.visibility = on ? 'hidden' : ''; if (on) bub.classList.remove('show'); },
     settingsChanged() { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); if (!M.busy && !M.asleep && M.state === 'idle') goRest(); schedule(0.5, 1.5); },
     debug: () => ({ cx: Math.round(M.cx), anim: M.anim, fi: M.fi, state: M.state, busy: M.busy, perch: M.perch, asleep: M.asleep, hidden: M.hidden }),
     show(name, fi) { if (!has(name)) return false; stop(); stopLook(); M.busy = true; M.anim = name; M.fi = fi || 1; render(); return true; },
