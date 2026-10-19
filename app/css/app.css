@@ -5,7 +5,7 @@
   --mint: #A8D8B9; --coral: #F4A59A; --lav: #C9B8E8; --butter: #FFD66B; --sky: #A9D6F0;
   --p1: #F4918A; --p2: #F9B77E; --p3: #FFE08A; --p4: #B9E7CC; --p5: #A9D6F0; --p6: #D4C4F2;
   --red: #C8372D; --line: 2.5px solid var(--ink); --r: 20px;
-  --nav-h: 68px; --safe-b: env(safe-area-inset-bottom, 0px);
+  --nav-h: 68px; --ease: cubic-bezier(.22, 1, .36, 1); --ease-in: cubic-bezier(.55, 0, .75, .25); --safe-b: env(safe-area-inset-bottom, 0px);
   color-scheme: light;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -112,11 +112,13 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .add:active { transform: scale(.94); }
 
 /* sheet, panel, dialog, toast */
-.scrim { position: fixed; inset: 0; background: rgba(30,27,24,.35); z-index: 40; opacity: 0; pointer-events: none; transition: opacity .25s; }
-.scrim.on { opacity: 1; pointer-events: auto; }
+.scrim { position: fixed; inset: 0; background: rgba(30,27,24,.35); z-index: 40; opacity: 0; pointer-events: none; transition: opacity .45s var(--ease); }
+.scrim.on { opacity: 1; pointer-events: auto; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
 .sheet { position: fixed; left: 50%; bottom: 0; width: min(640px, 100%); max-height: 92vh; transform: translate(-50%, 105%); z-index: 41; background: var(--cream); border: var(--line); border-bottom: none;
-  border-radius: 28px 28px 0 0; padding: 10px 18px calc(22px + var(--safe-b)); overflow-y: auto; transition: transform .3s cubic-bezier(.2,.8,.2,1); visibility: hidden; }
-.sheet.open { transform: translate(-50%, 0); visibility: visible; }
+  border-radius: 28px 28px 0 0; padding: 10px 18px calc(22px + var(--safe-b)); overflow-y: auto; transition: transform .38s var(--ease-in), visibility 0s linear .38s; visibility: hidden; }
+.sheet.open { transform: translate(-50%, 0); visibility: visible; transition: transform .55s var(--ease), visibility 0s; }
+.sheet.open > * { animation: rise .55s var(--ease) both; }
+.sheet.open > *:nth-child(n+3) { animation-delay: 40ms; }
 .grab { width: 44px; height: 5px; border-radius: 3px; background: var(--ink); opacity: .3; margin: 0 auto 10px; }
 .sheet-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .sheet-h b { font-size: 21px; }
@@ -136,8 +138,8 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .rcustom { margin-top: 8px; }
 
 .rpanel { position: fixed; z-index: 35; top: 64px; right: max(12px, calc(50% - 308px)); width: min(380px, calc(100% - 24px)); max-height: calc(100vh - 180px); overflow-y: auto;
-  background: var(--cream); border: var(--line); border-radius: 22px; padding: 14px 14px 16px; opacity: 0; transform: translateY(-8px); pointer-events: none; transition: opacity .18s, transform .18s; }
-.rpanel.open { opacity: 1; transform: none; pointer-events: auto; }
+  background: var(--cream); border: var(--line); border-radius: 22px; padding: 14px 14px 16px; opacity: 0; transform: translateY(-8px); pointer-events: none; transform-origin: top right; transform: translateY(-6px) scale(.97); transition: opacity .25s var(--ease-in), transform .25s var(--ease-in); }
+.rpanel.open { opacity: 1; transform: none; pointer-events: auto; transition: opacity .4s var(--ease), transform .45s var(--ease); }
 .rhead { display: flex; justify-content: space-between; align-items: center; }
 .rhead b { font-size: 18px; }
 .ritem { border: var(--line); border-radius: 16px; padding: 10px 12px; margin-top: 8px; background: var(--c, #fff); }
@@ -149,11 +151,12 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .ritem .ract button.pri { background: var(--ink); color: #fff; }
 
 .dialog { margin: auto; border: var(--line); border-radius: 22px; padding: 18px; background: var(--cream); width: min(360px, calc(100% - 32px)); }
-.dialog::backdrop { background: rgba(30,27,24,.4); }
+.dialog::backdrop { background: rgba(30,27,24,.4); backdrop-filter: blur(2px); animation: fade .4s var(--ease); }
+.dialog[open] { animation: rise .45s var(--ease); }
 .dialog p { font-weight: 600; margin-bottom: 14px; }
 .toast { position: fixed; left: 50%; top: 14px; transform: translate(-50%, -16px); z-index: 60; background: var(--ink); color: #fff; border-radius: 14px; padding: 10px 16px;
-  font-weight: 600; font-size: 14px; opacity: 0; transition: .25s; pointer-events: none; max-width: calc(100% - 32px); }
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
+  font-weight: 600; font-size: 14px; opacity: 0; transition: opacity .3s var(--ease-in), transform .35s var(--ease-in); pointer-events: none; max-width: calc(100% - 32px); }
+.toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); transition: opacity .45s var(--ease), transform .55s var(--ease); }
 .toast.good { background: #DDF3E4; color: var(--ink); border: var(--line); }
 .toast.remind { background: var(--butter); color: var(--ink); border: var(--line); }
 
@@ -238,4 +241,62 @@ input[type=range] { accent-color: var(--ink); width: 130px; }
   .view { padding-left: 24px; padding-right: 24px; }
   .grid4 { grid-template-columns: repeat(4, 1fr); }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+
+/* ---------- calm motion ----------
+   One easing for everything (--ease: soft ease-out, no bounce). Things arrive slowly and leave a little faster. */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } }
+
+/* screen changes: View Transitions API (Chrome, Edge, Safari 18) */
+.top { view-transition-name: top; }
+.nav { view-transition-name: nav; }
+::view-transition-group(root) { animation-duration: .45s; }
+::view-transition-old(root) { animation: vt-out .22s var(--ease-in) both; }
+::view-transition-new(root) { animation: vt-in .48s var(--ease) .06s both; }
+:root { --vt-x: 0px; --vt-y: 10px; }
+:root[data-vt="forward"] { --vt-x: 26px; --vt-y: 0px; }
+:root[data-vt="back"] { --vt-x: -26px; --vt-y: 0px; }
+:root[data-vt="right"] { --vt-x: 16px; --vt-y: 4px; }
+:root[data-vt="left"] { --vt-x: -16px; --vt-y: 4px; }
+@keyframes vt-out { to { opacity: 0; transform: translate(calc(var(--vt-x) * -.5), calc(var(--vt-y) * -.4)) scale(.99); filter: blur(1px); } }
+@keyframes vt-in { from { opacity: 0; transform: translate(var(--vt-x), var(--vt-y)) scale(.995); filter: blur(1px); } }
+::view-transition-old(nav), ::view-transition-new(nav), ::view-transition-old(top), ::view-transition-new(top) { animation-duration: .3s; }
+
+/* the active tab's pill eases in */
+.tab .ic { transition: background .35s var(--ease), border-color .35s var(--ease), transform .35s var(--ease); }
+.tab.on .ic { animation: pill .45s var(--ease); }
+@keyframes pill { from { transform: scale(.85); background: transparent; } }
+.tab:active .ic, .add:active, .btn:active, .chk:active, .mini:active, .chip-btn:active { transform: scale(.95); }
+.btn, .mini, .chip, .chk, .iconbtn, .seg button, .pick button, .ropts button, .tog { transition: background .3s var(--ease), color .3s var(--ease), transform .2s var(--ease), box-shadow .3s var(--ease), opacity .3s var(--ease); }
+.add { transition: transform .25s var(--ease), box-shadow .3s var(--ease); }
+
+/* charts grow when a screen opens */
+.entering .chart b { animation: grow .7s var(--ease) both; transform-origin: bottom; }
+.entering .chart b:nth-child(3n+1) { animation-delay: 30ms; } .entering .chart b:nth-child(3n+2) { animation-delay: 60ms; } .entering .chart b:nth-child(3n) { animation-delay: 90ms; }
+@keyframes grow { from { transform: scaleY(0); opacity: 0; } }
+.bar > i { transition: width .6s var(--ease); }
+.entering .bar > i { animation: fill .8s var(--ease) .1s both; transform-origin: left; }
+@keyframes fill { from { transform: scaleX(0); } }
+
+
+/* focus: setup controls fold away one after another, then come back the same way */
+.zc { display: grid; grid-template-rows: 1fr; opacity: 1; transform: none;
+  transition: grid-template-rows .55s var(--ease), opacity .4s var(--ease), transform .5s var(--ease);
+  transition-delay: calc(var(--i, 0) * 55ms); }
+.zc > div { min-height: 0; overflow: hidden; }
+.zc.out { grid-template-rows: 0fr; opacity: 0; transform: translateY(-8px) scale(.985); pointer-events: none;
+  transition: grid-template-rows .5s var(--ease), opacity .28s var(--ease-in), transform .4s var(--ease-in); transition-delay: calc(var(--i, 0) * 45ms); }
+.focus-card { text-align: center; transition: background .8s var(--ease), box-shadow .8s var(--ease); }
+.focus-card.is-break { background: #EAF5FC; }
+.focus-card.running { animation: breathe 8s ease-in-out infinite; }
+.focus-card.is-break.running { animation-name: breathe-sky; }
+@keyframes breathe { 0%, 100% { box-shadow: 0 0 0 0 rgba(244,145,138,0); } 50% { box-shadow: 0 0 0 10px rgba(244,145,138,.16); } }
+@keyframes breathe-sky { 0%, 100% { box-shadow: 0 0 0 0 rgba(169,214,240,0); } 50% { box-shadow: 0 0 0 10px rgba(169,214,240,.35); } }
+.timer [data-ring] { transition: stroke-dashoffset .3s linear, stroke .6s var(--ease); }
+.timer .t { transition: transform .5s var(--ease); }
+.focus-card.running .timer .t { transform: scale(1.04); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after, ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { transition: none !important; animation: none !important; }
+}

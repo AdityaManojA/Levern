@@ -20,7 +20,7 @@ export function questRow(q, now = new Date()) {
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',
     reminderChip(q),
   ].join('');
-  return `<div class="q${q.done ? ' done' : ''}${st === 'overdue' ? ' overdue' : ''}${isReminderDue(q) ? ' rdue' : ''}" style="--c:${TIER_COLORS[q.tier]}">
+  return `<div data-key="q-${q.id}" class="q${q.done ? ' done' : ''}${st === 'overdue' ? ' overdue' : ''}${isReminderDue(q) ? ' rdue' : ''}" style="--c:${TIER_COLORS[q.tier]}">
     <button class="chk" data-act="toggle" data-id="${q.id}" aria-label="${q.done ? 'Mark not done' : 'Complete'}: ${esc(q.title)}"></button>
     <button class="qb" data-act="open" data-id="${q.id}"><span class="qt">${esc(q.title)}</span><span class="qm">${meta}</span></button>
     <button class="qbell${q.remind && !q.done && !q.remind.dismissed ? ' set' : ''}" data-act="remind-edit" data-id="${q.id}" aria-label="Reminder for ${esc(q.title)}">${ICON.bell}</button>

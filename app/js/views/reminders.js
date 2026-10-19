@@ -4,6 +4,7 @@ import { fmtStamp, relTime } from '../dates.js';
 import { $, esc, sheet, toast, play, ICON } from '../ui.js';
 import { permission, requestPermission, supported } from '../notify.js';
 import { reminderPicker, bindPicker } from './common.js';
+import { morph } from '../motion.js';
 import { completeQuest } from '../complete.js';
 
 const panel = () => $('#rpanel');
@@ -21,9 +22,10 @@ export function permNote() {
   return '<p class="small" style="margin-top:10px">Get reminders outside the app too. <button class="mini" data-act="allow-notify">Allow notifications</button></p>';
 }
 
-export function render() {
+export function render() { morph(panel(), draw); }
+function draw() {
   const d = dueReminders(), u = upcomingReminders().slice(0, 12), snoozeMin = getState().settings.snoozeMin;
-  const item = (q, due) => `<div class="ritem${due ? '' : ' upcoming'}" style="--c:${TIER_COLORS[q.tier]}">
+  const item = (q, due) => `<div data-key="r-${q.id}" class="ritem${due ? '' : ' upcoming'}" style="--c:${TIER_COLORS[q.tier]}">
       <div class="rt">${esc(q.title)}</div>
       <div class="rw">${esc(tierLabel(q.tier))} · ${due ? 'went off ' + esc(relTime(q.remind.at)) : esc(fmtStamp(q.remind.at))}</div>
       <div class="ract">${due ? `<button class="pri" data-act="r-done" data-id="${q.id}">Done</button><button data-act="r-snooze" data-id="${q.id}">Snooze ${snoozeMin} min</button><button data-act="r-dismiss" data-id="${q.id}">Dismiss</button>`

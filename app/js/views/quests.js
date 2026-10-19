@@ -1,6 +1,7 @@
 // Quests list: filters (Today / Upcoming / Someday / Done / All), sorting and search.
 import { getState, sortQuests, SORTS } from '../store.js';
 import { dueStatus } from '../dates.js';
+import { swap, morph } from '../motion.js';
 import { esc } from '../ui.js';
 import { questRow } from './common.js';
 
@@ -29,8 +30,8 @@ export function render(params) {
       <span class="small">${query ? 'Try another word.' : 'Tap + to add one. Try "Call mum tomorrow at 6pm".'}</span></div>`;
   } else if (filter === 'today' && sort === 'smart') {
     const od = list.filter(q => dueStatus(q) === 'overdue'), td = list.filter(q => dueStatus(q) !== 'overdue');
-    body = (od.length ? `<div class="group-h red">Overdue · ${od.length}</div>${od.map(q => questRow(q)).join('')}` : '') +
-      (td.length ? `<div class="group-h">Due today · ${td.length}</div>${td.map(q => questRow(q)).join('')}` : '');
+    body = (od.length ? `<div class="group-h red" data-key="g-od">Overdue · ${od.length}</div>${od.map(q => questRow(q)).join('')}` : '') +
+      (td.length ? `<div class="group-h" data-key="g-td">Due today · ${td.length}</div>${td.map(q => questRow(q)).join('')}` : '');
   } else body = list.map(q => questRow(q)).join('');
   const count = f => all.filter(q => inFilter(q, f)).length;
   return `
@@ -53,7 +54,7 @@ export function onInput(el) {
   query = el.value;
   // re-render the list only, so the search box keeps focus
   const tmp = document.createElement('div'); tmp.innerHTML = render({});
-  document.getElementById('qlist').replaceWith(tmp.querySelector('#qlist'));
+  morph(document.getElementById('view'), () => document.getElementById('qlist').replaceWith(tmp.querySelector('#qlist')));
   document.querySelectorAll('.seg .n').forEach((n, i) => { n.textContent = tmp.querySelectorAll('.seg .n')[i].textContent; });
 }
-function rerender() { const y = scrollY; document.getElementById('view').innerHTML = render({}); scrollTo(0, y); }
+function rerender() { swap(render({})); }

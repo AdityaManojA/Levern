@@ -46,7 +46,7 @@ export function render(params) {
 
     <label class="lbl">Subtasks ${q.subtasks.length ? `<span class="small">${done}/${q.subtasks.length}</span>` : ''}</label>
     <div class="card" style="padding:6px 12px">
-      ${q.subtasks.map(s => `<div class="sub${s.done ? ' done' : ''}" style="--c:${TIER_COLORS[s.tier ?? q.tier]}">
+      ${q.subtasks.map(s => `<div data-key="s-${s.id}" class="sub${s.done ? ' done' : ''}" style="--c:${TIER_COLORS[s.tier ?? q.tier]}">
         <button class="chk${s.done ? ' on' : ''}" data-act="sub-toggle" data-sid="${s.id}" aria-label="Toggle subtask"></button>
         <input class="st" value="${esc(s.title)}" data-input="sub-title" data-sid="${s.id}" aria-label="Subtask">
         <select data-change="sub-tier" data-sid="${s.id}" aria-label="Subtask priority">${TIER_COLORS.map((_, i) => `<option value="${i}" ${i === (s.tier ?? q.tier) ? 'selected' : ''}>P${i + 1}</option>`).join('')}</select>

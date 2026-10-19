@@ -5,6 +5,7 @@ import { startReminders, paintBadges } from './reminders.js';
 import { watchInstall } from './install.js';
 import { $, toast, play, sheet, ICON } from './ui.js';
 import { completeQuest } from './complete.js';
+import { pageTransition, morph } from './motion.js';
 import * as home from './views/home.js';
 import * as quests from './views/quests.js';
 import * as detail from './views/detail.js';
@@ -30,15 +31,16 @@ function parseHash() {
 }
 
 function renderNav() {
-  const active = route.name === 'quest' ? 'quests' : route.name;
-  $('#nav').innerHTML = NAV.map(([k, label]) => k === 'add'
+  const active = route.name === 'quest' ? 'quests' : route.name, nav = $('#nav');
+  if (nav.dataset.active === active) return;   // unchanged: keep it (and its animations) as is
+  nav.dataset.active = active;
+  nav.innerHTML = NAV.map(([k, label]) => k === 'add'
     ? `<button class="add" data-act="add" aria-label="New quest">${ICON.plus}</button>`
     : `<a class="tab${k === active ? ' on' : ''}" href="#/${k}"${k === active ? ' aria-current="page"' : ''}><span class="ic">${ICON[k]}${k === 'quests' ? '<b class="rcount" data-rcount hidden></b>' : ''}</span><span>${label}</span></a>`).join('');
 }
 
-function render(opts = {}) {
+function draw(keep) {
   const v = VIEWS[route.name], main = $('#view');
-  const keep = opts.keepScroll ? scrollY : 0;
   if (v.unmount) v.unmount();
   main.innerHTML = v.render(route.params);
   main.dataset.view = route.name;
@@ -48,12 +50,31 @@ function render(opts = {}) {
   if (remindersPanel.isOpen()) remindersPanel.render();
   paintBadges();
 }
+// same screen, new data: rows glide instead of jumping
+function render(opts = {}) {
+  if (opts.keepScroll) { const y = scrollY; morph($('#view'), () => draw(y)); }
+  else draw(0);
+}
 
+// which way a screen change should drift: deeper (detail) slides forward, tabs slide by their order
+const ORDER = ['home', 'quests', 'calendar', 'focus', 'stats', 'settings'];
+function direction(from, to) {
+  if (to.name === 'quest') return 'forward';
+  if (from.name === 'quest') return 'back';
+  const a = ORDER.indexOf(from.name), b = ORDER.indexOf(to.name);
+  return a < 0 || b < 0 || a === b ? 'fade' : b > a ? 'right' : 'left';
+}
+let first = true;
 function go() {
-  const prev = route.name;
-  route = parseHash();
-  render();
-  if (prev !== route.name) $('#view').focus({ preventScroll: true });
+  const prev = route, next = parseHash();
+  route = next;
+  if (first) { first = false; draw(0); return; }
+  const same = prev.name === next.name && prev.params.id === next.params.id;
+  if (same) return render({ keepScroll: true });
+  pageTransition(() => draw(0), direction(prev, next));
+  const main = $('#view');
+  main.classList.add('entering'); setTimeout(() => main.classList.remove('entering'), 900);
+  main.focus({ preventScroll: true });
 }
 addEventListener('hashchange', go);
 store.subscribe((s, opts) => render({ keepScroll: true, ...opts }));

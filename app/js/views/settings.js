@@ -1,6 +1,7 @@
 import { getState, setSetting, exportData, importData, clearCompleted, resetAll, addQuest, setReminder, TIER_COLORS } from '../store.js';
 import { permission, requestPermission, supported, show, hasPeriodicSync } from '../notify.js';
 import { canInstall, install, isInstalled } from '../install.js';
+import { swap } from '../motion.js';
 import { esc, toast, play, confirmBox, download } from '../ui.js';
 import { todayStr } from '../dates.js';
 
@@ -98,5 +99,5 @@ export function onChange(el) {
 export function onInput(el) {
   if (el.dataset.input === 'tier') { const n = getState().settings.tierNames.slice(); n[+el.dataset.i] = el.value.trim() || `P${+el.dataset.i + 1}`; setSetting('tierNames', n, { quiet: true }); }
 }
-function rerender() { const y = scrollY; document.getElementById('view').innerHTML = render(); scrollTo(0, y); }
+function rerender() { swap(render({})); }
 export { show, supported };
