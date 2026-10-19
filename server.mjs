@@ -1,4 +1,5 @@
-// TaskFlow local server: serves app/ and keeps a live calendar feed at /calendar.ics.
+// TaskFlow local server: serves app/, the REST API (/api/v1, see app/API.md), the app's data sync
+// (/sync, this computer only) and a live calendar feed at /calendar.ics.
 // The app PUTs the feed whenever quests change; calendar apps subscribe to
 // webcal://localhost:5190/calendar.ics (or http://…) and re-fetch it on their own schedule.
 //
@@ -8,6 +9,10 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, stat, mkdir } from 'node:fs/promises';
 import { join, normalize, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { openDb } from './server/db.mjs';
+import { createApi } from './server/api.mjs';
+import { createSync } from './server/sync.mjs';
+import { createHooks } from './server/webhooks.mjs';
 
 const ROOT = process.env.TASKFLOW_ROOT || join(dirname(fileURLToPath(import.meta.url)), 'app');
 const DATA = process.env.TASKFLOW_DATA || join(dirname(fileURLToPath(import.meta.url)), '.data');
@@ -22,9 +27,18 @@ const MAX_FEED = 2 * 1024 * 1024;
 // only the app itself (same machine) may replace the feed
 const isLocal = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
 
+const db = openDb(DATA);
+const hooks = createHooks(db);
+const api = createApi(db);
+const sync = createSync(db, hooks, PORT);
+process.on('SIGINT', () => { db.flush(); process.exit(0); });
+process.on('SIGTERM', () => { db.flush(); process.exit(0); });
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const path = decodeURIComponent(url.pathname);
+  if (path.startsWith('/api/')) return api(req, res, path);
+  if (path.startsWith('/sync/')) return sync(req, res, path);
   try {
     if (path === '/calendar.ics') {
       if (req.method === 'PUT') {

@@ -452,6 +452,20 @@ body.ob-lock .mcard { visibility: hidden; }
 .rpast-i .rt { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (prefers-reduced-motion: reduce) { .mcard-in, .rcount.pop { animation: none !important; } }
 
+/* developer */
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .92em; background: rgba(30,27,24,.06); border-radius: 6px; padding: 1px 5px; }
+.keybox { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.keybox code { flex: 1; min-width: 0; word-break: break-all; background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 8px 10px; font-size: 13px; user-select: all; }
+.devform .seg { width: 100%; }
+.segopt { flex: 1; position: relative; }
+.segopt input { position: absolute; opacity: 0; }
+.segopt span { display: block; border: var(--line); border-radius: 14px; padding: 8px 10px; background: #fff; font-weight: 600; font-size: 13px; text-align: center; cursor: pointer; }
+.segopt input:checked + span { background: var(--ink); color: #fff; }
+.segopt input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 2px; }
+.evs { display: grid; gap: 6px; margin: 10px 0 12px; font-size: 13px; }
+.evs label { display: flex; align-items: center; gap: 8px; }
+.evs input { accent-color: #7DBB95; width: 18px; height: 18px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after, ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { transition: none !important; animation: none !important; }
 }

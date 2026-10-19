@@ -67,6 +67,8 @@ try {
   check('Manifest parses without errors', man.errors.length === 0, man.errors.map(e => e.message).join('; '));
 
   // reminder while the app is open (in the background is the same code path): shown via the service worker
+  // start from no reminders (the sample quests carry one at a fixed time of day)
+  await evalIn(p.sessionId, `window.TaskFlow.store.commit(s => { s.quests.forEach(q => { q.remind = null; }); }); return 1;`);
   await evalIn(p.sessionId, `const s = window.TaskFlow.store; const q = s.addQuest({ title: 'Open-app reminder', tier: 1 }); s.setReminder(q.id, { at: Date.now() + 2000 }); return q.id;`);
   await sleep(4000);
   const shown1 = await evalIn(p.sessionId, `const r = await navigator.serviceWorker.ready; const n = await r.getNotifications(); return { list: n.map(x => ({ title: x.title, body: x.body, actions: (x.actions || []).map(a => a.title) })), badge: document.querySelector('[data-rcount]').textContent, title: document.title };`);

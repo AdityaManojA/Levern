@@ -80,6 +80,11 @@ export function render() {
       <div class="srow"><div class="l"><b>Offline</b><small>${'serviceWorker' in navigator && navigator.serviceWorker.controller ? 'Ready. TaskFlow works without internet.' : 'Getting ready (reload once to finish).'}</small></div></div>
     </div>
 
+    <div class="sec">Developer</div>
+    <div class="card">
+      <div class="srow"><div class="l"><b>API and webhooks</b><small>Let other apps read and change your quests, and get told when things happen</small></div><a class="mini" href="#/developer">Open</a></div>
+    </div>
+
     <div class="sec">Your data</div>
     <div class="card">
       <p class="small" style="margin-bottom:10px">Everything is saved on this device only. Export a backup to move it to another device.</p>

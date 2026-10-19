@@ -61,7 +61,8 @@ export function init(customAdapter) {
 }
 function migrate(s) {
   s.settings = { ...DEFAULT_SETTINGS, ...(s.settings || {}) };
-  s.quests ||= []; s.history ||= []; s.sessions ||= []; s.timer ??= null; s.notifs ||= [];
+  s.quests ||= []; s.history ||= []; s.sessions ||= []; s.timer ??= null; s.notifs ||= []; s.tombstones ||= [];
+  for (const q of s.quests) q.updatedAt ??= q.createdAt || 0;
   for (const q of s.quests) { q.subtasks ||= []; q.notes ??= ''; }
   // saves from v1 never had seeded cleared when quests were added, so never swap their quests for starters
   if ((s.v || 1) < 2) s.seeded = false;
@@ -72,12 +73,37 @@ function migrate(s) {
 export const getState = () => state;
 export const subscribe = fn => { subs.add(fn); return () => subs.delete(fn); };
 // mutate state, save, and tell the views. opts.quiet: save without re-rendering (typing in a field)
+// Every change is stamped for syncing with the server copy: quests get updatedAt, deleted quests leave a
+// tombstone, and history / sessions / settings get a *UpdatedAt. Changes that came from the server
+// (opts.fromSync) keep the server's stamps.
+const saveSubs = new Set();
+export const onSave = fn => { saveSubs.add(fn); return () => saveSubs.delete(fn); };
 export function commit(fn, opts = {}) {
+  const track = !opts.fromSync && state;
+  let before, hBefore, sBefore, stBefore;
+  if (track) {
+    before = new Map(state.quests.map(q => [q.id, JSON.stringify(q)]));
+    hBefore = JSON.stringify(state.history); sBefore = JSON.stringify(state.sessions); stBefore = JSON.stringify(state.settings);
+  }
   const r = fn(state);
+  if (track) {
+    const now = Date.now(), ids = new Set();
+    for (const q of state.quests) { ids.add(q.id); if (before.get(q.id) !== JSON.stringify(q)) q.updatedAt = now; }
+    state.tombstones ||= [];
+    for (const id of before.keys()) if (!ids.has(id)) state.tombstones.push({ id, deletedAt: now });
+    if (JSON.stringify(state.history) !== hBefore) state.historyUpdatedAt = now;
+    if (JSON.stringify(state.sessions) !== sBefore) state.sessionsUpdatedAt = now;
+    if (JSON.stringify(state.settings) !== stBefore) state.settingsUpdatedAt = now;
+  }
   adapter.save(state);
+  saveSubs.forEach(f => f(state, opts));
   if (!opts.quiet) subs.forEach(f => f(state, opts));
   return r;
 }
+// the parts of the data that sync with the server
+export const SYNC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt'];
+export const syncDoc = () => Object.fromEntries(SYNC_KEYS.map(k => [k, state[k]]));
+export function adoptSynced(doc) { commit(s => { for (const k of SYNC_KEYS) if (doc[k] !== undefined) s[k] = k === 'settings' ? { ...DEFAULT_SETTINGS, ...doc[k] } : doc[k]; }, { fromSync: true }); }
 
 export const findQuest = id => state.quests.find(q => q.id === id);
 export const tierLabel = t => `P${t + 1} · ${state.settings.tierNames[t]}`;

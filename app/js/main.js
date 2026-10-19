@@ -13,6 +13,8 @@ import * as calendar from './views/calendar.js';
 import * as focus from './views/focus.js';
 import * as stats from './views/stats.js';
 import * as settings from './views/settings.js';
+import * as developer from './views/developer.js';
+import { startSync, onSyncStatus } from './sync.js';
 import { openAdd } from './views/add.js';
 import * as remindersPanel from './views/reminders.js';
 import * as onboarding from './views/onboarding.js';
@@ -26,7 +28,7 @@ import { syncGoogle, googleState, hasToken } from './calendars.js';
 
 store.init();
 
-const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings };
+const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, developer };
 const NAV = [['home', 'Home'], ['quests', 'Quests'], ['add'], ['calendar', 'Calendar'], ['focus', 'Focus']];
 let route = { name: 'home', params: {} };
 
@@ -68,7 +70,7 @@ function render(opts = {}) {
 }
 
 // which way a screen change should drift: deeper (detail) slides forward, tabs slide by their order
-const ORDER = ['home', 'quests', 'calendar', 'focus', 'stats', 'settings'];
+const ORDER = ['home', 'quests', 'calendar', 'focus', 'stats', 'settings', 'developer'];
 function direction(from, to) {
   if (to.name === 'quest') return 'forward';
   if (from.name === 'quest') return 'back';
@@ -157,6 +159,9 @@ document.addEventListener('sheet:close', () => mascot.setPerch('nav'));
 if (!store.getState().onboarded) onboarding.open(() => tour.start());
 registerSW().finally(startReminders);
 startCalendars();
+// share data with the TaskFlow server (API, webhooks); the app works the same without it
+startSync();
+onSyncStatus(() => { if (route.name === 'developer') render({ keepScroll: true }); });
 onCalendarChange(() => { if (route.name === 'settings') render({ keepScroll: true }); });
 if (new URLSearchParams(location.search).get('add') === '1') openAdd();
 window.TaskFlow = { store, go: h => { location.hash = h; }, mochi, tour };   // handy in the console
