@@ -48,6 +48,9 @@ function listen() {
 }
 
 export async function startSync() {
+  // the TaskFlow server runs on this computer (npm start); a hosted copy syncs through the account instead (cloud.js)
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || /^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(location.hostname);
+  if (!local) { enabled = false; setStatus({ online: false, error: 'Not connected to a TaskFlow server' }); return false; }
   try {
     const r = await fetch('sync/ping', { cache: 'no-store' });
     enabled = r.ok;
