@@ -45,7 +45,7 @@ export function render(params) {
     <div data-picker>${reminderPicker(q)}</div>
 
     <label class="lbl">Subtasks ${q.subtasks.length ? `<span class="small">${done}/${q.subtasks.length}</span>` : ''}</label>
-    <div class="card" style="padding:6px 12px">
+    <div class="card" data-tour="subtasks" style="padding:6px 12px">
       ${q.subtasks.map(s => `<div data-key="s-${s.id}" class="sub${s.done ? ' done' : ''}" style="--c:${TIER_COLORS[s.tier ?? q.tier]}">
         <button class="chk${s.done ? ' on' : ''}" data-act="sub-toggle" data-sid="${s.id}" aria-label="Toggle subtask"></button>
         <input class="st" value="${esc(s.title)}" data-input="sub-title" data-sid="${s.id}" aria-label="Subtask">

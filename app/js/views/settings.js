@@ -5,12 +5,13 @@ import { swap } from '../motion.js';
 import { esc, toast, play, confirmBox, download } from '../ui.js';
 import { todayStr, fmtStamp } from '../dates.js';
 import * as cal from '../calendars.js';
+import { mascot } from '../mascot.js';
 import { buildICS } from '../ics.js';
 
 const tog = (k, on, label) => `<button class="tog" role="switch" aria-checked="${on}" aria-label="${esc(label)}" data-act="tog" data-k="${k}"></button>`;
 const step = (k, v, unit = '') => `<div class="step"><button data-act="step" data-k="${k}" data-d="-1" aria-label="Less">−</button><b>${v}${unit}</b><button data-act="step" data-k="${k}" data-d="1" aria-label="More">+</button></div>`;
-const LIMITS = { target: [1, 10], focusMin: [5, 90], breakMin: [1, 30], snoozeMin: [5, 60] };
-const STEPS = { target: 1, focusMin: 5, breakMin: 1, snoozeMin: 5 };
+const LIMITS = { annoy: [3, 10], target: [1, 10], focusMin: [5, 90], breakMin: [1, 30], snoozeMin: [5, 60] };
+const STEPS = { annoy: 1, target: 1, focusMin: 5, breakMin: 1, snoozeMin: 5 };
 
 export function render() {
   const s = getState().settings, p = permission();
@@ -24,6 +25,7 @@ export function render() {
     <div class="card">
       <div class="srow"><div class="l"><b>Name</b><small>Used in the greeting on Home</small></div><input class="field" style="width:150px" value="${esc(s.name)}" maxlength="30" data-input="name" aria-label="Your name" placeholder="Optional"></div>
       <div class="srow"><div class="l"><b>Welcome screens</b><small>See the introduction again</small></div><button class="mini" data-act="onboard">Show again</button></div>
+      <div class="srow"><div class="l"><b>Quick tour</b><small>Mochi shows you around (30 seconds)</small></div><button class="mini" data-act="tour">Start</button></div>
     </div>
 
     <div class="sec">Goals</div>
@@ -60,6 +62,15 @@ export function render() {
       <div class="srow"><div class="l"><b>Sounds</b><small>Key click on ticks, coin on targets</small></div>${tog('sound', s.sound, 'Sounds')}</div>
       <div class="srow"><div class="l"><b>Voice input</b><small>Mic button when adding a quest</small></div>${tog('voice', s.voice, 'Voice input')}</div>
       <div class="srow"><div class="l"><b>Volume</b></div><input type="range" min="0" max="1" step="0.05" value="${s.volume}" data-change="volume" aria-label="Volume"></div>
+    </div>
+
+    <div class="sec">Mochi</div>
+    <div class="card" data-tour="mochi-settings">
+      <div class="srow"><div class="l"><b>Show Mochi</b><small>The cat on the nav bar</small></div>${tog('mochi', s.mochi !== false, 'Show Mochi')}</div>
+      <div class="srow"><div class="l"><b>Roam around</b><small>Walks along the bar. Off: sits by the edge.</small></div>${tog('roam', s.roam !== false, 'Mochi roams')}</div>
+      <div class="srow"><div class="l"><b>Walk speed</b></div><div class="seg" style="margin:0;width:auto">${[['slow', 'Slow'], ['normal', 'Normal'], ['zoomy', 'Zoomy']].map(([v, l]) => `<button class="${(s.speed || 'slow') === v ? 'on' : ''}" data-act="speed" data-v="${v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
+      <div class="srow"><div class="l"><b>Mochi sounds</b><small>The little "mrp" when you tap him</small></div>${tog('mochiSound', s.mochiSound !== false, 'Mochi sounds')}</div>
+      <div class="srow"><div class="l"><b>Patience</b><small>Taps before Mochi gets annoyed</small></div>${step('annoy', s.annoy || 5)}</div>
     </div>
 
     <div class="sec">App</div>
@@ -115,6 +126,8 @@ export const actions = {
     el.setAttribute('aria-checked', on);   // flip in place so the knob glides
     setSetting(k, on, { quiet: true }); play('click', 0.5);
     if (k === 'notify') { if (on) await requestPermission(); setTimeout(rerender, 300); }   // its description changes
+    if (k === 'mochi') mascot.setVisible(on);
+    if (k === 'roam') mascot.settingsChanged();
   },
   step: el => { const k = el.dataset.k, [lo, hi] = LIMITS[k]; setSetting(k, Math.max(lo, Math.min(hi, getState().settings[k] + STEPS[k] * +el.dataset.d))); play('click', 0.4); },
   perm: async () => { const p = await requestPermission(); toast(p === 'granted' ? 'Notifications allowed' : 'Notifications not allowed'); rerender(); },
@@ -125,9 +138,10 @@ export const actions = {
     play('click', 0.5); toast('Reminder in 10 seconds. You can switch tabs.');
   },
   install: () => install(),
+  speed: el => { setSetting('speed', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
   export: () => { download(`taskflow-backup-${todayStr()}.json`, exportData(), 'application/json'); toast('Backup saved'); },
   'clear-done': async () => { if (await confirmBox('Remove all done quests? Your history and stats stay.', 'Clear')) { clearCompleted(); toast('Done quests cleared'); } },
-  reset: async () => { if (await confirmBox('Delete all quests, history and settings on this device?', 'Reset')) { resetAll(); toast('Everything reset'); } },
+  reset: async () => { if (await confirmBox('Delete all quests, history and settings on this device?', 'Reset')) { resetAll(); toast('Everything reset'); setTimeout(() => mascot.react('cry', 'my settings…'), 400); } },
 };
 export function onChange(el) {
   if (el.dataset.change === 'volume') { setSetting('volume', +el.value, { quiet: true }); play('click'); }

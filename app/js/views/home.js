@@ -30,7 +30,7 @@ export function render() {
       ${rem ? '<button class="mini" data-act="bell" style="margin-top:8px">Show reminders</button>' : ''}
     </div>` : ''}
     <div class="sec">Up next <a href="#/quests">All quests</a></div>
-    ${next.length ? next.map(q => questRow(q)).join('') : `<div class="card empty"><b>All clear</b><span class="small">Add a quest with the + button.</span></div>`}
+    ${next.length ? next.map(q => questRow(q)).join('') : `<div class="card empty"><span class="empty-mochi" data-sprite="box-peek" data-scale=".9"></span><b>All clear</b><span class="small">Add a quest with the + button.</span></div>`}
     <div class="card" style="margin-top:12px">
       <h3>Daily target · this month</h3>
       <div class="small">You hit your ${s.target}-a-day target on ${sum.keptThisMonth} of ${sum.daysInMonthSoFar} days so far</div>

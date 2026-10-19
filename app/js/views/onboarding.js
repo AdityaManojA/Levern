@@ -1,113 +1,125 @@
-// First-run onboarding (design/DESIGN_BRIEF.md → "Onboarding"), without Mochi and without the tour.
-// Shown once (state.onboarded); Settings → "Show the welcome screens again" reopens it.
-// Copy rule from the brief: every game word gets a plain meaning the first time it appears.
+// First-run onboarding, matching the Figma "Onboarding" page (file bnt8lsuv1xdCg4xHFitxvZ, node 6:2):
+// Welcome · What's a quest? · How will you use TaskFlow? · How many quests a day? · Make it yours · Tour prompt.
+// Shown once (state.onboarded); Settings → You → Welcome screens reopens it.
+// Copy rule from the design brief: every game word gets a plain meaning the first time it appears.
 import { getState, setSetting, applyStarter, finishOnboarding, TIER_COLORS } from '../store.js';
 import { dayExp } from '../stats.js';
-import { permission, requestPermission, supported } from '../notify.js';
-import { canInstall, install, isInstalled } from '../install.js';
 import { speechSupported } from '../speech.js';
-import { esc, play, ICON } from '../ui.js';
+import { esc, play, toast } from '../ui.js';
 import { EASE, EASE_IN, reduced } from '../motion.js';
+import { portrait, sprite } from '../mochi.js';
+import * as cal from '../calendars.js';
 
-const STEPS = ['welcome', 'quests', 'you', 'target', 'yours', 'done'];
-let step = 0, root = null, profile = '';
+const STEPS = ['welcome', 'quests', 'use', 'target', 'yours', 'tour'];
+let step = 0, root = null, profile = '', stops = [], onFinish = null, linked = {};
 
-const MEANING = ['due today, blocking', 'due in 1–2 days', 'planned this week', 'the default', 'nice to do', 'ideas, no deadline'];
+const USES = [
+  ['student', 'Student', 'Classes, a timetable and exam prep', 'var(--sky)', 'Students get starter quests for revision, essays and exams.'],
+  ['work', 'Work', 'Projects, meetings and deadlines', 'var(--butter)', 'You get starter quests for emails, meetings and projects.'],
+  ['personal', 'Personal', 'Habits, chores and goals', 'var(--mint)', 'You get starter quests for habits, chores and people.'],
+];
 
 function screen(name) {
   const s = getState().settings;
   switch (name) {
     case 'welcome': return `
-      <div class="ob-hero"><img src="icons/icon.svg" alt="" width="96" height="96"></div>
-      <h1 class="ob-h">Welcome to TaskFlow</h1>
-      <p class="ob-p">A calm to-do list that feels like a game.</p>
-      <p class="ob-p small">Finish tasks, keep a streak, earn points. No pressure.</p>`;
+      <div class="ob-center">
+        <div class="ob-circle" style="background:var(--lav)"><span class="ob-mochi" data-portrait="2.1"></span></div>
+        <h1 class="ob-h" style="text-align:center">Welcome to TaskFlow</h1>
+        <p class="ob-p muted" style="text-align:center">A calm to-do list that feels like a game. Finish tasks, build a streak, earn points, and keep Mochi company.</p>
+      </div>`;
     case 'quests': return `
       <h1 class="ob-h">What's a quest?</h1>
-      <p class="ob-p">A <b>quest</b> is simply a task. Each one has a priority colour.</p>
-      <div class="ob-examples">
-        ${[['Submit lab report', 0, 'Due today, 5 pm'], ['Read chapter 4', 2, 'This week'], ['Tidy desk', 4, 'When free']].map(([t, p, m]) => `
-          <div class="q" style="--c:${TIER_COLORS[p]}"><span class="chk" aria-hidden="true"></span><span class="qb"><span class="qt">${t}</span><span class="qm"><span>P${p + 1} · ${esc(s.tierNames[p])}</span><span>${m}</span></span></span></div>`).join('')}
+      <p class="ob-p muted">A quest is simply a task, anything you want to get done. We call them quests because finishing them earns you points.</p>
+      <div class="ob-label">For example</div>
+      ${[['Submit lab report', 0, 'P1 · Critical · due today'], ['Read 10 pages', 2, 'P3 · Medium · every day'], ['Call grandma', 3, 'P4 · Normal · this week']].map(([t, p, m]) => `
+        <div class="ob-q" style="--c:${TIER_COLORS[p]}"><span class="chk" aria-hidden="true"></span><span><b>${t}</b><small>${m}</small></span></div>`).join('')}
+      <div class="ob-card">
+        <b>Questline = a bigger goal</b>
+        <p>A group of quests that belong together. "Exam week" could be 5 quests: revise, flashcards, a past paper…</p>
+        <div class="bar" style="background:#fff"><i style="width:40%;background:var(--butter)"></i></div>
       </div>
-      <p class="ob-p small" style="margin-top:6px">Warmer means sooner:</p>
-      <div class="ob-tiers">${TIER_COLORS.map((c, i) => `<div><i style="--c:${c}">P${i + 1}</i><span><b>${esc(s.tierNames[i])}</b> ${MEANING[i]}</span></div>`).join('')}</div>`;
-    case 'you': return `
-      <h1 class="ob-h">About you</h1>
-      <label class="lbl" for="ob-name" style="margin-top:4px">What should we call you? <span class="small">(optional)</span></label>
-      <input class="field" id="ob-name" data-ob="name" value="${esc(s.name)}" maxlength="30" autocomplete="given-name" placeholder="Your name">
-      <label class="lbl">What will you use TaskFlow for?</label>
-      <div class="ob-choices" role="radiogroup">
-        ${[['student', 'Student', 'Classes, homework, exams'], ['work', 'Work', 'Projects, meetings, emails'], ['personal', 'Personal', 'Home, health, people']].map(([k, l, d]) => `
-          <button type="button" role="radio" aria-checked="${profile === k}" class="ob-choice${profile === k ? ' on' : ''}" data-ob-profile="${k}"><b>${l}</b><span>${d}</span></button>`).join('')}
+      <div class="ob-chips">${TIER_COLORS.map((c, i) => `<span style="--c:${c}">P${i + 1}</span>`).join('')}</div>
+      <p class="ob-p muted small">The colour shows priority: P1 (red) is most urgent, P6 (lilac) is "someday".</p>`;
+    case 'use': {
+      const note = USES.find(u => u[0] === profile)?.[4];
+      return `
+      <h1 class="ob-h">How will you use TaskFlow?</h1>
+      <p class="ob-p muted">Pick one. You can change it later.</p>
+      <div class="ob-uses" role="radiogroup" aria-label="How will you use TaskFlow?">
+        ${USES.map(([k, l, d, c]) => `<button type="button" role="radio" aria-checked="${profile === k}" class="ob-use${profile === k ? ' on' : ''}" style="--c:${c}" data-ob-profile="${k}">
+          <span class="radio" aria-hidden="true"></span><span><b>${l}</b><small>${d}</small></span></button>`).join('')}
       </div>
-      <p class="ob-p small">${getState().seeded ? "We'll add a few example quests to match. You can delete them any time." : 'Your current quests stay as they are.'}</p>
-      ${getState().seeded ? `<button type="button" class="link" data-ob-profile="empty" style="${profile === 'empty' ? 'color:var(--ink);font-weight:700' : ''}">${profile === 'empty' ? '✓ ' : ''}Start with an empty list instead</button>` : ''}`;
+      ${note && getState().seeded ? `<div class="ob-note">${note}</div>` : ''}`;
+    }
     case 'target': {
       const t = s.target, some = Math.max(1, Math.min(t - 1, Math.round(t * 0.6)));
       return `
-      <h1 class="ob-h">Your daily target</h1>
-      <p class="ob-p">How many quests do you want to finish on a normal day? You can change this later.</p>
-      <div class="ob-target">
-        <button type="button" data-ob-step="-1" aria-label="Fewer">−</button><b aria-live="polite">${t}</b><button type="button" data-ob-step="1" aria-label="More">+</button>
+      <h1 class="ob-h">How many quests a day?</h1>
+      <p class="ob-p muted">Pick how many tasks you want to finish each day, like "Reply to Sam", "Gym" or "Read 10 pages".</p>
+      <div class="ob-stepper">
+        <button type="button" class="minus" data-ob-step="-1" aria-label="Fewer">−</button>
+        <div><b aria-live="polite">${t}</b><small>quests a day</small></div>
+        <button type="button" class="plus" data-ob-step="1" aria-label="More">+</button>
       </div>
-      <div class="chips" style="justify-content:center;margin:4px 0 16px">${[3, 5, 7, 10].map(n => `<button type="button" class="chip chip-btn${n === t ? ' on' : ''}" data-ob-target="${n}">${n} a day</button>`).join('')}</div>
-      <div class="card" style="background:var(--coral)"><h3>Streak</h3><div class="small" style="color:var(--ink)">The number of days in a row you finish ${t} quest${t === 1 ? '' : 's'}. Miss a day and it starts again.</div></div>
-      <div class="card" style="background:var(--butter)"><h3>EXP (points)</h3><div class="small" style="color:var(--ink)">${t > 1 ? `${some} of ${t} done = ${dayExp(some, t)} EXP · ` : ''}all ${t} done = ${dayExp(t, t)} EXP. Focus sessions add 1 EXP per 5 minutes.</div></div>`;
+      <div class="ob-presets">${[3, 5, 7, 10].map(n => `<button type="button" class="${n === t ? 'on' : ''}" data-ob-target="${n}">${n}</button>`).join('')}</div>
+      <div class="ob-card" style="background:var(--mint)"><b>Your streak</b><p>Finish ${t} today and your streak grows by 1 day. Miss a day and it starts again from 0.</p></div>
+      <div class="ob-card" style="background:var(--butter)"><b>EXP = points</b><p>You earn EXP for each quest you finish.<br>${t > 1 ? `${some} of ${t} done = ${dayExp(some, t)} EXP · ` : ''}all ${t} done = ${dayExp(t, t)} EXP (includes a +10 bonus).</p></div>`;
     }
     case 'yours': {
-      const p = permission();
-      const perm = { granted: '<span class="chip" style="background:var(--mint)">Allowed ✓</span>', denied: '<span class="small">Blocked in your browser settings</span>', unsupported: '<span class="small">Not available in this browser</span>' }[p]
-        || '<button type="button" class="mini" data-ob-allow>Allow</button>';
+      const g = cal.googleState();
+      const pill = (key, label, on) => `<button type="button" class="ob-pill${on ? ' done' : ''}" data-ob-connect="${key}">${esc(label)}</button>`;
       return `
       <h1 class="ob-h">Make it yours</h1>
-      <div class="card">
-        <div class="srow"><div class="l"><b>Reminders</b><small>Get a nudge when a quest is due, even with TaskFlow in the background.</small></div>${perm}</div>
-        <div class="srow"><div class="l"><b>Sounds</b><small>A soft click when you tick a quest</small></div><button type="button" class="tog" role="switch" aria-checked="${s.sound}" data-ob-tog="sound" aria-label="Sounds"></button></div>
-        <div class="srow"><div class="l"><b>Voice input</b><small>${speechSupported ? 'Say a quest instead of typing it' : 'Not available in this browser'}</small></div><button type="button" class="tog" role="switch" aria-checked="${s.voice && speechSupported}" data-ob-tog="voice" aria-label="Voice input" ${speechSupported ? '' : 'disabled'}></button></div>
-      </div>
-      <div class="card"><h3>Your calendar</h3><div class="small">Any quest with a date can go into Google Calendar or Apple Calendar from its page, or all at once from the Calendar tab.</div></div>`;
+      <p class="ob-p muted">Connect a calendar and choose how TaskFlow feels. Everything here can be changed later in Settings.</p>
+      <div class="ob-row"><span><b>Google Calendar</b><small>Quests with a due date show up here</small></span>${pill('google', g.connected ? 'Connected' : 'Connect', g.connected)}</div>
+      <div class="ob-row"><span><b>Apple Calendar</b><small>Quests with a due date show up here</small></span>${pill('apple', linked.apple ? 'Added' : 'Connect', linked.apple)}</div>
+      <div class="ob-row"><span><b>Apple Reminders</b><small>Coming with the TaskFlow phone app</small></span><button type="button" class="ob-pill soon" data-ob-connect="reminders">Soon</button></div>
+      <div class="ob-label" style="margin-top:16px">Feel</div>
+      <div class="ob-row"><span><b>Satisfying sounds</b><small>A soft key click when you tick a quest, a coin when you hit your target</small></span><button type="button" class="tog" role="switch" aria-checked="${s.sound}" data-ob-tog="sound" aria-label="Satisfying sounds"></button></div>
+      <div class="ob-row"><span><b>Voice input</b><small>${speechSupported ? 'Say a task out loud instead of typing it' : 'Not available in this browser'}</small></span><button type="button" class="tog" role="switch" aria-checked="${!!s.voice && speechSupported}" data-ob-tog="voice" aria-label="Voice input" ${speechSupported ? '' : 'disabled'}></button></div>`;
     }
-    case 'done': {
-      const n = s.name ? `, ${esc(s.name)}` : '';
-      const inst = isInstalled() ? '' : `<div class="card"><h3>Install TaskFlow</h3><div class="small" style="margin-bottom:${canInstall() ? 10 : 0}px">Put it on your home screen or Start menu. It opens like an app and works offline.${canInstall() ? '' : ' Use your browser menu: "Install app", or Share → "Add to Home Screen" on iPhone.'}</div>${canInstall() ? '<button type="button" class="btn white sm" data-ob-install>Install app</button>' : ''}</div>`;
-      return `
-      <div class="ob-hero"><span class="ob-check" aria-hidden="true"></span></div>
-      <h1 class="ob-h">You're all set${n}</h1>
-      <p class="ob-p">Tap <b>+</b> to add a quest. Try typing <i>"Call mum tomorrow at 6pm"</i> and watch it pick up the date and time.</p>
-      ${inst}`;
-    }
+    case 'tour': return `
+      <div class="ob-center">
+        <div class="ob-speech"><b>Hi, I'm Mochi!</b><p>Want a quick tour? It takes about 30 seconds. I'll show you where your quests live and how to make the app yours.</p></div>
+        <div class="ob-circle" style="background:var(--sky);width:184px;height:184px"><span class="ob-mochi" data-anim="wave" data-scale="1.55"></span></div>
+      </div>`;
   }
 }
 
-function frame() {
-  const last = step === STEPS.length - 1;
-  return `<div class="ob-top">
-      <div class="ob-dots" role="progressbar" aria-valuemin="1" aria-valuemax="${STEPS.length}" aria-valuenow="${step + 1}" aria-label="Step ${step + 1} of ${STEPS.length}">${STEPS.map((_, i) => `<i class="${i === step ? 'on' : i < step ? 'past' : ''}"></i>`).join('')}</div>
-      ${last ? '' : '<button type="button" class="link" data-ob-skip>Skip</button>'}
-    </div>
-    <div class="ob-body"><div class="ob-step" data-step="${STEPS[step]}">${screen(STEPS[step])}</div></div>
-    <div class="ob-nav">
-      ${step > 0 && !last ? '<button type="button" class="btn ghost" data-ob-back>Back</button>' : ''}
-      <button type="button" class="btn${last ? ' dark' : ''}" data-ob-next>${step === 0 ? 'Get started' : last ? 'Start using TaskFlow' : 'Next'}</button>
-    </div>`;
+function footer() {
+  const dots = `<div class="ob-dots" role="progressbar" aria-valuemin="1" aria-valuemax="${STEPS.length}" aria-valuenow="${step + 1}" aria-label="Step ${step + 1} of ${STEPS.length}">${STEPS.map((_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')}</div>`;
+  const name = STEPS[step];
+  if (name === 'tour') return `${dots}<button type="button" class="btn block" data-ob-tour>Show me around</button><button type="button" class="btn white block" data-ob-skiptour style="margin-top:12px">Skip tour</button>`;
+  const label = { welcome: 'Get started', quests: 'Got it' }[name] || 'Continue';
+  const below = name === 'welcome' ? '<button type="button" class="link ob-under" data-ob-skip>I\'ve used TaskFlow before</button>'
+    : name === 'yours' ? '<button type="button" class="link ob-under" data-ob-next>Skip for now</button>' : '';
+  const perch = name === 'quests' ? '<span class="ob-perch" data-anim="rest" data-scale=".62" aria-hidden="true"></span>' : '';
+  return `${dots}<div style="position:relative">${perch}<button type="button" class="btn block" data-ob-next>${label}</button></div>${below}`;
 }
 
-// redraw; dir 1 / -1 slides the step sideways, 0 just refreshes it in place
+const frame = () => `<div class="ob-body"><div class="ob-step" data-step="${STEPS[step]}">${screen(STEPS[step])}</div></div><div class="ob-foot">${footer()}</div>`;
+
+function mountSprites() {
+  stops.forEach(s => s()); stops = [];
+  root.querySelectorAll('[data-portrait]').forEach(el => stops.push(portrait(el, +el.dataset.portrait)));
+  root.querySelectorAll('[data-anim]').forEach(el => stops.push(sprite(el, el.dataset.anim, { scale: +el.dataset.scale || 1, pause: el.dataset.anim === 'wave' ? 1600 : 0 })));
+}
 function draw(dir = 0) {
   const old = root.querySelector('.ob-step');
-  if (!dir || !old || reduced()) { root.innerHTML = frame(); focusFirst(); return; }
-  old.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateX(${-20 * dir}px)` }], { duration: 180, easing: EASE_IN, fill: 'forwards' })
-    .finished.then(() => {
-      root.innerHTML = frame();
-      root.querySelector('.ob-step').animate([{ opacity: 0, transform: `translateX(${28 * dir}px)` }, { opacity: 1, transform: 'none' }], { duration: 460, easing: EASE });
-      root.querySelectorAll('.ob-step > *').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 480, delay: 40 + i * 45, easing: EASE, fill: 'backwards' }));
-      focusFirst();
-    });
+  const paint = () => { root.innerHTML = frame(); mountSprites(); const h = root.querySelector('.ob-h'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); } root.scrollTop = 0; };
+  if (!dir || !old || reduced()) { paint(); return; }
+  old.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateX(${-20 * dir}px)` }], { duration: 180, easing: EASE_IN, fill: 'forwards' }).finished.then(() => {
+    paint();
+    root.querySelector('.ob-step').animate([{ opacity: 0, transform: `translateX(${28 * dir}px)` }, { opacity: 1, transform: 'none' }], { duration: 460, easing: EASE });
+    root.querySelectorAll('.ob-step > *, .ob-center > *').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 480, delay: 40 + i * 45, easing: EASE, fill: 'backwards' }));
+  });
 }
-function focusFirst() { const h = root.querySelector('.ob-step .ob-h'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); } }
+// re-render the current step without the slide (after a choice)
+const refresh = () => { const y = root.scrollTop; root.innerHTML = frame(); mountSprites(); root.scrollTop = y; };
 
 function go(dir) {
-  if (STEPS[step] === 'you' && dir > 0 && profile) applyStarter(profile);
+  if (STEPS[step] === 'use' && dir > 0 && profile) applyStarter(profile);
   step = Math.max(0, Math.min(STEPS.length - 1, step + dir));
   play('click', 0.4);
   draw(dir);
@@ -115,18 +127,20 @@ function go(dir) {
 
 export const isOpen = () => !!root && root.classList.contains('open');
 
-export function close() {
+export function close(then) {
   if (!root) return;
   finishOnboarding();
   root.classList.remove('open');
   document.body.classList.remove('ob-lock');
   const r = root;
-  setTimeout(() => { r.hidden = true; }, reduced() ? 0 : 450);
+  setTimeout(() => { r.hidden = true; stops.forEach(s => s()); stops = []; if (then) then(); }, reduced() ? 0 : 450);
 }
 
-export function open() {
+// startTour: called when "Show me around" is chosen
+export function open(startTour) {
+  if (startTour) onFinish = startTour;
   root = document.getElementById('onboard');
-  step = 0; profile = getState().settings.profile || '';
+  step = 0; profile = getState().settings.profile || ''; linked = {};
   root.hidden = false;
   draw();
   document.body.classList.add('ob-lock');
@@ -135,25 +149,36 @@ export function open() {
   root.dataset.bound = '1';
   root.addEventListener('click', async e => {
     const t = e.target;
-    if (t.closest('[data-ob-next]')) return step === STEPS.length - 1 ? close() : go(1);
-    if (t.closest('[data-ob-back]')) return go(-1);
-    if (t.closest('[data-ob-skip]')) return close();
+    if (t.closest('[data-ob-next]')) return go(1);
+    if (t.closest('[data-ob-skip]') || t.closest('[data-ob-skiptour]')) return close();
+    if (t.closest('[data-ob-tour]')) return close(() => onFinish && onFinish());
     const pr = t.closest('[data-ob-profile]');
-    if (pr) { profile = pr.dataset.obProfile; if (profile !== 'empty') setSetting('profile', profile, { quiet: true }); play('click', 0.4); return draw(); }
+    if (pr) { profile = pr.dataset.obProfile; setSetting('profile', profile, { quiet: true }); play('click', 0.4); return refresh(); }
     const st = t.closest('[data-ob-step]');
-    if (st) { setSetting('target', Math.max(1, Math.min(10, getState().settings.target + +st.dataset.obStep)), { quiet: true }); play('click', 0.4); return draw(); }
+    if (st) { setSetting('target', Math.max(1, Math.min(10, getState().settings.target + +st.dataset.obStep)), { quiet: true }); play('click', 0.4); return refresh(); }
     const tg = t.closest('[data-ob-target]');
-    if (tg) { setSetting('target', +tg.dataset.obTarget, { quiet: true }); play('click', 0.4); return draw(); }
+    if (tg) { setSetting('target', +tg.dataset.obTarget, { quiet: true }); play('click', 0.4); return refresh(); }
     const tog = t.closest('[data-ob-tog]');
     if (tog) { const k = tog.dataset.obTog, on = !getState().settings[k]; tog.setAttribute('aria-checked', on); setSetting(k, on, { quiet: true }); play('click', 0.4); return; }
-    if (t.closest('[data-ob-allow]')) { await requestPermission(); return draw(); }
-    if (t.closest('[data-ob-install]')) { await install(); return draw(); }
+    const c = t.closest('[data-ob-connect]');
+    if (c) return connect(c.dataset.obConnect);
   });
-  root.addEventListener('input', e => { if (e.target.dataset.ob === 'name') setSetting('name', e.target.value.trim(), { quiet: true }); });
   root.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.matches('input')) { e.preventDefault(); go(1); }
-    if (e.key === 'ArrowRight' && !e.target.matches('input')) go(1);
-    if (e.key === 'ArrowLeft' && !e.target.matches('input') && step > 0) go(-1);
+    if (e.target.matches('input')) return;
+    if (e.key === 'ArrowRight' && STEPS[step] !== 'tour') go(1);
+    if (e.key === 'ArrowLeft' && step > 0) go(-1);
   });
 }
-export { supported, ICON };
+
+async function connect(kind) {
+  if (kind === 'google') {
+    if (!cal.googleConfigured()) return toast('Google Calendar needs a one-time setup first. See Settings → Calendars.');
+    try { await cal.connectGoogle(); toast('Google Calendar connected', 'good'); } catch (e) { toast(e.message); }
+    return refresh();
+  }
+  if (kind === 'apple') {
+    if (cal.feedAvailable() === false) return toast('Apple Calendar needs the TaskFlow server running (npm start).');
+    linked.apple = true; location.href = cal.webcalUrl(); return refresh();
+  }
+  toast('Apple Reminders will come with the TaskFlow phone app.');
+}

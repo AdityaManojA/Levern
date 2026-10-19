@@ -26,7 +26,7 @@ export function render(params) {
   if (filter === 'done') list.sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
   let body;
   if (!list.length) {
-    body = `<div class="card empty"><b>${query ? 'No matches' : { today: 'Nothing due today', upcoming: 'Nothing scheduled', someday: 'No someday quests', done: 'Nothing done yet', all: 'No quests yet' }[filter]}</b>
+    body = `<div class="card empty">${query ? '' : '<span class="empty-mochi" data-sprite="box-peek" data-scale=".9"></span>'}<b>${query ? 'No matches' : { today: 'Nothing due today', upcoming: 'Nothing scheduled', someday: 'No someday quests', done: 'Nothing done yet', all: 'No quests yet' }[filter]}</b>
       <span class="small">${query ? 'Try another word.' : 'Tap + to add one. Try "Call mum tomorrow at 6pm".'}</span></div>`;
   } else if (filter === 'today' && sort === 'smart') {
     const od = list.filter(q => dueStatus(q) === 'overdue'), td = list.filter(q => dueStatus(q) !== 'overdue');

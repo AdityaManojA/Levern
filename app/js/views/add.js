@@ -8,6 +8,7 @@ import { sheet, esc, toast, play, ICON } from '../ui.js';
 import { speechSupported, listen, speechError } from '../speech.js';
 import { reminderPicker, bindPicker, readPicker, pickerKey } from './common.js';
 import { requestPermission } from '../notify.js';
+import { mascot } from '../mascot.js';
 
 export function openAdd(prefill = {}) {
   const f = { title: '', tier: 3, due: prefill.due || null, time: null, repeat: null, subtasks: [], remindKey: 'none' };
@@ -17,12 +18,12 @@ export function openAdd(prefill = {}) {
   const s = sheet.open(`<form data-addform autocomplete="off">
     <div class="sheet-h"><b>New quest</b><button type="button" class="mini" data-close>Close</button></div>
     <input class="field" name="title" placeholder="What do you need to do?" aria-label="Quest" enterkeyhint="done">
-    <button type="button" class="mic" data-mic ${speechSupported ? '' : 'disabled'} ${getState().settings.voice ? '' : 'hidden'}>
+    <div data-tour="voice" class="tour-wrap"><button type="button" class="mic" data-mic ${speechSupported ? '' : 'disabled'} ${getState().settings.voice ? '' : 'hidden'}>
       <span class="orb">${ICON.mic}</span>
       <span><b data-mic-t>${speechSupported ? 'Tap and speak' : 'Voice not available here'}</b><small data-mic-s>${speechSupported ? 'Try "Dentist on Friday at 4pm"' : 'This browser has no speech recognition. Chrome, Edge and Safari do.'}</small></span>
     </button>
     <div class="sec" style="margin-top:10px">Picked up from your words</div>
-    <div class="chips" data-chips></div>
+    <div class="chips" data-chips></div></div>
     <label class="lbl">Priority</label>
     <div data-pick></div>
     <label class="lbl">Due</label>
@@ -73,7 +74,7 @@ export function openAdd(prefill = {}) {
     if (n === 'repeat') { manual.add('repeat'); f.repeat = e.target.value ? { freq: e.target.value } : null; if (f.repeat && !f.due) { f.due = todayLocal(); } paint(); paintPicker(); }
   });
   form.addEventListener('click', e => {
-    if (e.target.closest('[data-close]')) { stop && stop(); return sheet.close(); }
+    if (e.target.closest('[data-close]')) { stop && stop(); sheet.close(); setTimeout(() => mascot.react('look-back', 'pfft'), 420); return; }
     const t = e.target.closest('[data-tier]');
     if (t) { manual.add('tier'); f.tier = +t.dataset.tier; play('click', 0.5); return paint(); }
     if (e.target.closest('[data-subadd]')) return addSub();
@@ -100,11 +101,12 @@ export function openAdd(prefill = {}) {
     e.preventDefault();
     stop && stop();
     const raw = form.title.value.trim();
-    if (!raw) { toast('Your quest needs a name'); form.title.focus(); return; }
+    if (!raw) { toast('Your quest needs a name'); mascot.grumpy('name it first!'); form.title.focus(); return; }
     const spec = readPicker($f('[data-picker]'), pickerKey($f('[data-picker]')));
     const q = addQuest({ title: f.title || raw, tier: f.tier, due: f.due, time: f.due ? f.time : null, repeat: f.due ? f.repeat : null, subtasks: f.subtasks, remind: spec || null });
     play('click');
     sheet.close();
+    setTimeout(() => mascot.react('notify', 'new quest!'), 650);
     const nq = findQuest(q.id);
     toast(`Quest added to ${tierLabel(f.tier)}${nq.remind ? ` · reminder ${fmtStamp(nq.remind.at)}` : ''}`, 'good');
   });

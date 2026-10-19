@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS = {
   target: 5, tierNames: ['Critical', 'High', 'Medium', 'Normal', 'Low', 'Someday'],
   sound: true, volume: 0.6, notify: true, focusMin: 25, breakMin: 5, snoozeMin: 10,
   name: '', profile: '', voice: true,
+  mochi: true, roam: true, speed: 'slow', mochiSound: true, annoy: 5,
 };
 
 let adapter = localAdapter('taskflow.v1');

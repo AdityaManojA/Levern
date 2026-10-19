@@ -6,6 +6,7 @@ import { toStr } from '../dates.js';
 import { swap } from '../motion.js';
 import { esc, ICON, toast, play } from '../ui.js';
 import { show } from '../notify.js';
+import { mascot } from '../mascot.js';
 
 let tick = null, pickQuest = '', pickMode = 'focus', lastRunning = null;
 const fmt = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
@@ -63,6 +64,7 @@ function finish(early) {
   if (!early) pickMode = t.mode === 'focus' ? 'break' : 'focus';   // set before the re-render below
   else pickMode = t.mode;
   stopTimer();
+  mascot.focusMode(false);
   if (t.mode === 'focus') {
     if (minutes >= 1) logSession(t.questId || null, minutes);
     const q = t.questId && findQuest(t.questId);
@@ -112,7 +114,7 @@ setInterval(checkTimer, 5000);
 export const actions = {
   fmode: el => { pickMode = el.dataset.m; rerender(); },
   flen: el => { setSetting(pickMode === 'focus' ? 'focusMin' : 'breakMin', +el.dataset.m); play('click', 0.4); },
-  fstart: () => { const s = getState().settings; startTimer(pickMode === 'focus' ? pickQuest || null : null, pickMode, pickMode === 'focus' ? s.focusMin : s.breakMin); play('click'); },
+  fstart: () => { const s = getState().settings; startTimer(pickMode === 'focus' ? pickQuest || null : null, pickMode, pickMode === 'focus' ? s.focusMin : s.breakMin); play('click'); if (pickMode === 'focus') mascot.focusMode(true); },
   fpause: () => pauseTimer(),
   fresume: () => resumeTimer(),
   fstop: () => finish(true),

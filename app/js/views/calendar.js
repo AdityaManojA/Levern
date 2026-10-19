@@ -37,7 +37,7 @@ export function render() {
     const c = fromStr(cursor), grid = monthGrid(c.getFullYear(), c.getMonth()), map = byDay(grid[0], grid[41]);
     const mPrefix = cursor.slice(0, 7);
     head = `${MONTHS[c.getMonth()]} ${c.getFullYear()}`;
-    body = `<div class="month">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<div class="wd">${d}</div>`).join('')}
+    body = `<div class="month" data-tour="calendar">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<div class="wd">${d}</div>`).join('')}
       ${grid.map(d => { const qs = map[d] || [];
         return `<button class="day${d.slice(0, 7) !== mPrefix ? ' out' : ''}${d === today ? ' today' : ''}${d === selected ? ' sel' : ''}" data-act="pick-day" data-d="${d}" aria-label="${esc(fmtDate(d))}, ${qs.length} quests">
           ${fromStr(d).getDate()}<span class="dots">${qs.slice(0, 4).map(q => `<i style="--c:${TIER_COLORS[q.tier]}"></i>`).join('')}${qs.length > 4 ? `<span class="more">+${qs.length - 4}</span>` : ''}</span></button>`; }).join('')}
@@ -47,7 +47,7 @@ export function render() {
     const start = startOfWeek(cursor), end = addDays(start, 6), map = byDay(start, end);
     const s = fromStr(start), e = fromStr(end);
     head = `${s.getDate()} ${MONTHS[s.getMonth()]} – ${e.getDate()} ${MONTHS[e.getMonth()]}`;
-    body = `<div class="week">${Array.from({ length: 7 }, (_, i) => addDays(start, i)).map(d => { const qs = map[d] || [];
+    body = `<div class="week" data-tour="calendar">${Array.from({ length: 7 }, (_, i) => addDays(start, i)).map(d => { const qs = map[d] || [];
       return `<div class="wday${d === today ? ' today' : ''}">
         <div class="wh"><span>${WEEKDAYS[fromStr(d).getDay()]} ${fromStr(d).getDate()}${d === today ? ' · Today' : ''}</span><button class="mini" data-act="add" data-due="${d}" aria-label="Add quest on ${esc(fmtDate(d))}">+</button></div>
         ${qs.map(q => `<a data-key="w-${d}-${q.id}" class="wq" href="#/quest/${encodeURIComponent(q.id)}" style="${q.done ? 'opacity:.55;text-decoration:line-through' : ''}"><span class="dotc" style="--c:${TIER_COLORS[q.tier]}"></span><span class="t">${esc(q.title)}</span><span class="small">${q.time ? esc(fmtTime(q.time)) : ''}${q.repeat ? ' ↻' : ''}</span></a>`).join('') || '<div class="small" style="margin-top:4px">Free</div>'}

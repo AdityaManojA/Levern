@@ -44,9 +44,10 @@ export const sheet = {
     s.innerHTML = `<div class="grab"></div>${html}`;
     void s.offsetWidth; s.classList.add('open'); $('#scrim').classList.add('on');
     s.scrollTop = 0;
+    document.dispatchEvent(new CustomEvent('sheet:open'));
     return s;
   },
-  close() { $('#sheet').classList.remove('open'); $('#scrim').classList.remove('on'); },
+  close() { const was = this.isOpen(); $('#sheet').classList.remove('open'); $('#scrim').classList.remove('on'); if (was) document.dispatchEvent(new CustomEvent('sheet:close')); },
   isOpen: () => $('#sheet').classList.contains('open'),
 };
 
@@ -67,13 +68,14 @@ export function download(name, text, type) {
 }
 
 /* ---------- sounds ---------- */
-const SND = { click: 'sounds/click.wav', coin: 'sounds/coin.wav' };
+const SND = { click: 'sounds/click.wav', coin: 'sounds/coin.wav', mew: 'sounds/mew.wav' };
 const audio = {};
-export function play(name, vol = 1) {
+export function play(name, vol = 1, rate = 1) {
   const s = getState().settings;
   if (!s.sound) return;
   audio[name] ||= Object.assign(new Audio(SND[name]), { preload: 'auto' });
   const a = audio[name].cloneNode();
   a.volume = Math.max(0, Math.min(1, s.volume * vol));
+  if (rate !== 1) { a.preservesPitch = false; a.playbackRate = rate; }
   a.play().catch(() => {});
 }

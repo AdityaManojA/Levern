@@ -1,6 +1,6 @@
 # TaskFlow web app (v0.1)
 
-A calm to-do list that feels like a game, built as an installable PWA. Plain HTML, CSS and ES modules: there is no build step and nothing to install. Mochi the mascot is left out on purpose until his animations are finished (`design/` is the prototype he lives in).
+A calm to-do list that feels like a game, built as an installable PWA. Plain HTML, CSS and ES modules: there is no build step and nothing to install. Mochi the cat lives on the nav bar (`js/mochi.js`), using the Mochi v2 art copied from `design/` by `node scripts/sync-mochi.mjs <design folder>`. Re-run that after the frames are re-cut.
 
 ## Run it
 
@@ -16,7 +16,9 @@ Service workers need `localhost` or HTTPS, so open it through the server rather 
 
 | Feature | Where | Notes |
 |---|---|---|
-| Onboarding | first run | Six calm screens: welcome, what a quest and the P1–P6 colours mean, your name and use (Student, Work or Personal starter quests, or an empty list), daily target with plain-English streak and EXP, reminders/sound/voice, and an install prompt. Skippable, shown once, reopen from Settings → You → Welcome screens. |
+| Onboarding | first run | Matches the Figma frames: Welcome, What's a quest?, How will you use TaskFlow?, How many quests a day?, Make it yours (calendars, sounds, voice), and Mochi's tour prompt. Shown once. Reopen it from Settings → You. |
+| Guided tour | "Show me around", or Settings → You → Quick tour | 9 steps: the real screen dimmed, a spotlight, and a card from Mochi. Tap Mochi to finish. |
+| Mochi | nav bar | Breathes, blinks, idles, walks and naps. Tap, double tap, long press, and pointer play. Reacts to quests done, the daily target, new quests, errors and the add sheet, and sleeps while you focus. Settings → Mochi: show, roam, speed, sounds, patience. |
 | Saved quests and reminders | everywhere | Saved on the device through `js/storage.js`. Settings → Your data exports and imports a JSON backup. |
 | Voice entry | + button → mic | Web Speech API (Chrome, Edge, Safari). Firefox has none, so the button explains that and you type instead. |
 | Due dates from your words | + button | "Dentist Friday at 4pm", "tonight", "in 3 days", "25 Oct", "next week", "every Monday", "p1", "urgent". It sets the date, time, repeat and priority, and you can change any of them before saving. |
