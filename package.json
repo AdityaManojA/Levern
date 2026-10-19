@@ -1,0 +1,11 @@
+{
+  "name": "taskflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TaskFlow: a calm, game-like to-do list (PWA)",
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 5190 --directory app",
+    "test": "node --test app/tests/*.test.js"
+  }
+}

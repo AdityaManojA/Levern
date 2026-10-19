@@ -1,0 +1,79 @@
+// Local-date helpers. Due dates are stored as 'YYYY-MM-DD' strings (the user's local calendar day)
+// and times as 'HH:MM', so a quest due "Friday" stays on Friday whatever the timezone.
+
+const pad = n => String(n).padStart(2, '0');
+export const DAY_MS = 86400000;
+export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export const toStr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export const fromStr = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+export const todayStr = (now = new Date()) => toStr(now);
+export function addDays(s, n) { const d = fromStr(s); d.setDate(d.getDate() + n); return toStr(d); }
+export function addMonths(s, n) {
+  const d = fromStr(s), day = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth() + n);
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, last));
+  return toStr(d);
+}
+// whole days from a to b (b - a)
+export const diffDays = (a, b) => Math.round((fromStr(b) - fromStr(a)) / DAY_MS);
+export const weekday = s => fromStr(s).getDay();
+// Monday-based week start
+export function startOfWeek(s) { const wd = weekday(s); return addDays(s, wd === 0 ? -6 : 1 - wd); }
+// 6 rows x 7 days covering the month, starting on a Monday
+export function monthGrid(year, month) {
+  const first = toStr(new Date(year, month, 1));
+  const start = startOfWeek(first);
+  return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+}
+export function at(s, time) {
+  const d = fromStr(s);
+  if (time) { const [h, m] = time.split(':').map(Number); d.setHours(h, m, 0, 0); }
+  return d.getTime();
+}
+// the moment a quest becomes overdue: its time, or the end of its day
+export const dueTimestamp = q => q.due ? (q.time ? at(q.due, q.time) : at(q.due) + DAY_MS - 1) : null;
+
+export function fmtTime(t) {
+  const [h, m] = t.split(':').map(Number);
+  return `${((h + 11) % 12) + 1}${m ? ':' + pad(m) : ''} ${h < 12 ? 'am' : 'pm'}`;
+}
+export function fmtDate(s, now = new Date()) {
+  const d = fromStr(s), t = todayStr(now), n = diffDays(t, s);
+  if (n === 0) return 'Today';
+  if (n === 1) return 'Tomorrow';
+  if (n === -1) return 'Yesterday';
+  const base = `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  return d.getFullYear() === now.getFullYear() ? base : `${base} ${d.getFullYear()}`;
+}
+export function fmtStamp(ms, now = new Date()) {
+  const d = new Date(ms);
+  return `${fmtDate(toStr(d), now)}, ${fmtTime(`${pad(d.getHours())}:${pad(d.getMinutes())}`)}`;
+}
+
+// 'overdue' | 'today' | 'soon' (next 2 days) | 'week' | 'later' | 'none'
+export function dueStatus(q, now = new Date()) {
+  if (!q.due) return 'none';
+  if (!q.done && dueTimestamp(q) < now.getTime()) return 'overdue';
+  const n = diffDays(todayStr(now), q.due);
+  if (n <= 0) return 'today';
+  if (n <= 2) return 'soon';
+  if (n <= 7) return 'week';
+  return 'later';
+}
+export function dueLabel(q, now = new Date()) {
+  if (!q.due) return '';
+  const st = dueStatus(q, now), t = q.time ? ' ' + fmtTime(q.time) : '';
+  if (st === 'overdue') {
+    const n = diffDays(q.due, todayStr(now));
+    return n > 0 ? `Overdue · ${n} day${n === 1 ? '' : 's'}` : `Overdue · was ${fmtTime(q.time)}`;
+  }
+  return fmtDate(q.due, now) + t;
+}
+export function relTime(ms, now = Date.now()) {
+  const s = Math.round((ms - now) / 1000), a = Math.abs(s);
+  const v = a < 60 ? `${a} s` : a < 3600 ? `${Math.round(a / 60)} min` : a < 86400 ? `${Math.round(a / 3600)} h` : `${Math.round(a / 86400)} d`;
+  return s >= 0 ? `in ${v}` : `${v} ago`;
+}
