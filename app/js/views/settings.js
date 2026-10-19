@@ -146,7 +146,15 @@ export const actions = {
     try { const u = await account.signIn(); if (u) toast(`Signed in as ${u.name || u.email}`, 'good'); } catch (e) { toast(e.message); }
     rerender();
   },
-  'acct-out': async () => { if (await confirmBox('Sign out of TaskFlow? Your quests stay on this device and in your account.', 'Sign out')) { await account.signOut(); toast('Signed out'); rerender(); } },
+  'acct-out': async () => {
+    if (!await confirmBox('Sign out of TaskFlow? Your quests stay safe in your account, and this device goes back to the start.', 'Sign out')) return;
+    let r = await cloud.signOutAndReset();
+    if (r.unsaved) {
+      if (!await confirmBox('Your latest changes haven\'t reached your account yet (you may be offline). Sign out anyway and lose them on this device?', 'Sign out anyway')) return;
+      r = await cloud.signOutAndReset({ force: true });
+    }
+    toast('Signed out');
+  },
   gconnect: async () => { try { await cal.connectGoogle(); toast('Google Calendar connected', 'good'); } catch (e) { toast(e.message); } rerender(); },
   gsync: async () => { try { const c = await cal.syncGoogle(); if (c) toast(`Synced: ${c.inserted} added, ${c.updated} updated, ${c.deleted} removed`); } catch (e) { toast(e.message); } rerender(); },
   gdisconnect: async () => { if (await confirmBox('Stop syncing with Google Calendar? The TaskFlow calendar stays in your Google account.', 'Disconnect')) { try { await cal.disconnectGoogle(); toast('Disconnected'); } catch (e) { toast(e.message); } rerender(); } },

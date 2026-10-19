@@ -7,7 +7,7 @@
 //   taskflowUsers/{uid}               rev, chunk count, time zone, when it changed
 //   taskflowUsers/{uid}/chunks/{i}    the data, deflated (sketches can make it big; a document holds 1 MiB)
 //   taskflowUsers/{uid}/share/open    plain list of open quests and upcoming Google events, for Solodesk
-import { getState, onSave, syncDoc, adoptSynced } from './store.js';
+import { getState, onSave, syncDoc, adoptSynced, commit, resetAll } from './store.js';
 import { mergeDocs } from './syncmerge.js';
 import * as account from './account.js';
 
@@ -43,16 +43,19 @@ async function unpack(parts, z) {
 
 /* ---------- sync ---------- */
 const norm = d => JSON.stringify(mergeDocs(d || {}, {}));
+// returns { ok, hadData } (hadData: the account already had quests, i.e. a returning person)
 export async function syncNow() {
   const u = account.user();
-  if (!u) return;
-  if (busy) { again = true; return; }
+  if (!u) return { ok: false };
+  if (busy) { again = true; return { ok: false }; }
   busy = true;
+  let result = { ok: false };
   try {
     const { db, F } = await account.database();
     if (!(await account.firebaseUser())) throw new Error('signed out');
     const meta = F.doc(db, 'taskflowUsers', u.uid);
     const mine = syncDoc();
+    const samples = getState().seeded && !getState().history.length;   // untouched sample or starter quests
     // read the account's copy first (outside the transaction: big reads are cheaper to do once)
     const read = async get => {
       const m = await get(meta);
@@ -62,6 +65,9 @@ export async function syncNow() {
       return { md, doc: await unpack(snaps.map(s => s.exists() ? s.get('b').toUint8Array() : new Uint8Array(0)), md.z) };
     };
     const { md, doc } = await read(F.getDoc);
+    const hadData = !!doc?.quests?.length;
+    // signing in to an account that has quests: don't mix this device's sample quests into it
+    if (hadData && samples) { mine.quests = []; mine.tombstones = []; }
     const merged = mergeDocs(doc || {}, mine);
     let nextRev = md.rev || 0;
     if (!doc || norm(doc) !== JSON.stringify(merged)) {
@@ -75,15 +81,18 @@ export async function syncNow() {
         tx.set(meta, { rev: (md.rev || 0) + 1, chunks: parts.length, z, tz: TZ, updatedAt: Date.now(), app: 'taskflow' }, { merge: true });
         return true;
       });
-      if (!ok) { again = true; return; }
+      if (!ok) { again = true; return result; }
       nextRev = (md.rev || 0) + 1;
     }
     rev = nextRev;
     const now = JSON.stringify(syncDoc());
     const theirs = JSON.stringify(Object.fromEntries(Object.keys(mine).map(k => [k, merged[k]])));
     if (theirs !== now) adoptSynced(merged);
+    // the account's quests are real: onboarding must not swap them for starter quests
+    if (hadData && getState().seeded) commit(s => { s.seeded = false; }, { fromSync: true, quiet: true });
     dirty = false;
     info = { lastSync: Date.now(), error: null };
+    result = { ok: true, hadData };
     queueShare();
   } catch (e) {
     console.warn('TaskFlow: account sync failed', e);
@@ -94,6 +103,23 @@ export async function syncNow() {
     busy = false; emit();
     if (again) { again = false; schedule(300); }
   }
+  return result;
+}
+
+// Sign out: make sure everything reached the account, then clear this device so the next person
+// starts from the beginning. force: sign out even if the last changes couldn't be saved.
+export async function signOutAndReset({ force = false } = {}) {
+  if (account.user() && dirty) {
+    const r = await syncNow();
+    if (!r.ok && !force) return { ok: false, unsaved: true };
+  }
+  unlisten?.(); unlisten = null;
+  await account.signOut();
+  try { localStorage.removeItem('taskflow-events'); } catch (e) {}
+  resetAll();
+  rev = -1; dirty = false; lastShare = ''; sharedEvents = [];
+  info = { lastSync: null, error: null }; emit();
+  return { ok: true };
 }
 const schedule = (ms = 1200) => { clearTimeout(timer); timer = setTimeout(syncNow, ms); };
 

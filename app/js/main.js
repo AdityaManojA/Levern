@@ -29,6 +29,7 @@ import { syncGoogle, googleState, hasToken } from './calendars.js';
 import { startControls } from './controls.js';
 import { startMenu } from './menu.js';
 import { startAccount } from './account.js';
+import * as account from './account.js';
 
 store.init();
 
@@ -166,7 +167,10 @@ setupPullToRefresh({
 });
 document.addEventListener('sheet:open', () => mascot.setPerch('sheet'));
 document.addEventListener('sheet:close', () => mascot.setPerch('nav'));
-if (!store.getState().onboarded) onboarding.open(() => tour.start());
+// TaskFlow needs a signed-in account: signed out, you're back at the start of the welcome screens
+const toStart = () => { if (!onboarding.isOpen()) { sheet.close(); location.hash = '#/home'; onboarding.open(() => tour.start()); } };
+if (!store.getState().onboarded || !account.user()) onboarding.open(() => tour.start());
+account.onAccount(u => { if (!u) setTimeout(toStart, 0); });   // after sign-out has cleared the device
 registerSW().finally(startReminders);
 startCalendars();
 // share data with the TaskFlow server (API, webhooks); the app works the same without it
