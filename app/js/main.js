@@ -28,6 +28,7 @@ import { check as checkReminders } from './reminders.js';
 import { syncGoogle, googleState, hasToken } from './calendars.js';
 import { startControls } from './controls.js';
 import { startMenu } from './menu.js';
+import { startAccount } from './account.js';
 
 store.init();
 
@@ -141,6 +142,7 @@ unlockOnGesture();
 preloadSounds();
 startControls();
 startMenu();
+startAccount();
 go();
 // Mochi lives on the nav bar
 const mochi = createMochi({

@@ -369,6 +369,15 @@ body.ob-lock { overflow: hidden; }
 .ob-label { font-size: 13px; font-weight: 700; margin: 2px 0 8px; }
 .ob-circle { width: 220px; height: 220px; border-radius: 50%; border: var(--line); display: grid; place-items: center; margin: 0 auto 26px; overflow: hidden; }
 .ob-mochi { display: block; }
+/* smaller circle so Mochi is drawn at his art's own size (the frames are small; scaling them up blurs them) */
+.ob-circle-sm { width: 168px; height: 168px; }
+.ob-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 52px; border: var(--line); border-radius: 28px; background: #fff;
+  font-weight: 700; font-size: 15px; margin-top: 8px; transition: background .25s var(--ease), transform .2s var(--ease); }
+.ob-google:hover { background: #FFFCF6; }
+.ob-google:active { transform: scale(.98); }
+.ob-google:disabled { opacity: .6; cursor: default; }
+.ob-me img, .srow.acct img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--ink); flex: none; object-fit: cover; }
+.srow.acct img { width: 36px; height: 36px; }
 .ob-q { display: flex; align-items: center; gap: 12px; border: var(--line); border-radius: 18px; background: var(--c); padding: 10px 14px; margin-bottom: 10px; }
 .ob-q .chk { width: 22px; height: 22px; }
 .ob-q b, .ob-use b, .ob-row b { display: block; font-size: 15px; }

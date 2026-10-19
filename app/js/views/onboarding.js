@@ -9,9 +9,11 @@ import { esc, play, toast } from '../ui.js';
 import { EASE, EASE_IN, reduced } from '../motion.js';
 import { portrait, sprite } from '../mochi.js';
 import * as cal from '../calendars.js';
+import * as account from '../account.js';
 
-const STEPS = ['welcome', 'quests', 'use', 'target', 'yours', 'tour'];
-let step = 0, root = null, profile = '', stops = [], onFinish = null, linked = {};
+const STEPS = ['welcome', 'account', 'quests', 'use', 'target', 'yours', 'tour'];
+const G_LOGO = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.5 30.3 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
+let step = 0, root = null, profile = '', stops = [], onFinish = null, linked = {}, busy = false;
 
 const USES = [
   ['student', 'Student', 'Classes, a timetable and exam prep', 'var(--sky)', 'Students get starter quests for revision, essays and exams.'],
@@ -24,10 +26,19 @@ function screen(name) {
   switch (name) {
     case 'welcome': return `
       <div class="ob-center">
-        <div class="ob-circle" style="background:var(--lav)"><span class="ob-mochi" data-portrait="2.1"></span></div>
+        <div class="ob-circle ob-circle-sm" style="background:var(--lav)"><span class="ob-mochi" data-anim="happy-wiggle" data-scale="1.3" data-pause="1400"></span></div>
         <h1 class="ob-h" style="text-align:center">Welcome to TaskFlow</h1>
         <p class="ob-p muted" style="text-align:center">A calm to-do list that feels like a game. Finish tasks, build a streak, earn points, and keep Mochi company.</p>
       </div>`;
+    case 'account': {
+      const u = account.user();
+      return `
+      <h1 class="ob-h">Sign in</h1>
+      <p class="ob-p muted">Sign in with Google so TaskFlow knows it's you. Your quests stay on this device for now. Syncing between your devices comes next.</p>
+      ${u ? `<div class="ob-row ob-me">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="40" height="40" referrerpolicy="no-referrer">` : ''}<span><b>${esc(u.name || 'Signed in')}</b><small>${esc(u.email)}</small></span><button type="button" class="link" data-ob-signout>Sign out</button></div>`
+        : `<button type="button" class="ob-google" data-ob-google${busy ? ' disabled' : ''}>${G_LOGO}<span>${busy ? 'Signing in…' : 'Continue with Google'}</span></button>`}
+      <p class="ob-p muted small" style="margin-top:14px">No account? That's fine. Everything works without one, and you can sign in later from Settings.</p>`;
+    }
     case 'quests': return `
       <h1 class="ob-h">What's a quest?</h1>
       <p class="ob-p muted">A quest is simply a task, anything you want to get done. We call them quests because finishing them earns you points.</p>
@@ -82,7 +93,7 @@ function screen(name) {
     case 'tour': return `
       <div class="ob-center">
         <div class="ob-speech"><b>Hi, I'm Mochi!</b><p>Want a quick tour? It takes about 30 seconds. I'll show you where your quests live and how to make the app yours.</p></div>
-        <div class="ob-circle" style="background:var(--sky);width:184px;height:184px"><span class="ob-mochi" data-anim="wave" data-scale="1.55"></span></div>
+        <div class="ob-circle ob-circle-sm" style="background:var(--sky)"><span class="ob-mochi" data-anim="wave" data-scale="1.2"></span></div>
       </div>`;
   }
 }
@@ -94,6 +105,7 @@ function footer() {
   const label = { welcome: 'Get started', quests: 'Got it' }[name] || 'Continue';
   const below = name === 'welcome' ? '<button type="button" class="link ob-under" data-ob-skip>I\'ve used TaskFlow before</button>'
     : name === 'yours' ? '<button type="button" class="link ob-under" data-ob-next>Skip for now</button>' : '';
+  if (name === 'account' && !account.user()) return `${dots}<button type="button" class="btn white block" data-ob-next>Continue without an account</button>`;
   const perch = name === 'quests' ? '<span class="ob-perch" data-anim="rest" data-scale=".62" aria-hidden="true"></span>' : '';
   return `${dots}<div style="position:relative">${perch}<button type="button" class="btn block" data-ob-next>${label}</button></div>${below}`;
 }
@@ -103,7 +115,7 @@ const frame = () => `<div class="ob-body"><div class="ob-step" data-step="${STEP
 function mountSprites() {
   stops.forEach(s => s()); stops = [];
   root.querySelectorAll('[data-portrait]').forEach(el => stops.push(portrait(el, +el.dataset.portrait)));
-  root.querySelectorAll('[data-anim]').forEach(el => stops.push(sprite(el, el.dataset.anim, { scale: +el.dataset.scale || 1, pause: el.dataset.anim === 'wave' ? 1600 : 0 })));
+  root.querySelectorAll('[data-anim]').forEach(el => stops.push(sprite(el, el.dataset.anim, { scale: +el.dataset.scale || 1, pause: +el.dataset.pause || (el.dataset.anim === 'wave' ? 1600 : 0) })));
 }
 function draw(dir = 0) {
   const old = root.querySelector('.ob-step');
@@ -162,12 +174,28 @@ export function open(startTour) {
     if (tog) { const k = tog.dataset.obTog, on = !getState().settings[k]; tog.setAttribute('aria-checked', on); setSetting(k, on, { quiet: true }); play('click', 0.4); return; }
     const c = t.closest('[data-ob-connect]');
     if (c) return connect(c.dataset.obConnect);
+    if (t.closest('[data-ob-google]')) return googleSignIn();
+    if (t.closest('[data-ob-signout]')) { await account.signOut(); return refresh(); }
   });
   root.addEventListener('keydown', e => {
     if (e.target.matches('input')) return;
     if (e.key === 'ArrowRight' && STEPS[step] !== 'tour') go(1);
     if (e.key === 'ArrowLeft' && step > 0) go(-1);
   });
+}
+
+async function googleSignIn() {
+  busy = true; refresh();
+  try {
+    const u = await account.signIn();
+    if (u) {
+      const first = (u.name || '').split(' ')[0];
+      if (first && !getState().settings.name) setSetting('name', first, { quiet: true });
+      toast(`Signed in${first ? ` as ${first}` : ''}`, 'good'); play('click', 0.4);
+    }
+  } catch (e) { toast(e.message); }
+  busy = false;
+  if (isOpen()) refresh();
 }
 
 async function connect(kind) {

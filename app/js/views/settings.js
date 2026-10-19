@@ -7,6 +7,7 @@ import { todayStr, fmtStamp } from '../dates.js';
 import * as cal from '../calendars.js';
 import { mascot } from '../mascot.js';
 import { buildICS } from '../ics.js';
+import * as account from '../account.js';
 
 const tog = (k, on, label) => `<button class="tog" role="switch" aria-checked="${on}" aria-label="${esc(label)}" data-act="tog" data-k="${k}"></button>`;
 const step = (k, v, unit = '') => `<div class="step"><button data-act="step" data-k="${k}" data-d="-1" aria-label="Less">−</button><b>${v}${unit}</b><button data-act="step" data-k="${k}" data-d="1" aria-label="More">+</button></div>`;
@@ -23,6 +24,7 @@ export function render() {
 
     <div class="sec">You</div>
     <div class="card">
+      ${accountRow()}
       <div class="srow"><div class="l"><b>Name</b><small>Used in the greeting on Home</small></div><input class="field" style="width:150px" value="${esc(s.name)}" maxlength="30" data-input="name" aria-label="Your name" placeholder="Optional"></div>
       <div class="srow"><div class="l"><b>Welcome screens</b><small>See the introduction again</small></div><button class="mini" data-act="onboard">Show again</button></div>
       <div class="srow"><div class="l"><b>Quick tour</b><small>Mochi shows you around (30 seconds)</small></div><button class="mini" data-act="tour">Start</button></div>
@@ -121,7 +123,19 @@ function calendarRows() {
     ${feed === false ? '' : `<p class="small" style="margin-top:8px">Feed: ${esc(cal.feedUrl())}. Only devices that can reach this computer can use it; for your phone, TaskFlow needs to be hosted online.</p>`}`;
 }
 
+function accountRow() {
+  const u = account.user();
+  if (!u) return '<div class="srow"><div class="l"><b>Account</b><small>Sign in with Google so TaskFlow knows it\'s you. Quests stay on this device for now.</small></div><button class="mini" data-act="acct-in">Sign in</button></div>';
+  return `<div class="srow acct">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="36" height="36" referrerpolicy="no-referrer">` : ''}<div class="l"><b>${esc(u.name || 'Signed in')}</b><small>${esc(u.email)}</small></div><button class="mini" data-act="acct-out">Sign out</button></div>`;
+}
+
 export const actions = {
+  'acct-in': async el => {
+    el.disabled = true; el.textContent = 'Signing in…';
+    try { const u = await account.signIn(); if (u) toast(`Signed in as ${u.name || u.email}`, 'good'); } catch (e) { toast(e.message); }
+    rerender();
+  },
+  'acct-out': async () => { if (await confirmBox('Sign out of TaskFlow? Your quests stay on this device.', 'Sign out')) { await account.signOut(); toast('Signed out'); rerender(); } },
   gconnect: async () => { try { await cal.connectGoogle(); toast('Google Calendar connected', 'good'); } catch (e) { toast(e.message); } rerender(); },
   gsync: async () => { try { const c = await cal.syncGoogle(); if (c) toast(`Synced: ${c.inserted} added, ${c.updated} updated, ${c.deleted} removed`); } catch (e) { toast(e.message); } rerender(); },
   gdisconnect: async () => { if (await confirmBox('Stop syncing with Google Calendar? The TaskFlow calendar stays in your Google account.', 'Disconnect')) { cal.disconnectGoogle(); toast('Disconnected'); rerender(); } },
