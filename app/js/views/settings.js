@@ -116,7 +116,10 @@ function calendarRows() {
     gRight = `<button class="mini" data-act="gsync" ${cal.isSyncing() ? 'disabled' : ''}>${cal.isSyncing() ? 'Syncing…' : 'Sync now'}</button>`;
     const c = g.lastCounts;
     gText = (g.lastSync ? `Synced ${esc(fmtStamp(g.lastSync))}${c && (c.inserted || c.updated || c.deleted) ? ` (${c.inserted} added, ${c.updated} updated, ${c.deleted} removed${c.failed ? `, ${c.failed} failed` : ''})` : ''}.` : 'Connected.')
-      + (cal.hasToken() ? ' Changes sync automatically.' : ' Tap Sync now to sign in again and catch up.');
+      + (cal.hasToken() ? ' Changes sync automatically.' : ' Tap Sync now to sign in again and catch up.')
+      + (g.eventsError === 'denied' ? ' Your own events can\'t be shown: tap Disconnect, then Connect, and tick "See events" when Google asks.'
+        : g.eventsError ? ' Couldn\'t read your own events this time.'
+        : g.eventsAt ? ` Showing ${g.eventsCount || 0} of your own Google events on the Calendar screen.` : '');
   }
   return `
     <div class="srow"><div class="l"><b>Google Calendar</b><small>${gText}</small></div>${gRight}</div>

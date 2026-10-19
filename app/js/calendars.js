@@ -93,8 +93,15 @@ async function pullEvents() {
   const p = new URLSearchParams({ singleEvents: 'true', orderBy: 'startTime', maxResults: '250',
     timeMin: new Date(now - 7 * 86400000).toISOString(), timeMax: new Date(now + 62 * 86400000).toISOString() });
   let data;
+  const note = patch => commit(s => { s.gcal = { ...googleState(), ...patch }; }, { quiet: true });
   try { data = await api('GET', `/calendars/primary/events?${p}`); }
-  catch (e) { if (e.status === 403) return; throw e; }   // reading wasn't allowed: quests still sync
+  catch (e) {
+    // reading wasn't allowed (the "see events" box was left unticked): quests still sync
+    note({ eventsError: e.status === 403 ? 'denied' : 'failed', eventsAt: Date.now() });
+    if (e.status === 403) return;
+    throw e;
+  }
+  note({ eventsError: null, eventsAt: Date.now(), eventsCount: (data?.items || []).length });
   events = (data?.items || []).filter(e => e.status !== 'cancelled').map(e => {
     const allDay = !!e.start?.date;
     return { id: e.id, title: e.summary || '(No title)', allDay, start: allDay ? e.start.date : e.start?.dateTime, end: allDay ? e.end?.date : e.end?.dateTime, where: e.location || '', url: e.htmlLink || '' };
