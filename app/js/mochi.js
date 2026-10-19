@@ -18,6 +18,13 @@ const A = V.anims;
 const has = n => Object.prototype.hasOwnProperty.call(A, n);
 const stripUrl = n => V.base + 'strips/' + n + '.png';
 const SPEED = { slow: 28, normal: 50, zoomy: 95 }, SPRINT = 170, SINK = 2;
+// Tempo on top of the art's own fps: reactions and idles play much slower so they read as calm,
+// walking and running a little faster (stride and ground speed scale together, so his feet don't slide).
+// Rest and sleep keep their own breathing pace.
+const ACT_TEMPO = 0.55, MOVE_TEMPO = 1.15;
+const MOVES = new Set(['walk', 'sprint', 'sprint-stop', 'get-up-left', 'get-up-right']);
+const tempo = n => (MOVES.has(n) ? MOVE_TEMPO : n === 'rest' || n === 'sleep' ? 1 : ACT_TEMPO);
+const fpsOf = n => A[n].fps * tempo(n);
 const S = () => getState().settings;
 
 /* ---------- small looping sprites (onboarding, tour, empty states, toasts) ---------- */
@@ -128,7 +135,7 @@ export function createMochi(env) {
     M.anim = name; M.fi = from; render();
     if (reduced() && name !== 'rest') { M.fi = to; render(); if (!o.loop && !o.hold && o.then) setTimeout(o.then, 900); return true; }
     let f = from;
-    const fps = o.fps || a.fps;
+    const fps = o.fps || fpsOf(name);
     M.timer = setInterval(() => {
       if (o.onFrame && o.onFrame(f)) return;
       if (f !== to) { f += step; M.fi = f; render(); return; }
@@ -173,7 +180,7 @@ export function createMochi(env) {
     for (let i = 0; i < 12; i++) { const x = a + Math.random() * (b - a); if (Math.abs(x - addX()) > 50 && Math.abs(x - M.cx) > 40) return x; }
     return a;
   }
-  const walkFps = () => Math.max(5, Math.round(A.walk.fps * SPEED[S().speed || 'slow'] / SPEED.normal));
+  const walkFps = () => Math.max(5, Math.round(fpsOf('walk') * SPEED[S().speed || 'slow'] / SPEED.normal));
   function walkTo(x, opts = {}) {
     const [lo, hi] = bounds(); x = Math.max(lo, Math.min(hi, x));
     const d = x >= M.cx ? 1 : -1;
@@ -389,7 +396,7 @@ export function createMochi(env) {
     stopLook(); PLAY.lastPlay = Date.now(); PLAY.flips = [];
     M.busy = false; M.dir = dx >= 0 ? 1 : -1;
     const reach = Math.sign(dx) * Math.min(Math.abs(dx) - 26, kind === 'pounce' ? 70 : 50);
-    if (Math.abs(reach) > 4) slideTo(M.cx + reach, 1000 * A[kind].frames / A[kind].fps * 0.7);
+    if (Math.abs(reach) > 4) slideTo(M.cx + reach, 1000 * A[kind].frames / fpsOf(kind) * 0.7);
     strike(kind, kind === 'pounce' ? 'gotcha!' : '');
   }
   function stepLook() {
@@ -426,7 +433,7 @@ export function createMochi(env) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (M.state === 'drag' || M.state === 'fall') { /* positioned below */ }
     else if (M.state === 'walk' && !M.held) {
-      const sp = M.sprint ? SPRINT : SPEED[S().speed || 'slow'], dx = M.target - M.cx;
+      const sp = (M.sprint ? SPRINT : SPEED[S().speed || 'slow']) * MOVE_TEMPO, dx = M.target - M.cx;
       if (Math.abs(dx) < 1.5) { M.cx = M.target; arrive(); } else M.cx += Math.sign(dx) * Math.min(Math.abs(dx), sp * dt);
     } else if (now > M.next) decide();
     if (M.slide) {
