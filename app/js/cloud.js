@@ -88,7 +88,8 @@ export async function syncNow() {
   } catch (e) {
     console.warn('TaskFlow: account sync failed', e);
     info = { ...info, error: !navigator.onLine ? 'Offline. Changes will be saved when you\'re back online.'
-      : e.code === 'permission-denied' ? 'Your account storage isn\'t set up yet (database rules).' : "Couldn't save to your account right now. TaskFlow will try again." };
+      : e.code === 'permission-denied' ? 'Your account storage isn\'t set up yet (database rules).'
+      : "Couldn't save to your account right now. TaskFlow will try again. If you use an ad blocker, allow TaskFlow in it." };
   } finally {
     busy = false; emit();
     if (again) { again = false; schedule(300); }
