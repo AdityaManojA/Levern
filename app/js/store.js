@@ -3,6 +3,7 @@
 import { localAdapter } from './storage.js';
 import { todayStr, addDays, at, dueTimestamp, dueStatus } from './dates.js';
 import { rollForward } from './recur.js';
+import { cleanSketches } from './ink.js';
 
 export const TIER_COLORS = ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'];
 const VERSION = 2;
@@ -64,7 +65,7 @@ function migrate(s) {
   s.settings = { ...DEFAULT_SETTINGS, ...(s.settings || {}) };
   s.quests ||= []; s.history ||= []; s.sessions ||= []; s.timer ??= null; s.notifs ||= []; s.tombstones ||= [];
   for (const q of s.quests) q.updatedAt ??= q.createdAt || 0;
-  for (const q of s.quests) { q.subtasks ||= []; q.notes ??= ''; }
+  for (const q of s.quests) { q.subtasks ||= []; q.notes ??= ''; if (q.sketches) q.sketches = cleanSketches(q.sketches); }
   // saves from v1 never had seeded cleared when quests were added, so never swap their quests for starters
   if ((s.v || 1) < 2) s.seeded = false;
   s.v = VERSION;
@@ -114,6 +115,7 @@ export function addQuest(data) {
   const q = { id: uid(), title: data.title, tier: data.tier ?? 3, due: data.due || null, time: data.time || null, notes: data.notes || '',
     subtasks: (data.subtasks || []).map(s => typeof s === 'string' ? { id: uid(), title: s, done: false, tier: data.tier ?? 3 } : s),
     repeat: data.repeat || null, remind: null, done: false, doneAt: null, createdAt: Date.now() };
+  if (data.sketches && data.sketches.length) q.sketches = data.sketches.map(k => ({ id: uid(), createdAt: Date.now(), ...k }));
   commit(s => { s.quests.push(q); s.seeded = false; });
   if (data.remind) setReminder(q.id, data.remind);
   return q;
@@ -163,6 +165,15 @@ export function toggleDone(id) {
 export function addSubtask(id, title) { commit(s => { s.seeded = false; const q = findQuest(id); q && q.subtasks.push({ id: uid(), title, done: false, tier: q.tier }); }); }
 export function updateSubtask(id, sid, patch, opts) { commit(() => { const st = findQuest(id)?.subtasks.find(x => x.id === sid); st && Object.assign(st, patch); }, opts); }
 export function removeSubtask(id, sid) { commit(() => { const q = findQuest(id); if (q) q.subtasks = q.subtasks.filter(x => x.id !== sid); }); }
+
+/* ---------- sketches and handwriting (see ink.js) ---------- */
+export function addSketch(id, sketch) {
+  const k = { id: uid(), createdAt: Date.now(), kind: 'sketch', ...sketch };
+  commit(s => { s.seeded = false; const q = findQuest(id); if (q) (q.sketches ||= []).push(k); });
+  return k;
+}
+export function updateSketch(id, kid, patch) { commit(() => { const k = findQuest(id)?.sketches?.find(x => x.id === kid); k && Object.assign(k, patch, { editedAt: Date.now() }); }); }
+export function removeSketch(id, kid) { commit(() => { const q = findQuest(id); if (q && q.sketches) { q.sketches = q.sketches.filter(x => x.id !== kid); if (!q.sketches.length) delete q.sketches; } }); }
 
 /* ---------- reminders ----------
    q.remind = { at, offset, fired, dismissed }

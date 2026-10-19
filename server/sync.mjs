@@ -9,6 +9,7 @@ import { createKey, revokeKey, publicKey } from './keys.mjs';
 import { readJson, send } from './api.mjs';
 import { ApiError } from '../app/js/questops.js';
 
+const SYNC_MAX = 8 * 1024 * 1024;   // sketches make the app's data much bigger than an API call
 const LOOPBACK = ['127.0.0.1', '::1', '::ffff:127.0.0.1'];
 export function isLocalRequest(req, port) {
   if (!LOOPBACK.includes(req.socket.remoteAddress)) return false;
@@ -70,7 +71,7 @@ export function createSync(db, hooks, port) {
         return;
       }
       if (path === '/sync/state' && req.method === 'POST') {
-        const body = await readJson(req);
+        const body = await readJson(req, SYNC_MAX);   // the whole app's data, sketches included
         if (!Array.isArray(body.quests)) throw new ApiError(400, 'bad_doc', 'Expected the app data.');
         const before = JSON.stringify(pick(db.doc));
         const merged = mergeDocs(pick(db.doc), pick(body));

@@ -8,7 +8,7 @@ import { questRow } from './common.js';
 const FILTERS = [['today', 'Today'], ['upcoming', 'Upcoming'], ['someday', 'Someday'], ['done', 'Done'], ['all', 'All']];
 let filter = 'today', sort = 'smart', query = '';
 
-const match = q => !query || (q.title + ' ' + q.notes + ' ' + q.subtasks.map(s => s.title).join(' ')).toLowerCase().includes(query.toLowerCase());
+const match = q => !query || (q.title + ' ' + q.notes + ' ' + q.subtasks.map(s => s.title).join(' ') + ' ' + (q.sketches || []).map(k => k.text || '').join(' ')).toLowerCase().includes(query.toLowerCase());
 const inFilter = (q, f) => {
   const st = dueStatus(q);
   if (f === 'done') return q.done;

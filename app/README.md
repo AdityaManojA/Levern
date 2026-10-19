@@ -22,6 +22,7 @@ Service workers need `localhost` or HTTPS, so open it through the server rather 
 | Pull to refresh | Home, Quests, Calendar, Stats | Pull down from the top. Mochi stretches as you pull and spins while it re-checks reminders, re-syncs calendars and looks for an app update. |
 | Saved quests and reminders | everywhere | Saved on the device through `js/storage.js`. Settings → Your data exports and imports a JSON backup. |
 | Voice entry | + button → mic | Web Speech API (Chrome, Edge, Safari). Firefox has none, so the button explains that and you type instead. |
+| Sketches and handwriting | + button → Write or draw it, or Quest detail → Sketches and handwriting | Pen, finger or mouse. Pen pressure sets the line width, and once a pen touches the pad your resting hand is ignored (palm rejection). Eraser (or the pen's eraser end), undo, five inks, three sizes. Handwriting turns into text with the browser's Handwriting Recognition API, on the device and free, which today means Chrome on Android and ChromeOS; on other devices the writing is kept as ink on the quest. Sketches are stored as compact vector strokes (`js/ink.js`), so they sync and back up with the quest. |
 | Due dates from your words | + button | "Dentist Friday at 4pm", "tonight", "in 3 days", "25 Oct", "next week", "every Monday", "p1", "urgent". It sets the date, time, repeat and priority, and you can change any of them before saving. |
 | Real due dates, sorting, overdue | Quests | Today / Upcoming / Someday / Done / All, an Overdue group, sort by Smart, Priority, Due date or Newest, and search. Overdue quests get a red edge. |
 | Repeating quests and reminders | Quest detail → Repeat | Daily, weekdays, weekly or monthly. Ticking one off logs it and moves it to the next date. A reminder set "before due" moves with it. |
@@ -58,6 +59,9 @@ app/
     calendars.js     Google Calendar sync (Identity Services + Calendar API) and the live feed
     gcalmap.js       quest → event mapping and the sync plan (pure, tested)
     speech.js        Web Speech API
+    ink.js           sketch format, stroke smoothing and SVG drawing (pure, tested)
+    inkpad.js        the pen / touch canvas: pressure, palm rejection, eraser, undo
+    handwriting.js   Handwriting Recognition API (handwriting to text)
     views/           one module per screen (home, quests, detail, add, calendar, focus, stats, settings, reminders)
   tests/
 ```

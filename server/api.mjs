@@ -5,9 +5,9 @@ import { ApiError, createQuest, updateQuest, completeQuest, reopenQuest, deleteQ
 import { summary, lastDays } from '../app/js/stats.js';
 
 const MAX_BODY = 256 * 1024;
-export async function readJson(req) {
+export async function readJson(req, max = MAX_BODY) {
   let raw = '';
-  for await (const c of req) { raw += c; if (raw.length > MAX_BODY) throw new ApiError(413, 'too_large', 'Request body is too large (256 KB max).'); }
+  for await (const c of req) { raw += c; if (raw.length > max) throw new ApiError(413, 'too_large', `Request body is too large (${Math.round(max / 1024)} KB max).`); }
   if (!raw.trim()) return {};
   try { return JSON.parse(raw); } catch (e) { throw new ApiError(400, 'bad_json', 'The body is not valid JSON.'); }
 }
