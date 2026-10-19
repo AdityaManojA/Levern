@@ -1,12 +1,12 @@
 // Calendar: week and month views of due quests (repeating quests show every occurrence),
 // plus export to Google / Apple / Outlook calendars.
-import { getState, tierLabel, TIER_COLORS, sortQuests } from '../store.js';
+import { getState, tierLabel, TIER_COLORS, sortQuests, eventTier, setEventTier } from '../store.js';
 import { todayStr, addDays, startOfWeek, monthGrid, fromStr, toStr, WEEKDAYS, MONTHS, fmtDate, fmtTime, addMonths } from '../dates.js';
 import { externalEvents } from '../calendars.js';
 import { occurrences } from '../recur.js';
 import { buildICS } from '../ics.js';
 import { swap } from '../motion.js';
-import { esc, ICON, download, toast, play } from '../ui.js';
+import { esc, ICON, download, toast, play, sheet } from '../ui.js';
 
 let mode = 'month', cursor = todayStr(), selected = todayStr();
 
@@ -36,7 +36,13 @@ function eventsByDay(from, to) {
   return map;
 }
 const evTime = (e, d) => e.allDay ? 'All day' : toStr(new Date(e.start)) === d ? fmtTime(hhmm(e.start)) : 'cont.';
-const evRow = (e, d, cls) => `<a class="${cls} ev" href="${esc(e.url || '#')}" target="_blank" rel="noopener" title="${esc(e.where ? `${e.title} · ${e.where}` : e.title)}"><span class="dotc ev-dot"></span><span class="t">${esc(e.title)}</span><span class="small">${esc(evTime(e, d))}</span></a>`;
+// a Google event looks like a quest: its priority colour once you give it one, Google blue until then
+const EV_COLOR = '#9DB8F6';
+const evColor = e => { const t = eventTier(e.id); return t == null ? EV_COLOR : TIER_COLORS[t]; };
+const G_TAG = '<span class="gtag" aria-label="Google Calendar">G</span>';
+const evRow = (e, d, cls) => `<button type="button" class="${cls} ev" data-act="ev-open" data-ev="${esc(e.id)}" aria-label="${esc(e.title)}, Google Calendar event, ${esc(evTime(e, d))}${eventTier(e.id) != null ? `, ${esc(tierLabel(eventTier(e.id)))}` : ''}">
+  <span class="dotc" style="--c:${evColor(e)}"></span><span class="t">${esc(e.title)}</span>${G_TAG}<span class="small">${esc(evTime(e, d))}</span></button>`;
+const byTier = list => [...list].sort((a, b) => (eventTier(a.id) ?? 9) - (eventTier(b.id) ?? 9));
 
 function dayList(date, list, evs = []) {
   return `<div class="card">
@@ -45,7 +51,7 @@ function dayList(date, list, evs = []) {
     ${list.length ? list.map(q => `<a data-key="d-${q.id}" class="wday-q wq" href="#/quest/${encodeURIComponent(q.id)}" style="display:flex;align-items:center;gap:8px;margin-top:8px;text-decoration:none;font-weight:600;${q.done ? 'opacity:.55;text-decoration:line-through' : ''}">
         <span class="dotc" style="--c:${TIER_COLORS[q.tier]}"></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(q.title)}</span>
         <span class="small">${q.time ? esc(fmtTime(q.time)) : ''}${q.repeat ? ' ↻' : ''}</span></a>`).join('') : `<div class="small" style="margin-top:6px">${evs.length ? 'No quests due.' : 'Nothing due. Tap + Quest to plan something.'}</div>`}
-    ${evs.length ? `<div class="ev-h">From your Google Calendar</div>${evs.map(e => evRow(e, date, 'wday-q wq')).join('')}` : ''}
+    ${evs.length ? `<div class="ev-h">From your Google Calendar · tap one to set its priority</div>${byTier(evs).map(e => evRow(e, date, 'wday-q wq')).join('')}` : ''}
   </div>`;
 }
 
@@ -57,9 +63,11 @@ export function render() {
     const mPrefix = cursor.slice(0, 7);
     head = `${MONTHS[c.getMonth()]} ${c.getFullYear()}`;
     body = `<div class="month" data-tour="calendar">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<div class="wd">${d}</div>`).join('')}
-      ${grid.map(d => { const qs = map[d] || [], es = evs[d] || [], room = Math.max(0, 4 - Math.min(es.length, 1));
-        return `<button class="day${d.slice(0, 7) !== mPrefix ? ' out' : ''}${d === today ? ' today' : ''}${d === selected ? ' sel' : ''}" data-act="pick-day" data-d="${d}" aria-label="${esc(fmtDate(d))}, ${qs.length} quests${es.length ? `, ${es.length} events` : ''}">
-          ${fromStr(d).getDate()}<span class="dots">${qs.slice(0, room).map(q => `<i style="--c:${TIER_COLORS[q.tier]}"></i>`).join('')}${es.length ? '<i class="ev-dot"></i>' : ''}${qs.length > room ? `<span class="more">+${qs.length - room}</span>` : ''}</span></button>`; }).join('')}
+      ${grid.map(d => { const qs = map[d] || [], es = evs[d] || [];
+        // quests and events together, most urgent first, as solid dots
+        const all = [...qs.map(q => ({ c: TIER_COLORS[q.tier], t: q.tier })), ...es.map(e => ({ c: evColor(e), t: eventTier(e.id) ?? 6 }))].sort((a, b) => a.t - b.t);
+        return `<button class="day${d.slice(0, 7) !== mPrefix ? ' out' : ''}${d === today ? ' today' : ''}${d === selected ? ' sel' : ''}" data-act="pick-day" data-d="${d}" aria-label="${esc(fmtDate(d))}, ${qs.length} quests${es.length ? `, ${es.length} Google events` : ''}">
+          ${fromStr(d).getDate()}<span class="dots">${all.slice(0, 4).map(x => `<i style="--c:${x.c}"></i>`).join('')}${all.length > 4 ? `<span class="more">+${all.length - 4}</span>` : ''}</span></button>`; }).join('')}
     </div>
     <div style="height:12px"></div>${dayList(selected, map[selected] || byDay(selected, selected)[selected] || [], evs[selected] || eventsByDay(selected, selected)[selected] || [])}`;
   } else {
@@ -69,7 +77,7 @@ export function render() {
     body = `<div class="week" data-tour="calendar">${Array.from({ length: 7 }, (_, i) => addDays(start, i)).map(d => { const qs = map[d] || [];
       return `<div class="wday${d === today ? ' today' : ''}">
         <div class="wh"><span>${WEEKDAYS[fromStr(d).getDay()]} ${fromStr(d).getDate()}${d === today ? ' · Today' : ''}</span><button class="mini" data-act="add" data-due="${d}" aria-label="Add quest on ${esc(fmtDate(d))}">+</button></div>
-        ${qs.map(q => `<a data-key="w-${d}-${q.id}" class="wq" href="#/quest/${encodeURIComponent(q.id)}" style="${q.done ? 'opacity:.55;text-decoration:line-through' : ''}"><span class="dotc" style="--c:${TIER_COLORS[q.tier]}"></span><span class="t">${esc(q.title)}</span><span class="small">${q.time ? esc(fmtTime(q.time)) : ''}${q.repeat ? ' ↻' : ''}</span></a>`).join('')}${(evs[d] || []).map(e => evRow(e, d, 'wq')).join('')}${qs.length || evs[d]?.length ? '' : '<div class="small" style="margin-top:4px">Free</div>'}
+        ${qs.map(q => `<a data-key="w-${d}-${q.id}" class="wq" href="#/quest/${encodeURIComponent(q.id)}" style="${q.done ? 'opacity:.55;text-decoration:line-through' : ''}"><span class="dotc" style="--c:${TIER_COLORS[q.tier]}"></span><span class="t">${esc(q.title)}</span><span class="small">${q.time ? esc(fmtTime(q.time)) : ''}${q.repeat ? ' ↻' : ''}</span></a>`).join('')}${byTier(evs[d] || []).map(e => evRow(e, d, 'wq')).join('')}${qs.length || evs[d]?.length ? '' : '<div class="small" style="margin-top:4px">Free</div>'}
       </div>`; }).join('')}</div>`;
   }
   const open = getState().quests.filter(q => q.due && !q.done).length;
@@ -89,7 +97,32 @@ export function render() {
     </div>`;
 }
 
+// a Google event's sheet: when and where, a priority to pick, and a link to change it in Google.
+// No delete: the event belongs to Google Calendar, and TaskFlow never changes it there.
+function openEvent(id) {
+  const e = externalEvents().find(x => x.id === id);
+  if (!e) return;
+  const draw = () => {
+    const t = eventTier(e.id), d = e.allDay ? e.start : toStr(new Date(e.start));
+    const when = e.allDay ? `${fmtDate(e.start)} · all day` : `${fmtDate(d)} · ${fmtTime(hhmm(e.start))}${e.end ? `–${fmtTime(hhmm(e.end))}` : ''}`;
+    return `<div class="sheet-h"><b>${esc(e.title)}</b><button class="btn white sm" data-ev-close>Close</button></div>
+      <div class="ev-when">${G_TAG}<span>${esc(when)}${e.where ? ` · ${esc(e.where)}` : ''}</span></div>
+      <label class="lbl" id="ev-pri">Priority in TaskFlow</label>
+      <div class="pick" role="radiogroup" aria-labelledby="ev-pri">${TIER_COLORS.map((c, i) => `<button type="button" role="radio" aria-checked="${i === t}" data-ev-tier="${i}" class="${i === t ? 'on' : ''}" style="--c:${c}" title="${esc(tierLabel(i))}">P${i + 1}</button>`).join('')}</div>
+      <div class="small" style="margin-top:6px">${t == null ? 'No priority yet. It shows in Google blue until you pick one.' : esc(tierLabel(t))}${t != null ? ' · <button type="button" class="link" data-ev-tier="none">Clear</button>' : ''}</div>
+      <p class="small" style="margin:16px 0 10px">This event lives in your Google Calendar. Change its time or delete it there, and TaskFlow follows.</p>
+      ${e.url ? `<a class="btn white block" href="${esc(e.url)}" target="_blank" rel="noopener">Open in Google Calendar</a>` : ''}`;
+  };
+  const s = sheet.open(draw(), 'evsheet');
+  s.onclick = ev => {
+    const b = ev.target.closest('[data-ev-tier]');
+    if (b) { setEventTier(e.id, b.dataset.evTier === 'none' ? null : +b.dataset.evTier); play('click', 0.5); s.innerHTML = `<div class="grab"></div>${draw()}`; return; }
+    if (ev.target.closest('[data-ev-close]')) sheet.close();
+  };
+}
+
 export const actions = {
+  'ev-open': el => openEvent(el.dataset.ev),
   mode: el => { mode = el.dataset.m; play('click', 0.4); rerender(); },
   'pick-day': el => { selected = el.dataset.d; rerender(); },
   'cal-today': () => { cursor = selected = todayStr(); rerender(); },

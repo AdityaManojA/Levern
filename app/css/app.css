@@ -664,12 +664,15 @@ input[type=range]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--
 .legal h2 { font-size: 18px; margin: 26px 0 8px; line-height: 1.3; }
 .legal p, .legal li { margin-bottom: 10px; }
 .legal ul { padding-left: 20px; }
-/* the person's own Google Calendar events on the Calendar screen: quiet, dashed, not a quest */
-.ev-dot { background: #fff !important; border-style: dashed !important; border-color: var(--muted) !important; }
-.wq.ev { color: var(--muted); }
+/* the person's own Google Calendar events on the Calendar screen: shown like quests, with a small G */
+button.wq.ev { width: 100%; border: none; background: none; padding: 0; text-align: left; color: var(--ink); cursor: pointer; }
 .wq.ev .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card .wq.ev { display: flex; align-items: center; gap: 8px; margin-top: 8px; text-decoration: none; font-weight: 600; }
+.card .wq.ev { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: 600; font-size: 15px; }
+.wq.ev:hover .t { text-decoration: underline; text-underline-offset: 3px; }
+.gtag { flex: none; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid var(--ink); background: #fff;
+  font-size: 10px; font-weight: 800; line-height: 1; color: #1A73E8; }
 .ev-h { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 0; }
+.ev-when { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 4px; }
 .legal a:not(.mini):not(.brand):not(.seg a) { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
 .legal-sum { background: #F1FAF4; margin-top: 14px; }
 .legal-sum h2 { margin-top: 2px; }

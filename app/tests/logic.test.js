@@ -128,3 +128,10 @@ test('parseTime reads what people type into the time picker', () => {
   for (const [s, want] of Object.entries(cases)) assert.equal(parseTime(s), want, s);
   for (const s of ['', 'soon', '25:00', '9:75', '13pm', '0am']) assert.equal(parseTime(s), null, s);
 });
+
+test('Google event priorities merge per event, the later choice wins', async () => {
+  const { mergeEventMeta, mergeDocs } = await import('../js/syncmerge.js');
+  const a = { e1: { tier: 0, at: 10 }, e2: { tier: 3, at: 50 } }, b = { e1: { tier: 2, at: 20 }, e3: { tier: 5, at: 5 } };
+  assert.deepEqual(mergeEventMeta(a, b), { e1: { tier: 2, at: 20 }, e2: { tier: 3, at: 50 }, e3: { tier: 5, at: 5 } });
+  assert.deepEqual(mergeDocs({ eventMeta: a }, {}).eventMeta, a);
+});

@@ -146,7 +146,8 @@ async function writeShare() {
     id: q.id, title: q.title, tier: q.tier, due: q.due || null, time: q.time || null, repeat: q.repeat?.freq || null,
     notes: q.notes || '', subtasks: (q.subtasks || []).map(s => ({ title: s.title, done: !!s.done })), updatedAt: q.updatedAt || q.createdAt || null,
   }));
-  const body = { quests, events: sharedEvents.slice(0, 300), tz: TZ };
+  const meta = getState().eventMeta || {};
+  const body = { quests, events: sharedEvents.slice(0, 300).map(e => ({ ...e, tier: meta[e.id]?.tier ?? null })), tz: TZ };
   const key = JSON.stringify(body);
   if (key === lastShare) return;
   try {

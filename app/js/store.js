@@ -103,7 +103,14 @@ export function commit(fn, opts = {}) {
   return r;
 }
 // the parts of the data that sync with the server
-export const SYNC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt'];
+export const SYNC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt', 'eventMeta'];
+
+// TaskFlow's own notes on the person's Google Calendar events (only a priority for now), by event id.
+// Google stays the owner of the event itself: TaskFlow never changes or deletes it there.
+export const eventTier = id => state.eventMeta?.[id]?.tier ?? null;
+export function setEventTier(id, tier) {
+  commit(s => { s.eventMeta = { ...(s.eventMeta || {}), [id]: { tier, at: Date.now() } }; });
+}
 export const syncDoc = () => Object.fromEntries(SYNC_KEYS.map(k => [k, state[k]]));
 export function adoptSynced(doc) { commit(s => { for (const k of SYNC_KEYS) if (doc[k] !== undefined) s[k] = k === 'settings' ? { ...DEFAULT_SETTINGS, ...doc[k] } : doc[k]; }, { fromSync: true }); }
 

@@ -31,7 +31,15 @@ export function mergeDocs(a = {}, b = {}) {
     history: h.history || [], historyUpdatedAt: h.historyUpdatedAt || 0,
     sessions: s.sessions || [], sessionsUpdatedAt: s.sessionsUpdatedAt || 0,
     settings: st.settings || {}, settingsUpdatedAt: st.settingsUpdatedAt || 0,
+    eventMeta: mergeEventMeta(a.eventMeta, b.eventMeta),
   };
+}
+
+// notes on Google Calendar events ({ [eventId]: { tier, at } }): the later note wins, per event
+export function mergeEventMeta(a = {}, b = {}) {
+  const out = { ...(a || {}) };
+  for (const [id, m] of Object.entries(b || {})) if (!out[id] || (m?.at || 0) > (out[id]?.at || 0)) out[id] = m;
+  return out;
 }
 
 // what changed between two quest lists, as webhook-style events
