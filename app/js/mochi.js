@@ -20,10 +20,10 @@ const stripUrl = n => V.base + 'strips/' + n + '.png';
 const SPEED = { slow: 28, normal: 50, zoomy: 95 }, SPRINT = 170, SINK = 2;
 // Tempo on top of the art's own fps: reactions and idles play much slower so they read as calm,
 // walking and running a little faster (stride and ground speed scale together, so his feet don't slide).
-// Rest and sleep keep their own breathing pace.
-const ACT_TEMPO = 0.55, MOVE_TEMPO = 1.15;
+// His breathing (rest) and sleep are slowed a little too. Every Mochi animation goes through this, sprites included.
+const ACT_TEMPO = 0.4, BREATH_TEMPO = 0.75, MOVE_TEMPO = 1.15;
 const MOVES = new Set(['walk', 'sprint', 'sprint-stop', 'get-up-left', 'get-up-right']);
-const tempo = n => (MOVES.has(n) ? MOVE_TEMPO : n === 'rest' || n === 'sleep' ? 1 : ACT_TEMPO);
+const tempo = n => (MOVES.has(n) ? MOVE_TEMPO : n === 'rest' || n === 'sleep' ? BREATH_TEMPO : ACT_TEMPO);
 const fpsOf = n => A[n].fps * tempo(n);
 const S = () => getState().settings;
 
@@ -40,17 +40,17 @@ export function sprite(el, name, { scale = 1, loop, fps, pause = 0, frame } = {}
   const [l0, l1] = loop || a.loop || [1, a.frames];
   let i = 1, wait = 0; show(1);
   const t = setInterval(() => {
-    if (wait > 0) { wait -= 1000 / (fps || a.fps); return; }
+    if (wait > 0) { wait -= 1000 / (fps || fpsOf(name)); return; }
     i = i >= l1 ? l0 : i + 1; show(i);
     if (i === l1 && pause) wait = pause;
-  }, 1000 / (fps || a.fps));
+  }, 1000 / (fps || fpsOf(name)));
   return () => clearInterval(t);
 }
 // rest with an occasional blink, for portraits
 export function portrait(el, scale = 1) {
   let stop = sprite(el, 'rest', { scale }), t;
   if (reduced()) return () => stop();
-  const blink = () => { t = setTimeout(() => { stop(); stop = sprite(el, 'blink', { scale, loop: [1, A.blink.frames] }); setTimeout(() => { stop(); stop = sprite(el, 'rest', { scale }); blink(); }, 1000 * A.blink.frames / A.blink.fps); }, 2500 + Math.random() * 3000); };
+  const blink = () => { t = setTimeout(() => { stop(); stop = sprite(el, 'blink', { scale, loop: [1, A.blink.frames] }); setTimeout(() => { stop(); stop = sprite(el, 'rest', { scale }); blink(); }, 1000 * A.blink.frames / fpsOf('blink')); }, 2500 + Math.random() * 3000); };
   blink();
   return () => { clearTimeout(t); stop(); };
 }

@@ -5,7 +5,7 @@ import { parseQuest } from '../parse.js';
 import { fmtDate, fmtTime, fmtStamp } from '../dates.js';
 import { REPEATS } from '../recur.js';
 import { sheet, esc, toast, play, ICON } from '../ui.js';
-import { speechSupported, listen, speechError } from '../speech.js';
+import { speechSupported, speechBroken, browserName, listen, speechError } from '../speech.js';
 import { reminderPicker, bindPicker, readPicker, pickerKey } from './common.js';
 import { requestPermission } from '../notify.js';
 import { mascot } from '../mascot.js';
@@ -143,14 +143,25 @@ export function openAdd(prefill = {}) {
   function addSub() { const v = form.sub.value.trim(); if (!v) return; f.subtasks.push(v); form.sub.value = ''; play('click', 0.5); paint(); }
   bindPicker($f('[data-picker]'), (spec, key) => { f.remindKey = key; if (spec) requestPermission(); });
 
+  function markMicUnavailable() {
+    const btn = $f('[data-mic]'); btn.disabled = true;
+    $f('[data-mic-t]').textContent = 'Voice not available here';
+    $f('[data-mic-s]').textContent = `${browserName()[0].toUpperCase() + browserName().slice(1)} can't do voice input. Chrome, Edge and Safari can. Type it above.`;
+  }
+  if (speechBroken()) markMicUnavailable();   // already found out earlier this session
   function mic() {
     const btn = $f('[data-mic]');
     if (stop) { stop(); return; }
     btn.classList.add('listening'); $f('[data-mic-t]').textContent = 'Listening…'; $f('[data-mic-s]').textContent = 'Speak now. Tap again to stop.';
     stop = listen({
       onText: (text, final) => { form.title.value = text; onText(text); if (final) $f('[data-mic-s]').textContent = `"${text}"`; },
-      onError: code => { if (code !== 'aborted') toast(speechError(code)); },
-      onEnd: () => { stop = null; btn.classList.remove('listening'); $f('[data-mic-t]').textContent = form.title.value ? 'Got it. Tap to try again' : 'Tap and speak'; },
+      onStatus: text => { $f('[data-mic-s]').textContent = text + '. Speak now.'; },
+      onError: code => {
+        if (code === 'aborted') return;
+        toast(speechError(code));
+        if (code === 'unavailable') { markMicUnavailable(); form.title.focus(); }
+      },
+      onEnd: () => { stop = null; btn.classList.remove('listening'); if (!speechBroken()) $f('[data-mic-t]').textContent = form.title.value ? 'Got it. Tap to try again' : 'Tap and speak'; },
     });
   }
 
