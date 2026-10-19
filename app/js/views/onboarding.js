@@ -37,7 +37,8 @@ function screen(name) {
       <p class="ob-p muted">Sign in with Google so TaskFlow knows it's you. Your quests stay on this device for now. Syncing between your devices comes next.</p>
       ${u ? `<div class="ob-row ob-me">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="40" height="40" referrerpolicy="no-referrer">` : ''}<span><b>${esc(u.name || 'Signed in')}</b><small>${esc(u.email)}</small></span><button type="button" class="link" data-ob-signout>Sign out</button></div>`
         : `<button type="button" class="ob-google" data-ob-google${busy ? ' disabled' : ''}>${G_LOGO}<span>${busy ? 'Signing in…' : 'Continue with Google'}</span></button>`}
-      <p class="ob-p muted small" style="margin-top:14px">No account? That's fine. Everything works without one, and you can sign in later from Settings.</p>`;
+      <p class="ob-p muted small" style="margin-top:14px">No account? That's fine. Everything works without one, and you can sign in later from Settings.</p>
+      <p class="ob-p muted small">See what we keep in the <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a> and <a href="cookies.html" target="_blank" rel="noopener">cookies</a> pages.</p>`;
     }
     case 'quests': return `
       <h1 class="ob-h">What's a quest?</h1>

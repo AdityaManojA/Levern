@@ -95,6 +95,12 @@ export function render() {
       <div style="height:8px"></div>
       <div class="row-btns"><button class="btn ghost sm" data-act="clear-done">Clear done quests</button><button class="btn ghost sm" data-act="reset">Reset everything</button></div>
     </div>
+
+    <div class="sec">Privacy</div>
+    <div class="card">
+      <div class="srow"><div class="l"><b>Privacy policy</b><small>What TaskFlow stores and where it goes</small></div><a class="mini" href="privacy.html">Read</a></div>
+      <div class="srow"><div class="l"><b>Cookies</b><small>No tracking cookies. What's kept in your browser</small></div><a class="mini" href="cookies.html">Read</a></div>
+    </div>
     <p class="small" style="text-align:center;margin:16px 0">TaskFlow web 0.1 · light mode</p>`;
 }
 
