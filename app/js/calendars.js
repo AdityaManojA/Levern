@@ -1,40 +1,38 @@
-// Calendar connections.
-//  Google: Google Identity Services (OAuth token client) + Calendar API, straight from the browser.
-//    Dated quests sync into a calendar called "TaskFlow" that the app creates and owns
-//    (scope calendar.app.created: TaskFlow can only see and change calendars it made).
-//    The access token lives in memory only (about an hour); after that, "Sync now" asks again.
-//  Apple (and Outlook, Google, anything that subscribes to a URL): the app keeps a live .ics feed
-//    on the local server (server.mjs) at /calendar.ics, so a webcal:// subscription stays in sync.
-// Signed in, with the TaskFlow server online, both run on the server instead (cloud.js, functions/):
-//   Google keeps syncing with the app closed, the person's own events come back into TaskFlow, and the
-//   Apple feed is a private link on the web that their iPhone and Mac can reach.
+// Calendar connections, all from the browser (no TaskFlow server needed).
+//  Google: dated quests sync into a calendar called "TaskFlow" that the app creates and owns
+//    (scope calendar.app.created: TaskFlow can only see and change calendars it made), and the person's
+//    own upcoming events are read (calendar.events.readonly, primary calendar) to show on the Calendar
+//    screen and to share with Solodesk. Signed in, Google access comes through the person's Google
+//    sign-in (Firebase); otherwise through Google Identity Services with the client ID in config.js.
+//    Access lasts about an hour and lives in memory only; after that, "Sync now" asks again.
+//  Apple (and Outlook, anything that subscribes to a URL): the local server (server.mjs) serves a live
+//    .ics feed at /calendar.ics. A hosted live link needs a server (the Firebase Blaze plan, functions/).
 import { getState, subscribe, commit } from './store.js';
 import { planSync, applyOps } from './gcalmap.js';
 import { buildICS } from './ics.js';
 import { GOOGLE_CLIENT_ID } from '../config.js';
+import * as account from './account.js';
 import * as cloud from './cloud.js';
 
 const SCOPE = 'https://www.googleapis.com/auth/calendar.app.created';
+const READ_SCOPE = 'https://www.googleapis.com/auth/calendar.events.readonly';
 const API = 'https://www.googleapis.com/calendar/v3';
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-let token = null, tokenExp = 0, tokenClient = null, syncing = false, timer = null;
+const EVENTS_KEY = 'taskflow-events';
+let token = null, tokenExp = 0, tokenClient = null, syncing = false, timer = null, pullT = null;
+let events = (() => { try { return JSON.parse(localStorage.getItem(EVENTS_KEY)) || []; } catch (e) { return []; } })();
 const listeners = new Set();
 const emit = () => listeners.forEach(f => f());
 export const onCalendarChange = fn => listeners.add(fn);
-cloud.onCloud(() => emit());
 
 /* ---------- Google ---------- */
-export const serverMode = () => cloud.cloudOn();
-export const googleConfigured = () => serverMode() || !!GOOGLE_CLIENT_ID;
-const localGoogle = () => getState().gcal || { connected: false, map: {} };
-export const googleState = () => {
-  if (!serverMode()) return localGoogle();
-  const g = cloud.cloudInfo().gcal || {};
-  return { connected: !!g.connected, server: true, lastSync: g.lastSync, lastCounts: g.lastCounts, error: g.error };
-};
-export const hasToken = () => serverMode() || (!!token && Date.now() < tokenExp - 60000);
+const viaAccount = () => !!account.user();
+export const googleConfigured = () => viaAccount() || !!GOOGLE_CLIENT_ID;
+export const googleState = () => getState().gcal || { connected: false, map: {} };
+export const hasToken = () => !!token && Date.now() < tokenExp - 60000;
 export const isSyncing = () => syncing;
-export const externalEvents = () => serverMode() ? cloud.externalEvents() : [];
+// the person's own Google events (cached on the device), for the Calendar screen
+export const externalEvents = () => googleState().connected ? events : [];
 
 function loadGIS() {
   if (window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
@@ -47,10 +45,11 @@ function loadGIS() {
 }
 // must be called from a tap (browsers block the Google popup otherwise)
 async function getToken(prompt) {
+  if (viaAccount()) { const t = await account.googleAccess([SCOPE, READ_SCOPE]); token = t.token; tokenExp = t.exp; return token; }
   await loadGIS();
   return new Promise((res, rej) => {
     tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID, scope: SCOPE,
+      client_id: GOOGLE_CLIENT_ID, scope: `${SCOPE} ${READ_SCOPE}`,
       callback: r => {
         if (r.error) return rej(new Error(r.error_description || r.error));
         if (!google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)) return rej(new Error('Calendar access was not granted.'));
@@ -69,71 +68,78 @@ async function api(method, path, body) {
   return data;
 }
 async function ensureCalendar() {
-  const g = localGoogle();
+  const g = googleState();
   if (g.calendarId) {
     try { await api('GET', `/calendars/${encodeURIComponent(g.calendarId)}`); return g.calendarId; }
     catch (e) { if (e.status !== 404) throw e; }   // deleted in Google Calendar: make a new one
   }
   const cal = await api('POST', '/calendars', { summary: 'TaskFlow', description: 'Quests from TaskFlow. Edit them in TaskFlow; changes here are overwritten.', timeZone: TZ });
-  commit(s => { s.gcal = { ...localGoogle(), calendarId: cal.id, map: {} }; }, { quiet: true });
+  commit(s => { s.gcal = { ...googleState(), calendarId: cal.id, map: {} }; }, { quiet: true });
   return cal.id;
 }
 
+// the person's own upcoming events (primary calendar, a week back to two months ahead)
+async function pullEvents() {
+  const now = Date.now();
+  const p = new URLSearchParams({ singleEvents: 'true', orderBy: 'startTime', maxResults: '250',
+    timeMin: new Date(now - 7 * 86400000).toISOString(), timeMax: new Date(now + 62 * 86400000).toISOString() });
+  let data;
+  try { data = await api('GET', `/calendars/primary/events?${p}`); }
+  catch (e) { if (e.status === 403) return; throw e; }   // reading wasn't allowed: quests still sync
+  events = (data?.items || []).filter(e => e.status !== 'cancelled').map(e => {
+    const allDay = !!e.start?.date;
+    return { id: e.id, title: e.summary || '(No title)', allDay, start: allDay ? e.start.date : e.start?.dateTime, end: allDay ? e.end?.date : e.end?.dateTime, where: e.location || '', url: e.htmlLink || '' };
+  });
+  try { localStorage.setItem(EVENTS_KEY, JSON.stringify(events)); } catch (e) {}
+  cloud.setSharedEvents(events);
+}
+
 export async function connectGoogle() {
-  if (serverMode()) {
-    syncing = true; emit();
-    try { const ok = await cloud.connectGoogleServer(); if (ok === false) throw new Error('Google Calendar was not connected.'); return ok; }
-    finally { syncing = false; emit(); }
-  }
-  if (!GOOGLE_CLIENT_ID) throw new Error('Sign in with Google first (Settings → You), then connect your calendar.');
+  if (!googleConfigured()) throw new Error('Sign in with Google first (Settings → You), then connect your calendar.');
   await getToken('consent');
-  commit(s => { s.gcal = { ...localGoogle(), connected: true }; }, { quiet: true });
+  commit(s => { s.gcal = { ...googleState(), connected: true }; }, { quiet: true });
   await syncGoogle();
 }
-export async function disconnectGoogle() {
-  if (serverMode()) { await cloud.disconnectGoogleServer(); emit(); return; }
-  if (token && window.google) try { google.accounts.oauth2.revoke(token, () => {}); } catch (e) {}
-  token = null; tokenExp = 0;
+export function disconnectGoogle() {
+  if (token && !viaAccount() && window.google) try { google.accounts.oauth2.revoke(token, () => {}); } catch (e) {}
+  token = null; tokenExp = 0; events = [];
+  try { localStorage.removeItem(EVENTS_KEY); } catch (e) {}
+  cloud.setSharedEvents([]);
   // the TaskFlow calendar is left in place in Google; reconnecting re-uses it
-  commit(s => { s.gcal = { connected: false, calendarId: localGoogle().calendarId, map: {} }; }, { quiet: true });
+  commit(s => { s.gcal = { connected: false, calendarId: googleState().calendarId, map: {} }; }, { quiet: true });
   emit();
 }
 
-// interactive: true when called from a tap (may show Google's popup to refresh the token)
+// interactive: true when called from a tap (may show Google's popup to refresh access)
 export async function syncGoogle({ interactive = true } = {}) {
-  if (serverMode()) {
-    if (syncing) return null;
-    syncing = true; emit();
-    try { return await cloud.syncGoogleServer(); } finally { syncing = false; emit(); }
-  }
-  const g = localGoogle();
+  const g = googleState();
   if (!g.connected || syncing) return null;
   if (!hasToken()) { if (!interactive) { emit(); return null; } await getToken(''); }
   syncing = true; emit();
   try {
     const calId = await ensureCalendar();
-    const ops = planSync(getState().quests, localGoogle().map || {}, TZ);
+    const ops = planSync(getState().quests, googleState().map || {}, TZ);
     let res;
-    try { res = await applyOps(ops, localGoogle().map || {}, calId, api); }
+    try { res = await applyOps(ops, googleState().map || {}, calId, api); }
     catch (e) {
-      if (e.status === 401) { token = null; commit(s => { s.gcal = { ...localGoogle(), map: e.mapping }; }, { quiet: true }); }
+      if (e.status === 401) { token = null; commit(s => { s.gcal = { ...googleState(), map: e.mapping }; }, { quiet: true }); }
       throw e;
     }
-    commit(s => { s.gcal = { ...localGoogle(), map: res.mapping, lastSync: Date.now(), lastCounts: res.counts }; }, { quiet: true });
+    commit(s => { s.gcal = { ...googleState(), map: res.mapping, lastSync: Date.now(), lastCounts: res.counts }; }, { quiet: true });
+    await pullEvents().catch(() => {});
     return res.counts;
   } finally { syncing = false; emit(); }
 }
 
-/* ---------- live .ics feed (Apple Calendar and other subscriptions) ---------- */
+/* ---------- live .ics feed (Apple Calendar and other subscriptions), local server only ---------- */
 export const feedPath = 'calendar.ics';
-const localFeedUrl = () => new URL(feedPath, location.href.split('#')[0]).href;
-export const feedUrl = () => serverMode() && cloud.cloudInfo().feedUrl ? cloud.cloudInfo().feedUrl : localFeedUrl();
+export const feedUrl = () => new URL(feedPath, location.href.split('#')[0]).href;
 export const webcalUrl = () => feedUrl().replace(/^https?:/, 'webcal:');
-let feedOk = null, lastFeed = '';
-export const feedAvailable = () => serverMode() ? !!cloud.cloudInfo().feedUrl : feedOk;
-export const newFeedLink = () => cloud.newFeedLink();
+const hosted = () => !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+let feedOk = hosted() ? false : null, lastFeed = '';
+export const feedAvailable = () => feedOk;
 async function pushFeed() {
-  if (cloud.cloudAvailable()) return;   // hosted: the server builds each person's feed itself
+  if (hosted()) return;   // the feed lives on the local server (npm start)
   const ics = buildICS(getState().quests);
   const body = ics.replace(/^DTSTAMP:.*$/gm, '');   // ignore the timestamp when deciding if anything changed
   if (body === lastFeed && feedOk) return;
@@ -144,15 +150,21 @@ async function pushFeed() {
   emit();
 }
 
-/* ---------- keep both in step with the quests ---------- */
+/* ---------- keep everything in step with the quests ---------- */
 export function startCalendars() {
-  cloud.startCloud().finally(pushFeed);
+  cloud.startCloud();
+  cloud.onCloud(() => emit());
+  account.onAccount(() => emit());
+  if (googleState().connected) cloud.setSharedEvents(events);
+  pushFeed();
   subscribe(() => {
     clearTimeout(timer);
     timer = setTimeout(() => {
       pushFeed();
-      // with the server, cloud.js sends the change and the server updates Google itself
-      if (!serverMode() && localGoogle().connected && hasToken()) syncGoogle({ interactive: false }).catch(() => emit());
+      if (googleState().connected && hasToken()) syncGoogle({ interactive: false }).catch(() => emit());
     }, 2500);
   });
+  // refresh the person's events every 15 minutes while access lasts
+  clearInterval(pullT);
+  pullT = setInterval(() => { if (googleState().connected && hasToken() && !document.hidden) pullEvents().then(emit, () => {}); }, 15 * 60000);
 }

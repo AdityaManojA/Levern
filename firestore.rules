@@ -1,12 +1,18 @@
 rules_version = '2';
-// Firestore rules are owned and deployed by Solodesk (Solodesk-MVP/firestore.rules); this is a copy for
-// reference and is NOT in TaskFlow's firebase.json, so deploying TaskFlow never replaces them.
-// TaskFlow's server uses admin access and needs no rules; everything TaskFlow stores (users/*, feeds/*,
-// oauthStates/*) stays closed to browsers because nothing below allows it.
+// Firestore rules for the shared project (TaskFlow + Solodesk). Solodesk deploys them
+// (Solodesk-MVP/firestore.rules); keep this file and Solodesk's the same.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Each signed-in user can read/write only their own workspace document.
+    // Solodesk: each signed-in user can read/write only their own workspace document.
     match /solodeskWorkspaces/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // TaskFlow: each signed-in user can read/write only their own TaskFlow data (sync chunks and the
+    // share/open summary Solodesk reads). Same uid, so Solodesk can read it for the same person.
+    match /taskflowUsers/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /taskflowUsers/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
   }

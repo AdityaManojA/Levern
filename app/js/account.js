@@ -1,45 +1,58 @@
-// "Sign in with Google" through Firebase Authentication. The Firebase SDK is loaded from Google's CDN
-// only when it's needed (signing in, or a returning signed-in user), so the app still starts offline.
-// The signed-in profile is remembered on the device, so it shows straight away on the next start.
-// For now an account only says who you are; quests stay on this device.
+// "Sign in with Google" through Firebase Authentication, and the Firebase pieces that hang off it:
+// the database (Firestore) for account sync, and Google Calendar access through the same Google sign-in.
+// The Firebase SDK is loaded from Google's CDN only when it's needed (signing in, or a returning
+// signed-in user), so the app still starts offline. The signed-in profile is remembered on the device,
+// so it shows straight away on the next start.
 import { FIREBASE } from '../config.js';
 
 const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const KEY = 'taskflow-account';
-let fb = null, loading = null;
+let fb = null, loading = null, store = null;
 const listeners = new Set();
 
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { return null; } };
 let current = read();
 function save(u) {
-  current = u ? { uid: u.uid, name: u.displayName || '', email: u.email || '', photo: u.photoURL || '' } : null;
+  const next = u ? { uid: u.uid, name: u.displayName || '', email: u.email || '', photo: u.photoURL || '' } : null;
+  const same = JSON.stringify(next) === JSON.stringify(current);
+  current = next;
   try { current ? localStorage.setItem(KEY, JSON.stringify(current)) : localStorage.removeItem(KEY); } catch (e) {}
-  listeners.forEach(f => f(current));
+  if (!same) listeners.forEach(f => f(current));
 }
 
 async function load() {
   if (fb) return fb;
   if (!loading) loading = (async () => {
     const [{ initializeApp }, A] = await Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-auth.js')]);
-    const auth = A.getAuth(initializeApp(FIREBASE));
+    const app = initializeApp(FIREBASE);
+    const auth = A.getAuth(app);
     auth.useDeviceLanguage();
     A.onAuthStateChanged(auth, u => { if (u || current) save(u); });
     try { await A.getRedirectResult(auth); } catch (e) {}   // back from a redirect sign-in
-    fb = { auth, A };
+    fb = { app, auth, A };
     return fb;
   })().catch(e => { loading = null; throw e; });
   return loading;
 }
 
 export const user = () => current;
-// a fresh Firebase ID token for calling the TaskFlow server (null when signed out)
-export async function idToken() {
+export const onAccount = fn => { listeners.add(fn); return () => listeners.delete(fn); };
+// the signed-in Firebase user once the session is restored (null when signed out)
+export async function firebaseUser() {
   if (!current) return null;
   const f = await load();
   await f.auth.authStateReady();
-  return f.auth.currentUser ? f.auth.currentUser.getIdToken() : null;
+  return f.auth.currentUser;
 }
-export const onAccount = fn => { listeners.add(fn); return () => listeners.delete(fn); };
+export async function idToken() { const u = await firebaseUser(); return u ? u.getIdToken() : null; }
+// Firestore, loaded on first use
+export async function database() {
+  if (store) return store;
+  const f = await load();
+  const F = await import(SDK + 'firebase-firestore.js');
+  store = { db: F.getFirestore(f.app), F };
+  return store;
+}
 
 export async function signIn() {
   if (!navigator.onLine) throw new Error("You're offline. Sign in once you're back online.");
@@ -55,6 +68,29 @@ export async function signIn() {
   }
   try { await f.A.signInWithRedirect(f.auth, p); return null; } catch (e) { throw friendly(e); }
 }
+
+// Google Calendar access through the person's Google sign-in: asks Google for the extra permissions
+// (a popup, so call it from a tap) and returns a short-lived access token (about an hour).
+export async function googleAccess(scopes) {
+  const u = await firebaseUser();
+  if (!u) throw new Error('Sign in with Google first.');
+  const f = await load();
+  const p = new f.A.GoogleAuthProvider();
+  scopes.forEach(s => p.addScope(s));
+  if (current?.email) p.setCustomParameters({ login_hint: current.email });
+  let r;
+  try { r = await f.A.reauthenticateWithPopup(u, p); }
+  catch (e) {
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') throw new Error('Google Calendar access was not given.');
+    if (e.code === 'auth/user-mismatch') throw new Error('Pick the same Google account you signed in with.');
+    if (e.code === 'auth/popup-blocked') throw new Error('Allow pop-ups for TaskFlow, then try again.');
+    throw friendly(e);
+  }
+  const cred = f.A.GoogleAuthProvider.credentialFromResult(r);
+  if (!cred?.accessToken) throw new Error('Google Calendar access was not given.');
+  return { token: cred.accessToken, exp: Date.now() + 55 * 60000 };
+}
+
 function friendly(e) {
   const m = {
     'auth/unauthorized-domain': 'Google sign-in isn\'t allowed on this address yet (Firebase console → Authentication → Settings → Authorised domains).',
@@ -70,7 +106,7 @@ export async function signOut() {
   save(null);
 }
 
-// a returning signed-in user: refresh the session in the background once the app is up
+// a returning signed-in user: restore the session in the background once the app is up
 export function startAccount() {
   if (current && navigator.onLine) setTimeout(() => load().catch(() => {}), 1500);
 }

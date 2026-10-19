@@ -1,124 +1,143 @@
-// Keeps a signed-in person's data on the TaskFlow server (Firebase, functions/index.js), so it is safe,
-// the same on every device they sign in on, and available to their Apple Calendar link and to Google
-// Calendar sync while the app is closed. Works like sync.js (the local server): send our copy, the server
-// merges (last write wins per quest, deletions win) and returns the result, which we adopt.
-// Offline or signed out, the app just keeps working on its own copy.
+// Keeps a signed-in person's TaskFlow data in their account (Firestore, straight from the browser; the
+// database rules only let each person reach their own documents). The same on every device they sign in
+// on, and readable by Solodesk, which shares the account. Works like sync.js (the local server): merge
+// our copy with the account's copy (last write wins per quest, deletions win, syncmerge.js), save the
+// result to both. Offline or signed out, the app just keeps working on its own copy.
+//
+//   taskflowUsers/{uid}               rev, chunk count, time zone, when it changed
+//   taskflowUsers/{uid}/chunks/{i}    the data, deflated (sketches can make it big; a document holds 1 MiB)
+//   taskflowUsers/{uid}/share/open    plain list of open quests and upcoming Google events, for Solodesk
 import { getState, onSave, syncDoc, adoptSynced } from './store.js';
+import { mergeDocs } from './syncmerge.js';
 import * as account from './account.js';
 
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-const EVENTS_KEY = 'taskflow-events';
-let available = null, timer = null, busy = false, again = false, dirty = true, rev = -1, eventsRev = -1, poll = null;
-let info = { gcal: { connected: false }, feedUrl: null, lastSync: null, error: null };
-let events = (() => { try { return JSON.parse(localStorage.getItem(EVENTS_KEY)) || []; } catch (e) { return []; } })();
+const CHUNK = 700 * 1024;
+let started = false, timer = null, busy = false, again = false, dirty = true, rev = -1, unlisten = null, sharedEvents = [], lastShare = '', shareT = null;
+let info = { lastSync: null, error: null };
 const listeners = new Set();
 const emit = () => listeners.forEach(f => f(info));
 export const onCloud = fn => { listeners.add(fn); return () => listeners.delete(fn); };
 export const cloudInfo = () => info;
-export const cloudAvailable = () => available;
-export const cloudOn = () => !!(available && account.user());
-// the person's own Google Calendar events (from the server), for the Calendar screen
-export const externalEvents = () => events;
+export const cloudOn = () => !!account.user();
 
-async function call(method, path, body) {
-  const t = await account.idToken();
-  if (!t) throw Object.assign(new Error('Sign in first.'), { status: 401 });
-  const r = await fetch('api' + path, { method, headers: { Authorization: 'Bearer ' + t, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(data.error || `TaskFlow server error ${r.status}`), { status: r.status });
-  return data;
+/* ---------- packing ---------- */
+const canZip = typeof CompressionStream === 'function';
+async function zip(bytes, mode) {
+  const s = new Blob([bytes]).stream().pipeThrough(mode === 'in' ? new CompressionStream('deflate-raw') : new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(s).arrayBuffer());
 }
-function setEvents(items) {
-  events = items || [];
-  try { localStorage.setItem(EVENTS_KEY, JSON.stringify(events)); } catch (e) {}
+async function pack(doc) {
+  let bytes = new TextEncoder().encode(JSON.stringify(doc));
+  if (canZip) bytes = await zip(bytes, 'in');
+  const parts = [];
+  for (let i = 0; i < bytes.length; i += CHUNK) parts.push(bytes.subarray(i, i + CHUNK));
+  return { parts: parts.length ? parts : [new Uint8Array(0)], z: canZip };
 }
-function take(r) {
-  info = { ...info, gcal: r.gcal || info.gcal, feedUrl: r.feedUrl || info.feedUrl, lastSync: Date.now(), error: null };
-  if (typeof r.rev === 'number') rev = r.rev;
-  if (r.events) { setEvents(r.events.items); eventsRev = r.eventsRev ?? eventsRev; }
+async function unpack(parts, z) {
+  const all = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let o = 0; for (const p of parts) { all.set(p, o); o += p.length; }
+  if (!all.length) return null;
+  return JSON.parse(new TextDecoder().decode(z ? await zip(all, 'out') : all));
 }
 
+/* ---------- sync ---------- */
+const norm = d => JSON.stringify(mergeDocs(d || {}, {}));
 export async function syncNow() {
-  if (!cloudOn()) return;
+  const u = account.user();
+  if (!u) return;
   if (busy) { again = true; return; }
   busy = true;
   try {
+    const { db, F } = await account.database();
+    if (!(await account.firebaseUser())) throw new Error('signed out');
+    const meta = F.doc(db, 'taskflowUsers', u.uid);
     const mine = syncDoc();
-    const r = await call('POST', '/sync', { doc: mine, tz: TZ, withEvents: eventsRev < 0 });
+    // read the account's copy first (outside the transaction: big reads are cheaper to do once)
+    const read = async get => {
+      const m = await get(meta);
+      const md = m.exists() ? m.data() : {};
+      if (!md.chunks) return { md, doc: null };
+      const snaps = await Promise.all(Array.from({ length: md.chunks }, (_, i) => get(F.doc(db, 'taskflowUsers', u.uid, 'chunks', String(i)))));
+      return { md, doc: await unpack(snaps.map(s => s.exists() ? s.get('b').toUint8Array() : new Uint8Array(0)), md.z) };
+    };
+    const { md, doc } = await read(F.getDoc);
+    const merged = mergeDocs(doc || {}, mine);
+    let nextRev = md.rev || 0;
+    if (!doc || norm(doc) !== JSON.stringify(merged)) {
+      const { parts, z } = await pack(merged);
+      // only write if nobody else wrote since we read; otherwise go round again
+      const ok = await F.runTransaction(db, async tx => {
+        const cur = await tx.get(meta);
+        if ((cur.exists() ? cur.get('rev') || 0 : 0) !== (md.rev || 0)) return false;
+        parts.forEach((p, i) => tx.set(F.doc(db, 'taskflowUsers', u.uid, 'chunks', String(i)), { b: F.Bytes.fromUint8Array(p) }));
+        for (let i = parts.length; i < (md.chunks || 0); i++) tx.delete(F.doc(db, 'taskflowUsers', u.uid, 'chunks', String(i)));
+        tx.set(meta, { rev: (md.rev || 0) + 1, chunks: parts.length, z, tz: TZ, updatedAt: Date.now(), app: 'taskflow' }, { merge: true });
+        return true;
+      });
+      if (!ok) { again = true; return; }
+      nextRev = (md.rev || 0) + 1;
+    }
+    rev = nextRev;
     const now = JSON.stringify(syncDoc());
-    const theirs = JSON.stringify(Object.fromEntries(Object.keys(mine).map(k => [k, r.doc[k]])));
-    if (theirs !== now) adoptSynced(r.doc);
-    take(r);
-    if (r.eventsRev !== eventsRev && !r.events) await refreshEvents(r.eventsRev);
+    const theirs = JSON.stringify(Object.fromEntries(Object.keys(mine).map(k => [k, merged[k]])));
+    if (theirs !== now) adoptSynced(merged);
     dirty = false;
+    info = { lastSync: Date.now(), error: null };
+    queueShare();
   } catch (e) {
-    info = { ...info, error: navigator.onLine ? "Can't reach the TaskFlow server right now" : 'Offline' };
+    console.warn('TaskFlow: account sync failed', e);
+    info = { ...info, error: !navigator.onLine ? 'Offline. Changes will be saved when you\'re back online.'
+      : e.code === 'permission-denied' ? 'Your account storage isn\'t set up yet (database rules).' : "Couldn't save to your account right now. TaskFlow will try again." };
   } finally {
     busy = false; emit();
-    if (again) { again = false; schedule(50); }
+    if (again) { again = false; schedule(300); }
   }
-}
-async function refreshEvents(nextRev) {
-  try { const r = await call('GET', '/events'); setEvents(r.items); eventsRev = nextRev; } catch (e) {}
 }
 const schedule = (ms = 1200) => { clearTimeout(timer); timer = setTimeout(syncNow, ms); };
 
-// cheap check for changes made on another device (or by the server's Google sync)
-async function check() {
-  if (!cloudOn() || document.hidden) return;
-  if (dirty) return syncNow();
+// changes made on another device: Firestore tells us when the rev moves
+async function listen() {
+  unlisten?.(); unlisten = null;
+  const u = account.user(); if (!u) return;
   try {
-    const r = await call('GET', '/rev');
-    info = { ...info, gcal: r.gcal, feedUrl: r.feedUrl || info.feedUrl };
-    if (r.rev !== rev) await syncNow();
-    else if (r.eventsRev !== eventsRev) { await refreshEvents(r.eventsRev); emit(); }
+    const { db, F } = await account.database();
+    await account.firebaseUser();
+    unlisten = F.onSnapshot(F.doc(db, 'taskflowUsers', u.uid), s => {
+      const r = s.exists() ? s.get('rev') || 0 : 0;
+      if (r !== rev && !busy) schedule(100);
+    }, () => {});
   } catch (e) {}
 }
 
-/* ---------- Google Calendar, run by the server ---------- */
-// opens Google's permission page in a popup; the server finishes the connection and syncs
-export async function connectGoogleServer() {
-  const popup = window.open('', 'taskflow-gcal', 'width=500,height=650');
+/* ---------- what Solodesk reads ---------- */
+export function setSharedEvents(items) { sharedEvents = items || []; queueShare(); }
+function queueShare() { clearTimeout(shareT); shareT = setTimeout(writeShare, 1500); }
+async function writeShare() {
+  const u = account.user(); if (!u) return;
+  const quests = getState().quests.filter(q => !q.done).map(q => ({
+    id: q.id, title: q.title, tier: q.tier, due: q.due || null, time: q.time || null, repeat: q.repeat?.freq || null,
+    notes: q.notes || '', subtasks: (q.subtasks || []).map(s => ({ title: s.title, done: !!s.done })), updatedAt: q.updatedAt || q.createdAt || null,
+  }));
+  const body = { quests, events: sharedEvents.slice(0, 300), tz: TZ };
+  const key = JSON.stringify(body);
+  if (key === lastShare) return;
   try {
-    await syncNow();   // the server needs this person's quests first
-    const { url } = await call('POST', '/gcal/start');
-    if (popup && !popup.closed) popup.location.href = url; else { location.href = url; return null; }
-  } catch (e) { popup?.close(); throw e; }
-  return new Promise(res => {
-    const done = ok => { removeEventListener('message', onMsg); clearInterval(watch); res(ok); };
-    const onMsg = e => { if (e.origin === location.origin && e.data?.taskflow === 'gcal') done(!!e.data.ok); };
-    addEventListener('message', onMsg);
-    const watch = setInterval(() => { if (popup.closed) done(null); }, 700);
-  }).then(async ok => { eventsRev = -1; await syncNow(); return ok ?? !!info.gcal?.connected; });
-}
-export async function syncGoogleServer() {
-  await syncNow();
-  const r = await call('POST', '/gcal/sync');
-  take(r); emit();
-  return r.counts;
-}
-export async function disconnectGoogleServer() {
-  await call('POST', '/gcal/disconnect');
-  setEvents([]); info = { ...info, gcal: { connected: false } }; emit();
-}
-export async function newFeedLink() {
-  const r = await call('POST', '/feed/rotate');
-  info = { ...info, feedUrl: r.feedUrl }; emit();
-  return r.feedUrl;
+    const { db, F } = await account.database();
+    await F.setDoc(F.doc(db, 'taskflowUsers', u.uid, 'share', 'open'), { ...body, updatedAt: Date.now() });
+    lastShare = key;
+  } catch (e) {}
 }
 
-export async function startCloud() {
-  // the local server (npm start) has its own sync (sync.js); the TaskFlow server only runs when hosted
-  if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && !new URLSearchParams(location.search).has('cloud')) { available = false; emit(); return false; }
-  try { const r = await fetch('api/ping', { cache: 'no-store' }); available = r.ok && (await r.json().catch(() => ({}))).service === 'taskflow-cloud'; }
-  catch (e) { available = false; }
-  emit();
-  if (!available) return false;
-  onSave((s, opts) => { if (!opts.fromSync) { dirty = true; schedule(); } });
-  account.onAccount(u => { rev = -1; eventsRev = -1; dirty = true; if (u) syncNow(); else { setEvents([]); info = { gcal: { connected: false }, feedUrl: null, lastSync: null, error: null }; emit(); } });
-  addEventListener('online', () => schedule(50));
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
-  clearInterval(poll); poll = setInterval(check, 30000);
-  if (account.user()) await syncNow();
-  return true;
+export function startCloud() {
+  if (started) return; started = true;
+  onSave((s, opts) => { if (!opts.fromSync && account.user()) { dirty = true; schedule(); } });
+  account.onAccount(u => {
+    rev = -1; dirty = true; lastShare = '';
+    if (u) { syncNow().then(listen); } else { unlisten?.(); unlisten = null; info = { lastSync: null, error: null }; emit(); }
+  });
+  addEventListener('online', () => { if (dirty) schedule(50); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && dirty) schedule(50); });
+  setInterval(() => { if (dirty && account.user()) syncNow(); }, 20000);
+  if (account.user()) syncNow().then(listen);
 }

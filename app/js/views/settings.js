@@ -106,37 +106,10 @@ export function render() {
 }
 
 function calendarRows() {
-  // hosted with the TaskFlow server: calendars are tied to the person's account
-  if (cloud.cloudAvailable()) return account.user() ? serverCalendarRows() : `
-    <div class="srow"><div class="l"><b>Google and Apple Calendar</b><small>Sign in with Google first. Then your quests show up in Google Calendar and on your iPhone or Mac, and your own Google events show up here.</small></div><button class="mini" data-act="acct-in">Sign in</button></div>
-    <div class="row-btns" style="margin-top:4px"><button class="btn white sm" data-act="ics-download">Download .ics</button></div>`;
-  return localCalendarRows();
-}
-
-function serverCalendarRows() {
-  const g = cal.googleState(), c = g.lastCounts, link = cal.feedAvailable();
-  const gText = !g.connected
-    ? (g.error ? esc(g.error) : 'Puts your dated quests in a "TaskFlow" calendar and shows your own Google events in TaskFlow. Keeps going while the app is closed.')
-    : (g.error ? esc(g.error) : g.lastSync ? `Synced ${esc(fmtStamp(g.lastSync))}${c && (c.inserted || c.updated || c.deleted) ? ` (${c.inserted} added, ${c.updated} updated, ${c.deleted} removed)` : ''}. Stays in sync on its own.` : 'Connected. Syncing…');
-  const gRight = !g.connected ? `<button class="mini" data-act="gconnect" ${cal.isSyncing() ? 'disabled' : ''}>${cal.isSyncing() ? 'Connecting…' : 'Connect'}</button>`
-    : `<button class="mini" data-act="gsync" ${cal.isSyncing() ? 'disabled' : ''}>${cal.isSyncing() ? 'Syncing…' : 'Sync now'}</button>`;
-  return `
-    <div class="srow"><div class="l"><b>Google Calendar</b><small>${gText}</small></div>${gRight}</div>
-    ${g.connected ? '<div class="srow" style="padding-top:0;border-top:none"><div class="l"></div><button class="link" data-act="gdisconnect">Disconnect</button></div>' : ''}
-    <div class="srow"><div class="l"><b>Apple Calendar</b><small>${link ? 'Your private link. Subscribe once on your iPhone or Mac and your quests stay up to date. Also works in Outlook.' : 'Getting your private link…'}</small></div>
-      ${link ? `<a class="mini" href="${esc(cal.webcalUrl())}">Subscribe</a>` : ''}</div>
-    <div class="row-btns" style="margin-top:4px">
-      ${link ? '<button class="btn white sm" data-act="copy-feed">Copy link</button><button class="btn ghost sm" data-act="feed-new">New link</button>' : ''}
-      <button class="btn white sm" data-act="ics-download">Download .ics</button>
-    </div>
-    ${link ? '<p class="small" style="margin-top:8px">Anyone with this link can see your dated quests, so keep it to yourself. "New link" turns off the old one.</p>' : ''}`;
-}
-
-function localCalendarRows() {
   const g = cal.googleState(), feed = cal.feedAvailable();
   let gRight, gText;
-  if (!cal.googleConfigured()) { gRight = '<button class="mini" disabled>Connect</button>'; gText = 'Not set up on this install yet: it needs a Google client ID in app/config.js (steps in app/CALENDAR_SETUP.md).'; }
-  else if (!g.connected) { gRight = '<button class="mini" data-act="gconnect">Connect</button>'; gText = 'Adds your dated quests to a "TaskFlow" calendar and keeps it up to date.'; }
+  if (!cal.googleConfigured()) { gRight = '<button class="mini" data-act="acct-in">Sign in</button>'; gText = 'Sign in with Google first. Then your dated quests go into a "TaskFlow" calendar and your own Google events show up here.'; }
+  else if (!g.connected) { gRight = '<button class="mini" data-act="gconnect">Connect</button>'; gText = 'Adds your dated quests to a "TaskFlow" calendar, and shows your own Google events on the Calendar screen.'; }
   else {
     gRight = `<button class="mini" data-act="gsync" ${cal.isSyncing() ? 'disabled' : ''}>${cal.isSyncing() ? 'Syncing…' : 'Sync now'}</button>`;
     const c = g.lastCounts;
@@ -147,7 +120,7 @@ function localCalendarRows() {
     <div class="srow"><div class="l"><b>Google Calendar</b><small>${gText}</small></div>${gRight}</div>
     ${g.connected ? '<div class="srow" style="padding-top:0;border-top:none"><div class="l"></div><button class="link" data-act="gdisconnect">Disconnect</button></div>' : ''}
     <div class="srow"><div class="l"><b>Apple Calendar</b><small>${feed === false
-      ? 'Subscribing needs the TaskFlow server (npm start). You can still download a calendar file.'
+      ? 'A live link for your iPhone or Mac needs a server, which isn\'t on yet. For now, download a calendar file and open it to add your quests.'
       : 'Subscribe once and it stays in sync. Also works in Outlook and Google ("From URL").'}</small></div>
       ${feed === false ? '' : `<a class="mini" href="${esc(cal.webcalUrl())}">Subscribe</a>`}</div>
     <div class="row-btns" style="margin-top:4px">
@@ -159,10 +132,9 @@ function localCalendarRows() {
 
 function accountRow() {
   const u = account.user();
-  const online = cloud.cloudAvailable();
-  if (!u) return `<div class="srow"><div class="l"><b>Account</b><small>${online ? 'Sign in with Google to keep your quests safe and the same on all your devices.' : 'Sign in with Google so TaskFlow knows it\'s you. Quests stay on this device.'}</small></div><button class="mini" data-act="acct-in">Sign in</button></div>`;
+  if (!u) return '<div class="srow"><div class="l"><b>Account</b><small>Sign in with Google to keep your quests safe and the same on all your devices.</small></div><button class="mini" data-act="acct-in">Sign in</button></div>';
   const ci = cloud.cloudInfo();
-  const sync = !online ? 'Quests stay on this device.' : ci.error ? esc(ci.error) : ci.lastSync ? `Saved to your account ${esc(fmtStamp(ci.lastSync))}` : 'Saving to your account…';
+  const sync = ci.error ? esc(ci.error) : ci.lastSync ? `Saved to your account ${esc(fmtStamp(ci.lastSync))}` : 'Saving to your account…';
   return `<div class="srow acct">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="36" height="36" referrerpolicy="no-referrer">` : ''}<div class="l"><b>${esc(u.name || 'Signed in')}</b><small>${esc(u.email)}<br>${sync}</small></div><button class="mini" data-act="acct-out">Sign out</button></div>`;
 }
 
@@ -177,11 +149,6 @@ export const actions = {
   gsync: async () => { try { const c = await cal.syncGoogle(); if (c) toast(`Synced: ${c.inserted} added, ${c.updated} updated, ${c.deleted} removed`); } catch (e) { toast(e.message); } rerender(); },
   gdisconnect: async () => { if (await confirmBox('Stop syncing with Google Calendar? The TaskFlow calendar stays in your Google account.', 'Disconnect')) { try { await cal.disconnectGoogle(); toast('Disconnected'); } catch (e) { toast(e.message); } rerender(); } },
   'copy-feed': async () => { try { await navigator.clipboard.writeText(cal.feedUrl()); toast('Link copied'); } catch (e) { toast(cal.feedUrl()); } },
-  'feed-new': async () => {
-    if (!await confirmBox('Make a new calendar link? The old one stops working, so you\'ll need to subscribe again on your devices.', 'New link')) return;
-    try { await cal.newFeedLink(); toast('New link ready. Subscribe again with it.', 'good'); } catch (e) { toast(e.message); }
-    rerender();
-  },
   'ics-download': () => { download('taskflow.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
   tog: async el => {
     const k = el.dataset.k, on = !getState().settings[k];
