@@ -1,6 +1,6 @@
 // End-to-end PWA check in a headless Chromium browser (Edge or Chrome) over the DevTools protocol:
 // service worker, offline, installability, notifications, and reminders while the app is closed.
-// Run: npm run test:pwa   (needs Python for the static server; set BROWSER_PATH to use another browser)
+// Run: npm run test:pwa   (set BROWSER_PATH to use another browser)
 import { spawn } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -17,7 +17,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const results = [];
 const check = (name, ok, info = '') => { results.push({ name, ok: !!ok, info }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${info ? '  — ' + info : ''}`); };
 
-let server = spawn('python', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1', '--directory', APP_DIR], { stdio: 'ignore' });
+let server = spawn(process.execPath, [join(APP_DIR, '..', 'server.mjs'), String(PORT)], { stdio: 'ignore', env: { ...process.env, TASKFLOW_DATA: mkdtempSync(join(tmpdir(), 'tf-feed-')) } });
 const profile = mkdtempSync(join(tmpdir(), 'tf-edge-'));
 const edge = spawn(EDGE, ['--headless=new', `--remote-debugging-port=${DBG}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', 'about:blank'], { stdio: 'ignore' });
 await sleep(2500);

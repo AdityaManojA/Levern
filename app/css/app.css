@@ -59,6 +59,7 @@ a { color: inherit; }
 .row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .row-btns > * { flex: 1; }
 .mini { border: 2px solid var(--ink); border-radius: 12px; padding: 6px 12px; background: #fff; font-weight: 700; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.mini:disabled { opacity: .4; cursor: default; }
 
 /* segmented controls and chips */
 .seg { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }

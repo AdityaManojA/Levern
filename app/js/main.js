@@ -16,6 +16,7 @@ import * as settings from './views/settings.js';
 import { openAdd } from './views/add.js';
 import * as remindersPanel from './views/reminders.js';
 import * as onboarding from './views/onboarding.js';
+import { startCalendars, onCalendarChange } from './calendars.js';
 
 store.init();
 
@@ -121,5 +122,7 @@ $('#top-actions').innerHTML = `<button class="iconbtn bell" data-act="bell" aria
 go();
 if (!store.getState().onboarded) onboarding.open();
 registerSW().finally(startReminders);
+startCalendars();
+onCalendarChange(() => { if (route.name === 'settings') render({ keepScroll: true }); });
 if (new URLSearchParams(location.search).get('add') === '1') openAdd();
 window.TaskFlow = { store, go: h => { location.hash = h; } };   // handy in the console

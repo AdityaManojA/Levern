@@ -3,7 +3,9 @@ import { permission, requestPermission, supported, show, hasPeriodicSync } from 
 import { canInstall, install, isInstalled } from '../install.js';
 import { swap } from '../motion.js';
 import { esc, toast, play, confirmBox, download } from '../ui.js';
-import { todayStr } from '../dates.js';
+import { todayStr, fmtStamp } from '../dates.js';
+import * as cal from '../calendars.js';
+import { buildICS } from '../ics.js';
 
 const tog = (k, on, label) => `<button class="tog" role="switch" aria-checked="${on}" aria-label="${esc(label)}" data-act="tog" data-k="${k}"></button>`;
 const step = (k, v, unit = '') => `<div class="step"><button data-act="step" data-k="${k}" data-d="-1" aria-label="Less">−</button><b>${v}${unit}</b><button data-act="step" data-k="${k}" data-d="1" aria-label="More">+</button></div>`;
@@ -37,6 +39,9 @@ export function render() {
       <div class="srow"><div class="l"><b>Try it</b><small>Adds a quest with a reminder in 10 seconds</small></div><button class="mini" data-act="test-remind">Test reminder</button></div>
       <p class="small" style="margin-top:6px">Reminders go off on time while TaskFlow is open, even in a background tab. With it fully closed, an installed app can still show them when the browser checks in (Chrome/Edge, roughly every 15 min or more${hasPeriodicSync() ? '' : '; not available in this browser'}). Exact timing with the app closed will come with the sync server or the mobile app.</p>
     </div>
+
+    <div class="sec">Calendars</div>
+    <div class="card">${calendarRows()}</div>
 
     <div class="sec">Focus timer</div>
     <div class="card">
@@ -74,7 +79,37 @@ export function render() {
     <p class="small" style="text-align:center;margin:16px 0">TaskFlow web 0.1 · light mode</p>`;
 }
 
+function calendarRows() {
+  const g = cal.googleState(), feed = cal.feedAvailable();
+  let gRight, gText;
+  if (!cal.googleConfigured()) { gRight = '<button class="mini" disabled>Connect</button>'; gText = 'Not set up on this install yet: it needs a Google client ID in app/config.js (steps in app/CALENDAR_SETUP.md).'; }
+  else if (!g.connected) { gRight = '<button class="mini" data-act="gconnect">Connect</button>'; gText = 'Adds your dated quests to a "TaskFlow" calendar and keeps it up to date.'; }
+  else {
+    gRight = `<button class="mini" data-act="gsync" ${cal.isSyncing() ? 'disabled' : ''}>${cal.isSyncing() ? 'Syncing…' : 'Sync now'}</button>`;
+    const c = g.lastCounts;
+    gText = (g.lastSync ? `Synced ${esc(fmtStamp(g.lastSync))}${c && (c.inserted || c.updated || c.deleted) ? ` (${c.inserted} added, ${c.updated} updated, ${c.deleted} removed${c.failed ? `, ${c.failed} failed` : ''})` : ''}.` : 'Connected.')
+      + (cal.hasToken() ? ' Changes sync automatically.' : ' Tap Sync now to sign in again and catch up.');
+  }
+  return `
+    <div class="srow"><div class="l"><b>Google Calendar</b><small>${gText}</small></div>${gRight}</div>
+    ${g.connected ? '<div class="srow" style="padding-top:0;border-top:none"><div class="l"></div><button class="link" data-act="gdisconnect">Disconnect</button></div>' : ''}
+    <div class="srow"><div class="l"><b>Apple Calendar</b><small>${feed === false
+      ? 'Subscribing needs the TaskFlow server (npm start). You can still download a calendar file.'
+      : 'Subscribe once and it stays in sync. Also works in Outlook and Google ("From URL").'}</small></div>
+      ${feed === false ? '' : `<a class="mini" href="${esc(cal.webcalUrl())}">Subscribe</a>`}</div>
+    <div class="row-btns" style="margin-top:4px">
+      ${feed === false ? '' : '<button class="btn white sm" data-act="copy-feed">Copy feed link</button>'}
+      <button class="btn white sm" data-act="ics-download">Download .ics</button>
+    </div>
+    ${feed === false ? '' : `<p class="small" style="margin-top:8px">Feed: ${esc(cal.feedUrl())}. Only devices that can reach this computer can use it; for your phone, TaskFlow needs to be hosted online.</p>`}`;
+}
+
 export const actions = {
+  gconnect: async () => { try { await cal.connectGoogle(); toast('Google Calendar connected', 'good'); } catch (e) { toast(e.message); } rerender(); },
+  gsync: async () => { try { const c = await cal.syncGoogle(); if (c) toast(`Synced: ${c.inserted} added, ${c.updated} updated, ${c.deleted} removed`); } catch (e) { toast(e.message); } rerender(); },
+  gdisconnect: async () => { if (await confirmBox('Stop syncing with Google Calendar? The TaskFlow calendar stays in your Google account.', 'Disconnect')) { cal.disconnectGoogle(); toast('Disconnected'); rerender(); } },
+  'copy-feed': async () => { try { await navigator.clipboard.writeText(cal.feedUrl()); toast('Feed link copied'); } catch (e) { toast(cal.feedUrl()); } },
+  'ics-download': () => { download('taskflow.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
   tog: async el => {
     const k = el.dataset.k, on = !getState().settings[k];
     el.setAttribute('aria-checked', on);   // flip in place so the knob glides
