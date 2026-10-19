@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "taskflow-dailytracker",
     "public": "app",
     "ignore": ["firebase.json", "**/.*", "tests/**", "**/*.md"],
     "rewrites": [

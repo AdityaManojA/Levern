@@ -34,6 +34,13 @@ const db = getFirestore();
 const CLIENT_ID = defineString('GOOGLE_CLIENT_ID', { description: 'OAuth web client ID (ends in .apps.googleusercontent.com)' });
 const PUBLIC_URL = defineString('PUBLIC_URL', { default: 'https://taskflow-dailytracker.web.app' });
 const CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET');
+// sites that share this server and sign-in (TaskFlow and Solodesk); Google sends people back to the one they came from
+const ORIGINS = defineString('ALLOWED_ORIGINS', { default: 'https://taskflow-dailytracker.web.app,https://taskflow-solodesk.web.app' });
+function originOf(req) {
+  const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
+  const o = host ? `https://${host}` : '';
+  return ORIGINS.value().split(',').map(s => s.trim()).includes(o) ? o : PUBLIC_URL.value();
+}
 const SYNC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt'];
 
 const userRef = uid => db.collection('users').doc(uid);
@@ -125,7 +132,7 @@ export const api = onRequest({ secrets: [CLIENT_SECRET], cors: false }, async (r
         return res.status(400).type('html').send(page('Not connected', error === 'access_denied' ? 'Google Calendar access was not allowed.' : 'That sign-in link expired. Go back to TaskFlow and tap Connect again.', false));
       }
       const uid = s.get('uid');
-      const t = await G.exchangeCode({ code: String(code), clientId: CLIENT_ID.value(), clientSecret: CLIENT_SECRET.value(), redirectUri: `${PUBLIC_URL.value()}/api/gcal/callback` });
+      const t = await G.exchangeCode({ code: String(code), clientId: CLIENT_ID.value(), clientSecret: CLIENT_SECRET.value(), redirectUri: `${s.get('origin') || PUBLIC_URL.value()}/api/gcal/callback` });
       const granted = String(t.scope || '').split(' ');
       if (!granted.includes(G.SCOPES[0])) return res.status(400).type('html').send(page('Not connected', 'TaskFlow needs permission to manage its own calendar. Tap Connect again and leave that box ticked.', false));
       const gRef = userRef(uid).collection('private').doc('google');
@@ -172,9 +179,16 @@ export const api = onRequest({ secrets: [CLIENT_SECRET], cors: false }, async (r
 
     if (path === '/gcal/start' && req.method === 'POST') {
       if (!CLIENT_ID.value()) return send(res, 503, { error: 'Google Calendar is not set up on the server yet.' });
-      const state = token();
-      await db.collection('oauthStates').doc(state).set({ uid, exp: Date.now() + 10 * 60000 });
-      return send(res, 200, { url: G.authUrl({ clientId: CLIENT_ID.value(), redirectUri: `${PUBLIC_URL.value()}/api/gcal/callback`, state, loginHint: user.email }) });
+      const state = token(), origin = originOf(req);
+      await db.collection('oauthStates').doc(state).set({ uid, origin, exp: Date.now() + 10 * 60000 });
+      return send(res, 200, { url: G.authUrl({ clientId: CLIENT_ID.value(), redirectUri: `${origin}/api/gcal/callback`, state, loginHint: user.email }) });
+    }
+
+    // read-only view for other apps on the same account (Solodesk): open quests and calendar events
+    if (path === '/quests' && req.method === 'GET') {
+      const { meta, doc } = await loadDoc(uid);
+      const quests = (doc?.quests || []).filter(q => req.query.all === '1' || !q.done);
+      return send(res, 200, { quests, tz: meta.tz || null, rev: meta.rev || 0, events: (await events(uid)).items || [], gcal: meta.gcal || { connected: false } });
     }
 
     if (path === '/gcal/sync' && req.method === 'POST') {
