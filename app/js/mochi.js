@@ -70,7 +70,7 @@ export function createMochi(env) {
   for (const n in A) { const im = new Image(); im.src = stripUrl(n); }
 
   M = { cx: innerWidth / 2 + 120, dir: -1, anim: 'rest', fi: 1, timer: null, state: 'idle', perch: 'nav', busy: false, target: 0, onArrive: null, next: 0,
-    lastActive: Date.now(), clicks: [], lastTap: 0, annoyedUntil: 0, bubbleUntil: 0, pending: null, asleep: false, held: false, slide: null,
+    lastActive: Date.now(), clicks: [], lastTap: 0, annoyedUntil: 0, sulkTaps: 0, sulkNeed: 2, sulkT: 0, bubbleUntil: 0, pending: null, asleep: false, held: false, slide: null,
     lift: 0, liftTo: 0, sprint: false, p1Seen: 0, homeVisits: 0, hidden: false, holding: null };
 
   /* drawing */
@@ -285,20 +285,28 @@ export function createMochi(env) {
   let tapCount = 0, lastTapVoice = 0;
   const tapVoice = (kind, o) => { const now = Date.now(); if (tapCount % 2 !== 0 || now - lastTapVoice < 1500) return; lastTapVoice = now; sfx(kind, o); };
   const AFFECTION = new Set(['boop', 'happy-wiggle', 'heart-eyes', 'wave', 'sitting-pretty', 'celebrate', 'excited', 'cursor-swipe']);
+  // A sulk is short: he gets over it after 3–4 s, or sooner if you keep tapping (2–3 more taps).
   function getAnnoyed() {
     M.busy = true; M.clicks = []; M.state = 'sulk';
     say('Hmph! Enough.', 1600, true); voice('grumpy');
-    M.annoyedUntil = Date.now() + 9000;
-    play('grumpy', { then: () => {
-      play('ignore', { hold: true, to: A.ignore.hold || A.ignore.frames });
-      setTimeout(() => play('ignore', { from: A.ignore.hold || A.ignore.frames, to: 1, then: () => { say('…fine.', 1400); M.annoyedUntil = 0; goRest(); schedule(3, 6); } }), 4500);
-    } });
+    M.annoyedUntil = Date.now() + 6000; M.sulkTaps = 0; M.sulkNeed = 2 + Math.floor(Math.random() * 2);
+    clearTimeout(M.sulkT); M.sulkT = setTimeout(forgive, 3000 + Math.random() * 1000);
+    play('grumpy', { then: () => { if (M.state === 'sulk') play('ignore', { hold: true, to: A.ignore.hold || A.ignore.frames }); } });
+  }
+  function forgive() {
+    clearTimeout(M.sulkT);
+    if (M.state !== 'sulk') { M.annoyedUntil = 0; return; }   // something else already moved him on
+    M.state = 'idle'; M.annoyedUntil = 0; M.clicks = [];
+    say(['…fine.', 'hmm.', 'whatever.'][Math.floor(Math.random() * 3)], 1400);
+    const back = () => { goRest(); schedule(3, 6); };
+    if (M.anim === 'ignore' && M.fi > 1) play('ignore', { from: M.fi, to: 1, then: back }); else back();
   }
   function tap(e) {
     const now = Date.now(); M.lastActive = now;
     if (env.onTap && env.onTap()) return;   // the tour's last step finishes on a tap
     tapCount++;
     if (M.holding) { env.onHoldTap && env.onHoldTap(); return; }
+    if (M.state === 'sulk') { if (++M.sulkTaps >= M.sulkNeed) forgive(); else say('…', 800, true); return; }
     if (now < M.annoyedUntil) { say('…', 800, true); return; }
     if (M.asleep) { wakeUp('!!'); return; }
     if (M.state === 'walk' || M.state === 'prep' || M.perch !== 'nav') return;
