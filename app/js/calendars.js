@@ -64,8 +64,17 @@ async function api(method, path, body) {
   const r = await fetch(API + path, { method, headers: { Authorization: 'Bearer ' + token, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
   if (r.status === 204) return null;
   const data = await r.json().catch(() => null);
-  if (!r.ok) { const e = new Error(data?.error?.message || `Google Calendar error ${r.status}`); e.status = r.status; throw e; }
+  if (!r.ok) { const e = new Error(friendlyGoogle(r.status, data?.error)); e.status = r.status; e.reason = data?.error?.errors?.[0]?.reason || data?.error?.status; throw e; }
   return data;
+}
+// Google's 403s in words a person can act on
+function friendlyGoogle(status, err = {}) {
+  const msg = String(err.message || ''), reason = err.errors?.[0]?.reason || '';
+  if (/has not been used|is disabled|accessNotConfigured/i.test(msg + reason)) return 'Google Calendar isn\'t switched on for TaskFlow yet. The Google Calendar API needs enabling in Google Cloud (project taskflow-dailytracker).';
+  if (/insufficient/i.test(msg + reason) || err.status === 'PERMISSION_DENIED' && /scope/i.test(msg)) return 'TaskFlow didn\'t get calendar access. Tap Connect again and tick the calendar boxes when Google asks.';
+  if (status === 401) return 'Google Calendar access ran out. Tap Sync now to continue.';
+  if (status === 429 || /rate|quota/i.test(reason)) return 'Google Calendar is busy. TaskFlow will try again in a moment.';
+  return msg || `Google Calendar error ${status}`;
 }
 async function ensureCalendar() {
   const g = googleState();
@@ -98,7 +107,9 @@ export async function connectGoogle() {
   if (!googleConfigured()) throw new Error('Sign in with Google first (Settings → You), then connect your calendar.');
   await getToken('consent');
   commit(s => { s.gcal = { ...googleState(), connected: true }; }, { quiet: true });
-  await syncGoogle();
+  // the first sync proves it works; if it doesn't, don't leave it looking connected
+  try { await syncGoogle(); }
+  catch (e) { commit(s => { s.gcal = { ...googleState(), connected: false }; }, { quiet: true }); emit(); throw e; }
 }
 export function disconnectGoogle() {
   if (token && !viaAccount() && window.google) try { google.accounts.oauth2.revoke(token, () => {}); } catch (e) {}
