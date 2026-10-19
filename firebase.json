@@ -17,13 +17,10 @@
   "functions": [
     {
       "source": "functions",
-      "codebase": "default",
+      "codebase": "taskflow",
       "runtime": "nodejs22",
       "ignore": ["node_modules", "test", ".git", "*.log"],
       "predeploy": ["node scripts/copy-shared.mjs"]
     }
-  ],
-  "firestore": {
-    "rules": "firestore.rules"
-  }
+  ]
 }

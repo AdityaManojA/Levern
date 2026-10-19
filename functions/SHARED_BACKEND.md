@@ -7,7 +7,11 @@ Both apps live in the Firebase project `taskflow-dailytracker` and share one sig
 | TaskFlow | `taskflow-dailytracker` → https://taskflow-dailytracker.web.app | this repo (`firebase.json` pins `"site"`) |
 | Solodesk | `taskflow-solodesk` → https://taskflow-solodesk.web.app | the Solodesk repo |
 
-Deploy each site with its own `"site"` in `firebase.json` so one never overwrites the other. **Only one repo should deploy the functions** (this one); a deploy from another repo with a `functions` block would replace them.
+Deploy each site with its own `"site"` (or target) in `firebase.json` so one never overwrites the other.
+
+**Functions codebases must differ.** TaskFlow's functions are codebase `taskflow`; Solodesk's are `default`. A deploy only replaces functions in its own codebase, so the two repos can't delete each other's functions.
+
+**Firestore rules belong to Solodesk** (`Solodesk-MVP/firestore.rules`, owner-only access to `solodeskWorkspaces/{uid}`). TaskFlow's `firebase.json` has no `firestore` block, so a TaskFlow deploy never replaces them. TaskFlow's server uses admin access and needs no rules.
 
 ## Using the server from Solodesk
 
@@ -36,7 +40,7 @@ Every `/api` call except `/api/ping` and `/api/gcal/callback` needs `Authorizati
 
 - `users/{uid}`: the shared account root. TaskFlow keeps `rev`, `chunks`, `tz`, `feed`, `gcal`, `eventsRev` here and its data in `users/{uid}/chunks`.
 - `users/{uid}/private/google`: the Google refresh token and the TaskFlow calendar. Shared by both apps.
-- Solodesk should keep its own data under `users/{uid}/solodesk/...` (or its own top-level collections keyed by uid), so the two apps never write the same documents.
+- Solodesk keeps its data in `solodeskWorkspaces/{uid}` (written by the Solodesk app directly). The two apps never write the same documents.
 
 ## Google OAuth client
 
