@@ -35,7 +35,7 @@ export async function check() {
   }
   toast(fresh.length > 1 ? `🔔 ${fresh.length} reminders due` : `🔔 Reminder: ${fresh[0].title}`, 'remind');
   mascot.hold({ count, title: fresh[fresh.length - 1].title });
-  play('click', 0.8);
+  play('chime');
   document.querySelectorAll('.bell').forEach(b => { b.classList.remove('ring'); void b.offsetWidth; b.classList.add('ring'); });
 }
 

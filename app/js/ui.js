@@ -1,5 +1,6 @@
 // Small UI helpers shared by the views.
 import { getState } from './store.js';
+import { sfx } from './sound.js';
 
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -68,14 +69,5 @@ export function download(name, text, type) {
 }
 
 /* ---------- sounds ---------- */
-const SND = { click: 'sounds/click.wav', coin: 'sounds/coin.wav', mew: 'sounds/mew.wav' };
-const audio = {};
-export function play(name, vol = 1, rate = 1) {
-  const s = getState().settings;
-  if (!s.sound) return;
-  audio[name] ||= Object.assign(new Audio(SND[name]), { preload: 'auto' });
-  const a = audio[name].cloneNode();
-  a.volume = Math.max(0, Math.min(1, s.volume * vol));
-  if (rate !== 1) { a.preservesPitch = false; a.playbackRate = rate; }
-  a.play().catch(() => {});
-}
+// all sounds go through sound.js (Web Audio, preloaded); play() keeps the old call sites working
+export function play(name, vol = 1, rate = 1) { sfx(name, { vol, rate }); }

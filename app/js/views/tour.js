@@ -196,7 +196,7 @@ export function end(finished) {
   mascot.raise(false);
   root.classList.remove('open', 'round');
   setTimeout(() => { if (!isOpen()) { root.hidden = true; root.innerHTML = ''; document.body.classList.remove('touring'); } }, reduced() ? 0 : 400);
-  if (finished) { play('coin', 0.7); mascot.react('celebrate', 'you’re all set!'); }
+  if (finished) { play('coin', 0.7); setTimeout(() => play('sweet'), 350); mascot.react('celebrate', 'you’re all set!'); }
   if (location.hash.startsWith('#/quest/') || location.hash.startsWith('#/settings')) location.hash = '#/home';
 }
 // Mochi tells us when he's tapped: on the last step that ends the tour

@@ -59,7 +59,8 @@ export function render() {
 
     <div class="sec">Sound and voice</div>
     <div class="card">
-      <div class="srow"><div class="l"><b>Sounds</b><small>Key click on ticks, coin on targets</small></div>${tog('sound', s.sound, 'Sounds')}</div>
+      <div class="srow"><div class="l"><b>Sound effects</b><small>Taps, ticks, reminders and Mochi. Starts off if your device asks for reduced motion.</small></div>${tog('sound', s.sound, 'Sound effects')}</div>
+      <div class="srow"><div class="l"><b>Try them</b></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="mini" data-act="hear" data-s="tick">Tick</button><button class="mini" data-act="hear" data-s="chime">Reminder</button><button class="mini" data-act="hear" data-s="mrrp">Mochi</button></div></div>
       <div class="srow"><div class="l"><b>Voice input</b><small>Mic button when adding a quest</small></div>${tog('voice', s.voice, 'Voice input')}</div>
       <div class="srow"><div class="l"><b>Volume</b></div><input type="range" min="0" max="1" step="0.05" value="${s.volume}" data-change="volume" aria-label="Volume"></div>
     </div>
@@ -143,6 +144,7 @@ export const actions = {
     play('click', 0.5); toast('Reminder in 10 seconds. You can switch tabs.');
   },
   install: () => install(),
+  hear: el => play(el.dataset.s),
   speed: el => { setSetting('speed', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
   export: () => { download(`taskflow-backup-${todayStr()}.json`, exportData(), 'application/json'); toast('Backup saved'); },
   'clear-done': async () => { if (await confirmBox('Remove all done quests? Your history and stats stay.', 'Clear')) { clearCompleted(); toast('Done quests cleared'); } },

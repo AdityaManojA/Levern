@@ -20,6 +20,7 @@ import * as remindersPanel from './views/reminders.js';
 import * as onboarding from './views/onboarding.js';
 import { startCalendars, onCalendarChange } from './calendars.js';
 import { createMochi, sprite } from './mochi.js';
+import { preloadSounds, unlockOnGesture, sfx, sfxLog, soundsLoaded } from './sound.js';
 import { mascot, setMascot } from './mascot.js';
 import * as tour from './views/tour.js';
 import { setupPullToRefresh } from './ptr.js';
@@ -86,6 +87,7 @@ function go() {
   if (same) return render({ keepScroll: true });
   pageTransition(() => draw(0), direction(prev, next));
   if (prev.name !== next.name) setTimeout(() => mascot.enterPage(next.name === 'quest' ? 'quests' : next.name), 420);
+  if (prev.name !== next.name && NAV.some(([k]) => k === next.name)) sfx('tab');   // nav bar screens
   const main = $('#view');
   main.classList.add('entering'); setTimeout(() => main.classList.remove('entering'), 900);
   main.focus({ preventScroll: true });
@@ -133,6 +135,8 @@ addEventListener('online', () => toast('Back online')); addEventListener('offlin
 /* ---------- start ---------- */
 $('#top-actions').innerHTML = `<button class="iconbtn bell" data-act="bell" aria-label="Reminders">${ICON.bell}<b class="rcount" data-rcount hidden></b></button>
   <a class="iconbtn" href="#/stats" aria-label="Stats">${ICON.stats}</a><a class="iconbtn" href="#/settings" aria-label="Settings">${ICON.settings}</a>`;
+unlockOnGesture();
+preloadSounds();
 go();
 // Mochi lives on the nav bar
 const mochi = createMochi({
@@ -164,4 +168,4 @@ startSync();
 onSyncStatus(() => { if (route.name === 'developer') render({ keepScroll: true }); });
 onCalendarChange(() => { if (route.name === 'settings') render({ keepScroll: true }); });
 if (new URLSearchParams(location.search).get('add') === '1') openAdd();
-window.TaskFlow = { store, go: h => { location.hash = h; }, mochi, tour };   // handy in the console
+window.TaskFlow = { store, go: h => { location.hash = h; }, mochi, tour, sfxLog, soundsLoaded };   // handy in the console

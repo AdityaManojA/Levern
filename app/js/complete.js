@@ -10,12 +10,12 @@ export function completeQuest(id) {
   const before = summary(store.getState().history, [], store.getState().settings.target).todayCount;
   const r = store.toggleDone(id);
   const st = store.getState();
-  if (!r.done) { play('click', 0.6); mascot.react('suspicious', 'hmm… sure?'); return toast('Marked as not done'); }
+  if (!r.done) { play('tap', 0.8); mascot.react('suspicious', 'hmm… sure?'); return toast('Marked as not done'); }
   const after = before + 1;
   const openToday = st.quests.filter(x => !x.done && x.due && x.due <= fmtToday()).length;
-  if (after === st.settings.target) { play('coin'); toast(`🎉 Daily target hit! ${after} of ${st.settings.target} done.`, 'good'); mascot.react('button', 'target hit!'); }
+  if (after === st.settings.target) { play('tick'); setTimeout(() => play('coin'), 160); toast(`🎉 Daily target hit! ${after} of ${st.settings.target} done.`, 'good'); mascot.react('button', 'target hit!'); }
   else {
-    play('click'); toast(r.next ? `Done. Next one: ${fmtDate(r.next)}` : `Done: ${q.title}`);
+    play('tick'); toast(r.next ? `Done. Next one: ${fmtDate(r.next)}` : `Done: ${q.title}`);
     if (!openToday) mascot.react('wipe', 'all clean!'); else mascot.celebrate(['nice!', 'yay!', 'one down'][Math.floor(Math.random() * 3)]);
   }
 }

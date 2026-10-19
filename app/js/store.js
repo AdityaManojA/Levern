@@ -8,7 +8,8 @@ export const TIER_COLORS = ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0
 const VERSION = 2;
 const DEFAULT_SETTINGS = {
   target: 5, tierNames: ['Critical', 'High', 'Medium', 'Normal', 'Low', 'Someday'],
-  sound: true, volume: 0.6, notify: true, focusMin: 25, breakMin: 5, snoozeMin: 10,
+  // sound effects start off when the device asks for reduced motion
+  sound: !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches), volume: 0.6, notify: true, focusMin: 25, breakMin: 5, snoozeMin: 10,
   name: '', profile: '', voice: true,
   mochi: true, roam: true, speed: 'slow', mochiSound: true, annoy: 5,
 };

@@ -11,7 +11,7 @@
  */
 import V from '../mochi/manifest.js';
 import { getState } from './store.js';
-import { play as sound } from './ui.js';
+import { sfx } from './sound.js';
 import { reduced } from './motion.js';
 
 const A = V.anims;
@@ -181,8 +181,10 @@ export function createMochi(env) {
     M.getUp = d > 0 ? 'get-up-right' : 'get-up-left';
     play(M.getUp, { dir: d, then: () => {
       M.state = 'walk'; M.busy = false;
-      if (M.sprint) { say('zoomies!', 900); play('sprint', { dir: d, loop: A.sprint.loop }); }
-      else play('walk', { dir: d, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps() });
+      let stepsLeft = M.sprint ? 6 : opts.steps ? 8 : 0;   // random wandering is silent
+      const paws = beats => f => { if (stepsLeft > 0 && beats.includes(f)) { stepsLeft--; voice('step', { vol: M.sprint ? 1.2 : 1 }); } return false; };
+      if (M.sprint) { say('zoomies!', 900); play('sprint', { dir: d, loop: A.sprint.loop, onFrame: paws([2, 5]) }); }
+      else play('walk', { dir: d, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps(), onFrame: paws([3, 9]) });
     } });
   }
   function arrive() {
@@ -237,7 +239,7 @@ export function createMochi(env) {
   const canMove = () => !reduced() && !M.hidden && !env.paused();
   function decide() {
     if (M.busy || M.held || M.asleep || M.state !== 'idle' || M.perch !== 'nav' || !canMove()) return;
-    if (!S().roam) { const [, b] = bounds(); if (Math.abs(M.cx - b) > 4) { walkTo(b); return; } schedule(5, 9); return; }
+    if (!S().roam) { const [, b] = bounds(); if (Math.abs(M.cx - b) > 4) { walkTo(b, { steps: true }); return; } schedule(5, 9); return; }
     const page = env.current();
     const walkP = { home: 0.45, quests: 0.6, calendar: 0.35, focus: 0.1, stats: 0.3, settings: 0.15 }[page] ?? 0.3;
     if (Math.random() < walkP) { const x = randomX(); walkTo(x, { sprint: page !== 'focus' && Math.abs(x - M.cx) > 130 && Math.random() < 0.15 }); }
@@ -270,10 +272,12 @@ export function createMochi(env) {
   }
 
   /* touch */
-  const mew = (rate = 1, vol = 1) => { if (S().mochiSound !== false) sound('mew', 0.3 * vol, rate); };
+  // his voice: the signature "mrrp" for affection, a "hey" meow for surprises and reminders, a grumpy one when annoyed
+  const voice = (kind, o) => sfx(kind, o);
+  const AFFECTION = new Set(['boop', 'happy-wiggle', 'heart-eyes', 'wave', 'sitting-pretty', 'celebrate', 'excited', 'cursor-swipe']);
   function getAnnoyed() {
     M.busy = true; M.clicks = []; M.state = 'sulk';
-    say('Hmph! Enough.', 1600, true); mew(0.72, 0.9);
+    say('Hmph! Enough.', 1600, true); voice('grumpy');
     M.annoyedUntil = Date.now() + 9000;
     play('grumpy', { then: () => {
       play('ignore', { hold: true, to: A.ignore.hold || A.ignore.frames });
@@ -291,15 +295,15 @@ export function createMochi(env) {
     const n = M.clicks.length, limit = S().annoy || 5;
     if (n > limit) return getAnnoyed();
     M.busy = false;
-    if (n === limit - 1) { mew(0.85); return strike('stomp', 'hey!', true); }
-    if (n === limit) { mew(0.85); return strike('grumpy', 'stop it…', true); }
-    if (now - M.lastTap < 320) { M.lastTap = 0; mew(0.8); return strike('startled', 'eep!'); }
+    if (n === limit - 1) { voice('grumpy', { vol: 0.7, rate: 1.1 }); return strike('stomp', 'hey!', true); }
+    if (n === limit) { voice('grumpy'); return strike('grumpy', 'stop it…', true); }
+    if (now - M.lastTap < 320) { M.lastTap = 0; voice('hey', { rate: 1.12 }); return strike('startled', 'eep!'); }
     M.lastTap = now;
-    mew(0.95 + Math.random() * 0.15);
     const r = el.getBoundingClientRect(), a = A[M.anim];
     const headLine = r.top + (a.gy - V.sit * 0.55) * (r.height / a.h);
-    if (e && e.clientY && e.clientY < headLine && Math.random() < 0.6 && recent[recent.length - 1] !== 'head-bonk') { recent.push('head-bonk'); return strike('head-bonk', Math.random() < 0.5 ? 'ow!' : ''); }
+    if (e && e.clientY && e.clientY < headLine && Math.random() < 0.6 && recent[recent.length - 1] !== 'head-bonk') { recent.push('head-bonk'); voice('hey', { vol: 0.7, rate: 1.2 }); return strike('head-bonk', Math.random() < 0.5 ? 'ow!' : ''); }
     const pick = pickFrom(TAPS, 2), lines = TAP_LINES[pick];
+    if (AFFECTION.has(pick)) voice('mrrp'); else if (pick === 'confused' || pick === 'surprised') voice('hey', { vol: 0.8 });
     strike(pick, lines && Math.random() < 0.55 ? lines[Math.floor(Math.random() * lines.length)] : '');
   }
   // pointer on Mochi: a tap (moved < 6px), a long press (heart eyes while held), or a drag (pick him up)
@@ -318,7 +322,7 @@ export function createMochi(env) {
     play('stretch', { from: 3, to: 3, hold: true });
     M.dragTo = { x: e.clientX, y: e.clientY, vx: 0, vy: 0, t: performance.now() };
     press.drag = true;
-    mew(1.15); say(['wheee', 'hey!', 'mrrp?!'][Math.floor(Math.random() * 3)], 1100);
+    voice('mrrp', { rate: 1.15 }); say(['wheee', 'hey!', 'mrrp?!'][Math.floor(Math.random() * 3)], 1100);
   }
   function drop() {
     const d = M.dragTo; M.dragTo = null;
@@ -329,6 +333,7 @@ export function createMochi(env) {
   function land() {
     M.fall = null; M.lift = 0; M.liftTo = 0;
     const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx));
+    voice('land');
     if (!reduced()) act.animate([{ transform: 'scale(1.14, .82)' }, { transform: 'scale(.96, 1.05)', offset: .55 }, { transform: 'none' }], { duration: 320, easing: 'ease-out' });
     M.lastActive = Date.now();
     M.state = 'idle'; M.busy = true;
@@ -345,7 +350,7 @@ export function createMochi(env) {
     press.t = setTimeout(() => {
       if (!press || press.drag || M.state === 'walk' || M.state === 'prep' || M.asleep || M.holding) return;
       Object.assign(M, { held: true, busy: true, pending: null, slide: null });
-      const a = A['heart-eyes']; play('heart-eyes', { to: a.loop[1], loop: a.loop }); mew(1.1); say('purr…', 1400);
+      const a = A['heart-eyes']; play('heart-eyes', { to: a.loop[1], loop: a.loop }); voice('mrrp', { rate: 0.95 }); say('purr…', 1400);
       press.t = setTimeout(endHeld, 6000);   // never loops forever
     }, 450);
   });
@@ -456,7 +461,7 @@ export function createMochi(env) {
       if (page === 'quests' && urgent) { M.p1Seen++; if (M.p1Seen > 1 && M.p1Seen % 3 === 0) strike('grumpy', 'that P1 is STILL open!', true); else if (M.p1Seen === 1) strike('surprised', 'a P1 is due!'); }
       else if (page === 'focus') { say(LINES.focus, 1300); }
       else if (page === 'settings') strike('sitting-pretty', LINES.settings);
-      else if (page === 'home' && M.homeVisits++ % 3 === 0) strike('wave', 'hi again!');
+      else if (page === 'home' && M.homeVisits++ % 3 === 0) { voice('sweet', { vol: 0.8 }); strike('wave', 'hi again!'); }
       else if (Math.random() < 0.5 && LINES[page]) say(LINES[page], 1300);
       schedule(1.5, 3);
     },
@@ -503,7 +508,7 @@ export function createMochi(env) {
       if (M.state === 'walk' || M.state === 'prep') { M.state = 'idle'; }   // stops right there
       if (M.asleep) M.asleep = false;
       if (M.perch !== 'nav') { showCard(info, isNew); return; }
-      if (!wasHolding) { holdPose(true); mew(1.05, 0.8); }
+      if (!wasHolding) { holdPose(true); setTimeout(() => voice('hey'), 280); }   // after the app's chime
       showCard(info, isNew);
     },
     // the notifications were opened (or everything was handled): he lets go of the card calmly
@@ -517,7 +522,7 @@ export function createMochi(env) {
       if (M.state === 'hold') { M.busy = true; play(HOLD.name, { from: HOLD.frame, to: A[HOLD.name].frames, then: () => { goRest(); schedule(2, 4); } }); }
     },
     holding: () => !!M.holding,
-    grumpy(text) { this.react('grumpy', text, true); mew(0.8); },
+    grumpy(text) { this.react('grumpy', text, true); voice('grumpy', { vol: 0.8 }); },
     rect: () => el.getBoundingClientRect(),
     raise(on) { el.classList.toggle('raised', on); bub.classList.toggle('raised', on); },
     // pull to refresh borrows him as its indicator; the one on the bar steps out meanwhile
