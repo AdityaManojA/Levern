@@ -5,10 +5,11 @@ import { todayStr, addDays, at, dueTimestamp, dueStatus } from './dates.js';
 import { rollForward } from './recur.js';
 
 export const TIER_COLORS = ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'];
-const VERSION = 1;
+const VERSION = 2;
 const DEFAULT_SETTINGS = {
   target: 5, tierNames: ['Critical', 'High', 'Medium', 'Normal', 'Low', 'Someday'],
   sound: true, volume: 0.6, notify: true, focusMin: 25, breakMin: 5, snoozeMin: 10,
+  name: '', profile: '', voice: true,
 };
 
 let adapter = localAdapter('taskflow.v1');
@@ -31,6 +32,21 @@ function seed() {
   ];
 }
 
+// starter quests picked in onboarding ("About you"), replacing the samples while nothing has been touched
+const STARTERS = {
+  student: [['Revise for the maths test', 1, 2], ['Finish history essay draft', 2, 4], ['Read chapter 4', 2, 3], ['Pack bag for tomorrow', 3, 0, { repeat: { freq: 'weekdays' } }], ['Organise notes folder', 4, null]],
+  work: [['Reply to client email', 0, 0], ['Prepare Monday slides', 1, 3], ['Weekly team sync', 3, 1, { repeat: { freq: 'weekly' }, time: '10:00' }], ['Update project tracker', 3, 2], ['Clear out downloads folder', 4, null]],
+  personal: [['Book dentist', 1, 1], ['Water the plants', 3, 0, { repeat: { freq: 'daily' } }], ['Call mum', 2, 2, { time: '18:00' }], ['Go for a walk', 3, 0], ['Learn to bake sourdough', 5, null]],
+};
+export function applyStarter(kind) {
+  commit(s => {
+    if (!s.seeded || s.history.length) return;
+    const t = todayStr();
+    s.quests = kind === 'empty' ? [] : (STARTERS[kind] || []).map(([title, tier, inDays, extra = {}]) => ({ id: uid(), title, tier, due: inDays == null ? null : addDays(t, inDays), time: null, notes: '', subtasks: [], repeat: null, remind: null, done: false, doneAt: null, createdAt: Date.now(), ...extra }));
+  });
+}
+export function finishOnboarding() { commit(s => { s.onboarded = true; }); }
+
 function fresh() {
   return { v: VERSION, quests: seed(), history: [], sessions: [], timer: null, settings: { ...DEFAULT_SETTINGS }, seeded: true };
 }
@@ -46,6 +62,8 @@ function migrate(s) {
   s.settings = { ...DEFAULT_SETTINGS, ...(s.settings || {}) };
   s.quests ||= []; s.history ||= []; s.sessions ||= []; s.timer ??= null;
   for (const q of s.quests) { q.subtasks ||= []; q.notes ??= ''; }
+  // saves from v1 never had seeded cleared when quests were added, so never swap their quests for starters
+  if ((s.v || 1) < 2) s.seeded = false;
   s.v = VERSION;
   return s;
 }
@@ -68,7 +86,7 @@ export function addQuest(data) {
   const q = { id: uid(), title: data.title, tier: data.tier ?? 3, due: data.due || null, time: data.time || null, notes: data.notes || '',
     subtasks: (data.subtasks || []).map(s => typeof s === 'string' ? { id: uid(), title: s, done: false, tier: data.tier ?? 3 } : s),
     repeat: data.repeat || null, remind: null, done: false, doneAt: null, createdAt: Date.now() };
-  commit(s => { s.quests.push(q); });
+  commit(s => { s.quests.push(q); s.seeded = false; });
   if (data.remind) setReminder(q.id, data.remind);
   return q;
 }
@@ -77,6 +95,7 @@ export function updateQuest(id, patch, opts) {
     const q = findQuest(id); if (!q) return;
     const dueChanged = ('due' in patch && patch.due !== q.due) || ('time' in patch && patch.time !== q.time);
     Object.assign(q, patch);
+    state.seeded = false;
     if (q.repeat && !q.due) q.due = todayStr();
     // a reminder set relative to the due date moves with it
     if (dueChanged && q.remind && q.remind.offset != null) {
@@ -85,7 +104,7 @@ export function updateQuest(id, patch, opts) {
     }
   }, opts);
 }
-export function deleteQuest(id) { commit(s => { s.quests = s.quests.filter(q => q.id !== id); }); }
+export function deleteQuest(id) { commit(s => { s.quests = s.quests.filter(q => q.id !== id); s.seeded = false; }); }
 
 // returns { done, next } where next is the new due date when a repeating quest rolls forward
 export function toggleDone(id) {
@@ -112,7 +131,7 @@ export function toggleDone(id) {
 }
 
 /* ---------- subtasks ---------- */
-export function addSubtask(id, title) { commit(() => { const q = findQuest(id); q && q.subtasks.push({ id: uid(), title, done: false, tier: q.tier }); }); }
+export function addSubtask(id, title) { commit(s => { s.seeded = false; const q = findQuest(id); q && q.subtasks.push({ id: uid(), title, done: false, tier: q.tier }); }); }
 export function updateSubtask(id, sid, patch, opts) { commit(() => { const st = findQuest(id)?.subtasks.find(x => x.id === sid); st && Object.assign(st, patch); }, opts); }
 export function removeSubtask(id, sid) { commit(() => { const q = findQuest(id); if (q) q.subtasks = q.subtasks.filter(x => x.id !== sid); }); }
 
@@ -125,6 +144,7 @@ export const reminderBase = q => q.due ? at(q.due, q.time || '09:00') : null;
 export function setReminder(id, spec) {
   commit(() => {
     const q = findQuest(id); if (!q) return;
+    state.seeded = false;
     if (!spec) { q.remind = null; return; }
     const offset = spec.offset != null && q.due ? spec.offset : null;
     const when = offset != null ? reminderBase(q) - offset : spec.at;

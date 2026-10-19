@@ -15,6 +15,7 @@ import * as stats from './views/stats.js';
 import * as settings from './views/settings.js';
 import { openAdd } from './views/add.js';
 import * as remindersPanel from './views/reminders.js';
+import * as onboarding from './views/onboarding.js';
 
 store.init();
 
@@ -85,6 +86,7 @@ const ACTIONS = {
   open: el => { location.hash = '#/quest/' + el.dataset.id; },
   add: el => openAdd({ due: el.dataset.due }),
   bell: () => remindersPanel.toggle(),
+  onboard: () => onboarding.open(),
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
@@ -105,7 +107,7 @@ $('#scrim').addEventListener('click', () => sheet.close());
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if (sheet.isOpen()) sheet.close(); else if (remindersPanel.isOpen()) remindersPanel.close(); }
   // "n" opens the add sheet when not typing
-  if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !sheet.isOpen()) { e.preventDefault(); openAdd(); }
+  if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !sheet.isOpen() && !onboarding.isOpen()) { e.preventDefault(); openAdd(); }
 });
 
 /* ---------- install prompt ---------- */
@@ -117,6 +119,7 @@ addEventListener('online', () => toast('Back online')); addEventListener('offlin
 $('#top-actions').innerHTML = `<button class="iconbtn bell" data-act="bell" aria-label="Reminders">${ICON.bell}<b class="rcount" data-rcount hidden></b></button>
   <a class="iconbtn" href="#/stats" aria-label="Stats">${ICON.stats}</a><a class="iconbtn" href="#/settings" aria-label="Settings">${ICON.settings}</a>`;
 go();
+if (!store.getState().onboarded) onboarding.open();
 registerSW().finally(startReminders);
 if (new URLSearchParams(location.search).get('add') === '1') openAdd();
 window.TaskFlow = { store, go: h => { location.hash = h; } };   // handy in the console

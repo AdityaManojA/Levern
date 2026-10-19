@@ -1,6 +1,6 @@
 // "New quest" sheet: type or speak; dates, times, repeats and priority are picked out of the words
 // and can be changed before saving.
-import { addQuest, tierLabel, TIER_COLORS, findQuest } from '../store.js';
+import { addQuest, tierLabel, TIER_COLORS, findQuest, getState } from '../store.js';
 import { parseQuest } from '../parse.js';
 import { fmtDate, fmtTime, fmtStamp } from '../dates.js';
 import { REPEATS } from '../recur.js';
@@ -17,7 +17,7 @@ export function openAdd(prefill = {}) {
   const s = sheet.open(`<form data-addform autocomplete="off">
     <div class="sheet-h"><b>New quest</b><button type="button" class="mini" data-close>Close</button></div>
     <input class="field" name="title" placeholder="What do you need to do?" aria-label="Quest" enterkeyhint="done">
-    <button type="button" class="mic" data-mic ${speechSupported ? '' : 'disabled'}>
+    <button type="button" class="mic" data-mic ${speechSupported ? '' : 'disabled'} ${getState().settings.voice ? '' : 'hidden'}>
       <span class="orb">${ICON.mic}</span>
       <span><b data-mic-t>${speechSupported ? 'Tap and speak' : 'Voice not available here'}</b><small data-mic-s>${speechSupported ? 'Try "Dentist on Friday at 4pm"' : 'This browser has no speech recognition. Chrome, Edge and Safari do.'}</small></span>
     </button>

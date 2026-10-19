@@ -18,6 +18,12 @@ export function render() {
     <div class="h-sub">Make TaskFlow yours</div>
     <h1 class="h-title">Settings</h1>
 
+    <div class="sec">You</div>
+    <div class="card">
+      <div class="srow"><div class="l"><b>Name</b><small>Used in the greeting on Home</small></div><input class="field" style="width:150px" value="${esc(s.name)}" maxlength="30" data-input="name" aria-label="Your name" placeholder="Optional"></div>
+      <div class="srow"><div class="l"><b>Welcome screens</b><small>See the introduction again</small></div><button class="mini" data-act="onboard">Show again</button></div>
+    </div>
+
     <div class="sec">Goals</div>
     <div class="card">
       <div class="srow"><div class="l"><b>Daily quest target</b><small>Hit this to keep your streak (1–10)</small></div>${step('target', s.target)}</div>
@@ -44,9 +50,10 @@ export function render() {
       ${s.tierNames.map((n, i) => `<div class="tier-in"><i style="--c:${TIER_COLORS[i]}">P${i + 1}</i><input value="${esc(n)}" maxlength="14" data-input="tier" data-i="${i}" aria-label="Name for P${i + 1}"></div>`).join('')}
     </div>
 
-    <div class="sec">Sound</div>
+    <div class="sec">Sound and voice</div>
     <div class="card">
       <div class="srow"><div class="l"><b>Sounds</b><small>Key click on ticks, coin on targets</small></div>${tog('sound', s.sound, 'Sounds')}</div>
+      <div class="srow"><div class="l"><b>Voice input</b><small>Mic button when adding a quest</small></div>${tog('voice', s.voice, 'Voice input')}</div>
       <div class="srow"><div class="l"><b>Volume</b></div><input type="range" min="0" max="1" step="0.05" value="${s.volume}" data-change="volume" aria-label="Volume"></div>
     </div>
 
@@ -97,6 +104,7 @@ export function onChange(el) {
   }
 }
 export function onInput(el) {
+  if (el.dataset.input === 'name') setSetting('name', el.value.trim(), { quiet: true });
   if (el.dataset.input === 'tier') { const n = getState().settings.tierNames.slice(); n[+el.dataset.i] = el.value.trim() || `P${+el.dataset.i + 1}`; setSetting('tierNames', n, { quiet: true }); }
 }
 function rerender() { swap(render({})); }

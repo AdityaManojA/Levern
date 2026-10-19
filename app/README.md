@@ -16,6 +16,7 @@ Service workers need `localhost` or HTTPS, so open it through the server rather 
 
 | Feature | Where | Notes |
 |---|---|---|
+| Onboarding | first run | Six calm screens: welcome, what a quest and the P1–P6 colours mean, your name and use (Student, Work or Personal starter quests, or an empty list), daily target with plain-English streak and EXP, reminders/sound/voice, and an install prompt. Skippable, shown once, reopen from Settings → You → Welcome screens. |
 | Saved quests and reminders | everywhere | Saved on the device through `js/storage.js`. Settings → Your data exports and imports a JSON backup. |
 | Voice entry | + button → mic | Web Speech API (Chrome, Edge, Safari). Firefox has none, so the button explains that and you type instead. |
 | Due dates from your words | + button | "Dentist Friday at 4pm", "tonight", "in 3 days", "25 Oct", "next week", "every Monday", "p1", "urgent". It sets the date, time, repeat and priority, and you can change any of them before saving. |

@@ -16,7 +16,7 @@ export function render() {
   const left = Math.max(0, s.target - sum.todayCount);
   const rem = dueReminders().length;
   return `
-    <div class="h-sub">${greeting()}</div>
+    <div class="h-sub">${greeting()}${s.name ? ', ' + esc(s.name) : ''}</div>
     <h1 class="h-title">Your progress</h1>
     <div class="grid2 grid4">
       <a class="stat" href="#/stats" style="background:var(--sky)"><div class="k">Today</div><div class="v">${sum.todayCount} / ${s.target}</div><div class="s">${left ? `${left} more to hit your target` : 'target hit!'}</div></a>

@@ -4,13 +4,13 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v2';
+const VERSION = 'taskflow-v3';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
   'js/notify.js', 'js/reminders.js', 'js/speech.js', 'js/ui.js', 'js/complete.js', 'js/motion.js', 'js/install.js', 'js/views/common.js',
   'js/views/home.js', 'js/views/quests.js', 'js/views/detail.js', 'js/views/add.js', 'js/views/calendar.js',
-  'js/views/focus.js', 'js/views/stats.js', 'js/views/settings.js', 'js/views/reminders.js',
+  'js/views/focus.js', 'js/views/stats.js', 'js/views/settings.js', 'js/views/reminders.js', 'js/views/onboarding.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/badge-96.png', 'icons/icon.svg', 'icons/apple-touch-icon.png',
   'sounds/click.wav', 'sounds/coin.wav',
 ];
