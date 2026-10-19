@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "python -m http.server 5190 --directory app",
-    "test": "node --test app/tests/*.test.js"
+    "test": "node --test app/tests/*.test.js",
+    "test:pwa": "node app/tests/pwa.e2e.mjs"
   }
 }
