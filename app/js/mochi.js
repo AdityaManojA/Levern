@@ -373,6 +373,7 @@ export function createMochi(env) {
     play('stretch', { from: 3, to: 3, hold: true });
     M.dragTo = { x: e.clientX, y: e.clientY, vx: 0, vy: 0, t: performance.now() };
     press.drag = true;
+    document.body.classList.add('mochi-held');   // no page scroll while he's in the hand
     voice('pickup'); say(['wheee', 'hey!', 'mrrp?!'][Math.floor(Math.random() * 3)], 1100);
   }
   function drop() {
@@ -419,6 +420,7 @@ export function createMochi(env) {
   const release = (e, cancelled) => {
     if (!press || (e && e.pointerId !== press.id)) return;
     const p = press; press = null; clearTimeout(p.t);
+    document.body.classList.remove('mochi-held');
     if (p.drag) { drop(); return; }
     if (M.held) { endHeld(); return; }
     if (!cancelled) tap(e);

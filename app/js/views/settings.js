@@ -1,4 +1,5 @@
-import { getState, setSetting, exportData, importData, clearCompleted, resetAll, addQuest, setReminder, TIER_COLORS } from '../store.js';
+import { getState, setSetting, exportData, importData, clearCompleted, resetAll, addQuest, setReminder, tidyHistory, TIER_COLORS } from '../store.js';
+import { summary } from '../stats.js';
 import { permission, requestPermission, supported, show, hasPeriodicSync } from '../notify.js';
 import { canInstall, install, isInstalled } from '../install.js';
 import { swap } from '../motion.js';
@@ -101,7 +102,7 @@ export function render() {
       <p class="small" style="margin-bottom:10px">${account.user() ? 'Saved on this device and in your account. You can also export a backup file.' : 'Everything is saved on this device only. Sign in to keep it in your account, or export a backup to move it to another device.'}</p>
       <div class="row-btns"><button class="btn white sm" data-act="export">Export backup</button><label class="btn white sm" style="cursor:pointer">Import backup<input type="file" accept="application/json,.json" data-change="import" hidden></label></div>
       <div style="height:8px"></div>
-      <div class="row-btns"><button class="btn ghost sm" data-act="clear-done">Clear done quests</button><button class="btn ghost sm" data-act="reset">Reset everything</button></div>
+      <div class="row-btns"><button class="btn ghost sm" data-act="tidy-exp">Remove duplicate completions</button><button class="btn ghost sm" data-act="clear-done">Clear done quests</button><button class="btn ghost sm" data-act="reset">Reset everything</button></div>
     </div>
 
     <div class="sec">Privacy</div>
@@ -190,6 +191,13 @@ export const actions = {
   hear: el => play(el.dataset.s),
   speed: el => { setSetting('speed', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
   export: () => { download(`taskflow-backup-${todayStr()}.json`, exportData(), 'application/json'); toast('Backup saved'); },
+  'tidy-exp': async () => {
+    const st = getState(), before = summary(st.history, st.sessions, st.settings.target).exp;
+    if (!await confirmBox('Remove extra same-day completions? Each quest keeps one per day. Focus time is kept.', 'Remove')) return;
+    const n = tidyHistory();
+    const after = summary(getState().history, getState().sessions, getState().settings.target).exp;
+    toast(n ? `Removed ${n} extra completion${n === 1 ? '' : 's'}. EXP ${before} → ${after}` : 'Nothing to remove. No duplicate completions.');
+  },
   'clear-done': async () => { if (await confirmBox('Remove all done quests? Your history and stats stay.', 'Clear')) { clearCompleted(); toast('Done quests cleared'); } },
   reset: async () => { if (await confirmBox('Delete all quests, history and settings on this device?', 'Reset')) { resetAll(); toast('Everything reset'); setTimeout(() => mascot.react('cry', 'my settings…'), 400); } },
 };

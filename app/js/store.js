@@ -1,8 +1,9 @@
 // App state and every action that changes it. Views read getState(); changes go through the
 // functions below, which save through the storage adapter and notify subscribers.
 import { localAdapter } from './storage.js';
-import { todayStr, addDays, at, dueTimestamp, dueStatus } from './dates.js';
+import { todayStr, addDays, at, dueTimestamp, dueStatus, toStr } from './dates.js';
 import { rollForward } from './recur.js';
+import { nextMultiAt } from './multi.js';
 import { cleanSketches } from './ink.js';
 
 export const TIER_COLORS = ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'];
@@ -179,7 +180,7 @@ export function toggleDone(id) {
       const next = rollForward(q.due, q.repeat);
       q.due = next;
       q.subtasks.forEach(st => { st.done = false; });
-      if (q.remind) q.remind = q.remind.offset != null ? { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false } : null;
+      if (q.remind) q.remind = q.remind.multi ? { ...q.remind, at: nextMultiAt(q.remind.multi, at(q.due, '00:00') - 1), fired: false, dismissed: false } : q.remind.offset != null ? { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false } : null;
       return { done: true, next };
     }
     q.done = true; q.doneAt = Date.now();
@@ -215,7 +216,7 @@ export function setReminder(id, spec) {
     if (!spec) { q.remind = null; return; }
     const offset = spec.offset != null && q.due ? spec.offset : null;
     const when = offset != null ? reminderBase(q) - offset : spec.at;
-    q.remind = { at: when, offset, fired: false, dismissed: false };
+    q.remind = { at: when, offset, fired: false, dismissed: false, ...(spec.multi ? { multi: spec.multi } : {}) };
   });
 }
 export const isReminderDue = q => !!(q.remind && q.remind.fired && !q.remind.dismissed && !q.done);
@@ -227,6 +228,8 @@ export function markFired(ids) {
     for (const id of ids) {
       const q = findQuest(id); if (!q || !q.remind) continue;
       q.remind.fired = true;
+      // a repeating reminder comes back at its next time (it stays fired only once per occurrence)
+      if (q.remind.multi) { q.remind.at = nextMultiAt(q.remind.multi, Date.now()); q.remind.fired = false; q.remind.dismissed = false; }
       s.notifs.push({ id: q.id, title: q.title, tier: q.tier, at: Date.now(), status: 'due' });
     }
     if (s.notifs.length > 50) s.notifs.splice(0, s.notifs.length - 50);
@@ -261,6 +264,21 @@ export function importData(json) {
   commit(s => { Object.keys(s).forEach(k => delete s[k]); Object.assign(s, migrate(data)); });
 }
 export function clearCompleted() { commit(s => { s.quests = s.quests.filter(q => !q.done); }); }
+// Removes repeat completions of the same quest on the same day (from the spam bug). Each quest counts once a day,
+// so this only takes away credit that shouldn't have been given. Focus sessions are kept. Returns how many went.
+export function tidyHistory() {
+  let removed = 0;
+  commit(s => {
+    const seen = new Set(), kept = [];
+    for (const h of s.history) {
+      const k = h.questId + '|' + toStr(new Date(h.doneAt));
+      if (seen.has(k)) { removed++; continue; }
+      seen.add(k); kept.push(h);
+    }
+    if (removed) s.history = kept;
+  });
+  return removed;
+}
 export function resetAll() { commit(s => { const f = fresh(); Object.keys(s).forEach(k => delete s[k]); Object.assign(s, f); }); }
 
 /* ---------- sorting ---------- */

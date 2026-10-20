@@ -873,3 +873,8 @@ input.field, select.field, textarea.field, .field { font-family: inherit; font-w
 .daychips button { flex: 1; min-width: 0; padding: 9px 0; border: 2px solid var(--ink); border-radius: 12px; background: #fff; font-weight: 700; font-size: 13px; transition: background .25s var(--ease), transform .2s var(--ease); }
 .daychips button:active { transform: scale(.94); }
 .daychips button.on { background: var(--butter); }
+
+/* Mochi's touch area is bigger than his picture: a tap or pickup anywhere within ~22px of him is his */
+.mochi::before { content: ""; position: absolute; inset: -22px; border-radius: 50%; touch-action: none; }
+/* while he's picked up, the page doesn't scroll under the finger */
+body.mochi-held { overflow: hidden; touch-action: none; overscroll-behavior: none; }

@@ -13,6 +13,18 @@ import { createPad } from '../inkpad.js';
 import { isBlank, sketchBytes, MAX_SKETCH_BYTES } from '../ink.js';
 import { handwritingLanguage, HANDWRITING_HELP } from '../handwriting.js';
 import { inkToolbar, wireToolbar, reader } from './ink.js';
+import { nextMultiAt } from '../multi.js';
+// "Remind me several times a day": a checkbox, then every few hours in a window, or at set times
+const multiBlock = m => `<label class="check-row"><input type="checkbox" name="multi" ${m ? 'checked' : ''}> Remind me several times a day</label>
+  ${m ? `<div class="multi">
+    <div class="seg"><button type="button" class="${m.times ? '' : 'on'}" data-mmode="every">Every few hours</button><button type="button" class="${m.times ? 'on' : ''}" data-mmode="times">At set times</button></div>
+    ${m.times ? `<div class="mtimes">${m.times.map(t => `<span class="chip">${esc(t)} <button type="button" data-mdel="${esc(t)}" aria-label="Remove ${esc(t)}">×</button></span>`).join('')}
+      <input class="field" type="time" name="mf" data-mf="time" aria-label="Add a time"></div>`
+      : `<div class="mrow"><label>Every <input class="field" type="number" name="mf" data-mf="every" min="1" max="12" value="${m.every}"> hours</label>
+        <label>from <input class="field" type="time" name="mf" data-mf="from" value="${m.from}"></label>
+        <label>to <input class="field" type="time" name="mf" data-mf="to" value="${m.to}"></label></div>`}
+  </div>` : ''}`;
+
 
 export function openAdd(prefill = {}) {
   const f = { title: '', tier: 3, due: prefill.due || null, time: null, repeat: null, subtasks: [], remindKey: 'none' };
@@ -47,6 +59,7 @@ export function openAdd(prefill = {}) {
     <label class="lbl">Repeat</label>
     <select class="field" name="repeat">${REPEATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
     <div data-days></div>
+    <div data-multi></div>
     <label class="lbl">Reminder</label>
     <div data-picker></div>
     <label class="lbl">Subtasks</label>
@@ -68,6 +81,7 @@ export function openAdd(prefill = {}) {
     $f('[name=time]').disabled = !f.due;
     $f('[name=repeat]').value = f.repeat?.freq || '';
     $f('[data-days]').innerHTML = f.repeat?.freq === 'custom' ? dayChips(f.repeat.days) : '';
+    $f('[data-multi]').innerHTML = f.repeat && f.due ? multiBlock(f.multi) : '';
     $f('[data-subs]').innerHTML = f.subtasks.map((t, i) => `<span class="chip">${esc(t)} <button type="button" data-subdel="${i}" aria-label="Remove" style="border:none;background:none;font-weight:700">×</button></span>`).join('');
   }
   function paintPicker() { $f('[data-picker]').innerHTML = reminderPicker({ due: f.due, time: f.time, remind: null }, f.remindKey); }
@@ -89,6 +103,14 @@ export function openAdd(prefill = {}) {
     const n = e.target.name;
     if (n === 'due') { manual.add('due'); f.due = e.target.value || null; if (!f.due) { f.time = null; f.repeat = null; } paint(); paintPicker(); }
     if (n === 'time') { manual.add('due'); f.time = e.target.value || null; }
+    if (n === 'multi') { f.multi = e.target.checked ? { every: 2, from: '09:00', to: '21:00', times: null } : null; paint(); }
+    if (n === 'mf' && f.multi) {
+      const k = e.target.dataset.mf;
+      if (k === 'every') f.multi.every = Math.min(12, Math.max(1, +e.target.value || 2));
+      else if (k === 'time') { if (e.target.value) f.multi.times = [...new Set([...(f.multi.times || []), e.target.value])].sort(); }
+      else if (e.target.value) f.multi[k] = e.target.value;
+      paint();
+    }
     if (n === 'repeat') {
       manual.add('repeat');
       if (e.target.value === 'custom') {
@@ -96,11 +118,15 @@ export function openAdd(prefill = {}) {
         if (!f.due) f.due = todayLocal();
         f.repeat = { freq: 'custom', days: [new Date(f.due + 'T12:00:00').getDay()] };
       } else f.repeat = e.target.value ? { freq: e.target.value } : null;
-      if (f.repeat && !f.due) { f.due = todayLocal(); }
+      if (f.repeat && !f.due) { f.due = todayLocal(); manual.add('due'); }   // a repeat needs a date, so keep it when the title is typed
       paint(); paintPicker();
     }
   });
   form.addEventListener('click', e => {
+    const mm = e.target.closest('[data-mmode]');
+    if (mm && f.multi) { f.multi = { ...f.multi, times: mm.dataset.mmode === 'times' ? (f.multi.times || []) : null }; paint(); return; }
+    const md = e.target.closest('[data-mdel]');
+    if (md && f.multi?.times) { f.multi = { ...f.multi, times: f.multi.times.filter(t => t !== md.dataset.mdel) }; paint(); return; }
     const dd = e.target.closest('[data-day]');
     if (dd && f.repeat?.freq === 'custom') {
       const d = +dd.dataset.day, days = f.repeat.days || [];
@@ -192,7 +218,13 @@ export function openAdd(prefill = {}) {
     if (!raw) { toast('Your quest needs a name'); mascot.grumpy('name it first!'); form.title.focus(); return; }
     if (f.due && f.repeat?.freq === 'custom' && !f.repeat.days?.length) { toast('Pick at least one day'); return; }
     const spec = readPicker($f('[data-picker]'), pickerKey($f('[data-picker]')));
-    const q = addQuest({ title: f.title || raw, tier: f.tier, due: f.due, time: f.due ? f.time : null, repeat: f.due ? f.repeat : null, subtasks: f.subtasks, remind: spec || null, sketches: sk ? [sk] : [] });
+    // several times a day: the reminder comes back on its own (multi.js)
+    const mt = f.due && f.repeat && f.multi ? f.multi : null;
+    if (mt?.times && !mt.times.length) { toast('Add at least one time'); return; }
+    if (mt && !mt.times && !(mt.from < mt.to)) { toast('The end time has to be after the start'); return; }
+    const mspec = mt ? (mt.times ? { times: [...mt.times] } : { every: mt.every, from: mt.from, to: mt.to }) : null;
+    const remindSpec = mspec ? { multi: mspec, at: nextMultiAt(mspec) } : spec;
+    const q = addQuest({ title: f.title || raw, tier: f.tier, due: f.due, time: f.due ? f.time : null, repeat: f.due ? f.repeat : null, subtasks: f.subtasks, remind: remindSpec || null, sketches: sk ? [sk] : [] });
     dropInk();
     play('click');
     sheet.close();
