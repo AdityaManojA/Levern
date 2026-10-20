@@ -150,8 +150,13 @@ export function createMochi(env) {
       if (f !== to) { f += step; M.fi = f; render(); return; }
       if (o.loop) {
         stop();
-        let g = o.loop[0]; M.fi = g; render();
-        M.timer = setInterval(() => { if (o.onFrame && o.onFrame(g)) return; g = g >= o.loop[1] ? o.loop[0] : g + 1; M.fi = g; render(); }, 1000 / (o.loopFps || fps));
+        // rev: the loop runs backwards (a moonwalk)
+        let g = o.rev ? o.loop[1] : o.loop[0]; M.fi = g; render();
+        M.timer = setInterval(() => {
+          if (o.onFrame && o.onFrame(g)) return;
+          g = o.rev ? (g <= o.loop[0] ? o.loop[1] : g - 1) : (g >= o.loop[1] ? o.loop[0] : g + 1);
+          M.fi = g; render();
+        }, 1000 / (o.loopFps || fps));
         return;
       }
       if (o.hold) return;
@@ -193,14 +198,21 @@ export function createMochi(env) {
   function walkTo(x, opts = {}) {
     const [lo, hi] = bounds(); x = Math.max(lo, Math.min(hi, x));
     const d = x >= M.cx ? 1 : -1;
-    Object.assign(M, { target: x, busy: true, state: 'prep', asleep: false, pending: null, slide: null, sprint: !!opts.sprint, dir: d });
-    M.getUp = d > 0 ? 'get-up-right' : 'get-up-left';
-    play(M.getUp, { dir: d, then: () => {
+    // a moonwalk travels the way he's NOT facing: the art faces the other way and the steps run backwards
+    const moon = !!opts.moon && !opts.sprint, face = moon ? -d : d;
+    Object.assign(M, { target: x, busy: true, state: 'prep', asleep: false, pending: null, slide: null, sprint: !!opts.sprint, dir: face, moon });
+    M.getUp = face > 0 ? 'get-up-right' : 'get-up-left';
+    play(M.getUp, { dir: face, then: () => {
       M.state = 'walk'; M.busy = false;
       let stepsLeft = M.sprint ? 6 : opts.steps ? 8 : 0;   // random wandering is silent
       const paws = beats => f => { if (stepsLeft > 0 && beats.includes(f)) { stepsLeft--; voice('step', { vol: M.sprint ? 1.2 : 1 }); } return false; };
-      if (M.sprint) { say('zoomies!', 900); play('sprint', { dir: d, loop: A.sprint.loop, onFrame: paws([2, 5]) }); }
-      else play('walk', { dir: d, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps(), onFrame: paws([3, 9]) });
+      if (M.sprint) { say('zoomies!', 900); play('sprint', { dir: face, loop: A.sprint.loop, onFrame: paws([2, 5]) }); }
+      else if (moon) {
+        say('moonwalk!', 1500);
+        setTimeout(() => { if (M.moon && M.state === 'walk') say('the Michael Jackson move', 1800); }, 1600);
+        play('walk', { dir: face, from: A.walk.frames, to: A.walk.loop[0], rev: true, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps(), onFrame: paws([3, 9]) });
+      }
+      else play('walk', { dir: face, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps(), onFrame: paws([3, 9]) });
     } });
   }
   function arrive() {
@@ -267,7 +279,7 @@ export function createMochi(env) {
     if (!S().roam) { const [, b] = bounds(); if (Math.abs(M.cx - b) > 4) { walkTo(b, { steps: true }); return; } schedule(5, 9); return; }
     const page = env.current();
     const walkP = { home: 0.45, quests: 0.6, calendar: 0.35, focus: 0.1, stats: 0.3, settings: 0.15 }[page] ?? 0.3;
-    if (Math.random() < walkP) { const x = randomX(); walkTo(x, { sprint: page !== 'focus' && Math.abs(x - M.cx) > 130 && Math.random() < 0.15 }); }
+    if (Math.random() < walkP) { const x = randomX(); walkTo(x, { sprint: page !== 'focus' && Math.abs(x - M.cx) > 130 && Math.random() < 0.15, moon: page !== 'focus' && Math.random() < 0.2 }); }
     else schedule(3, 7);
   }
   const sleepAfter = () => (env.current() === 'focus' ? 9000 : 90000);   // plenty of idling before a nap
@@ -462,8 +474,16 @@ export function createMochi(env) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (M.state === 'drag' || M.state === 'fall') { /* positioned below */ }
     else if (M.state === 'walk' && !M.held) {
+      // the bar can move under him (zoom, resize, the sheet): keep the target and his spot on it, every frame
+      const [lo, hi] = bounds();
+      M.target = Math.max(lo, Math.min(hi, M.target));
       const sp = (M.sprint ? SPRINT : SPEED[S().speed || 'slow']) * MOVE_TEMPO, dx = M.target - M.cx;
-      if (Math.abs(dx) < 1.5) { M.cx = M.target; arrive(); } else M.cx += Math.sign(dx) * Math.min(Math.abs(dx), sp * dt);
+      if (Math.abs(dx) < 1.5) { M.cx = M.target; arrive(); }
+      else {
+        M.cx = Math.max(lo, Math.min(hi, M.cx + Math.sign(dx) * Math.min(Math.abs(dx), sp * dt)));
+        // a normal walk faces the way it goes, so his steps and his feet always agree
+        if (!M.moon) M.dir = Math.sign(dx);
+      }
     } else if (now > M.next) decide();
     if (M.slide) {
       const k = Math.min(1, (now - M.slide.t0) / M.slide.ms), ease = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
@@ -483,6 +503,8 @@ export function createMochi(env) {
       if (M.lift >= 0) land();
     }
     if (M.lift !== M.liftTo) { const d = M.liftTo - M.lift; M.lift = Math.abs(d) < 0.5 ? M.liftTo : M.lift + d * Math.min(1, dt * (M.liftRate || 12)); }
+    // whatever he's doing, he stays on the bar (or the sheet's edge): the bar can change size under him
+    if (M.state !== 'drag' && M.state !== 'fall') { const [lo, hi] = bounds(); M.cx = Math.max(lo, Math.min(hi, M.cx)); }
     if (!M.hidden) render();
     requestAnimationFrame(tick);
   }
