@@ -9,7 +9,8 @@ export const GOOGLE_CLIENT_ID = '';
 // Also public by design; access is limited by the authorised domains in Firebase Authentication.
 export const FIREBASE = {
   apiKey: 'AIzaSyD7EE6-jpfNsSaMF1jVTYl19-5JCSR62bo',
-  authDomain: 'taskflow-dailytracker.firebaseapp.com',
+  // the app's own domain: the sign-in handler then shares storage with the app (phones block the cross-site one)
+  authDomain: 'taskflow-dailytracker.web.app',
   projectId: 'taskflow-dailytracker',
   storageBucket: 'taskflow-dailytracker.firebasestorage.app',
   messagingSenderId: '1033081200615',

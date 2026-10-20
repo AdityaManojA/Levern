@@ -58,11 +58,15 @@ export async function database() {
 // or phones block it and we'd fall back to a full-page redirect.
 export const preload = () => load().catch(() => {});
 const REDIRECT_KEY = 'taskflow-signin-redirect';
+// kept in localStorage (not sessionStorage): the browser can hand the sign-in to another tab or window, which loses
+// sessionStorage and would restart the welcome screens. Expires after 15 minutes.
+const stashRedirect = () => { try { localStorage.setItem(REDIRECT_KEY, String(Date.now())); } catch (e) {} };
+const unstashRedirect = () => { try { localStorage.removeItem(REDIRECT_KEY); } catch (e) {} };
 // After a redirect sign-in the page reloads: true when that's what just happened (the caller then waits
 // for finishRedirect() instead of starting the welcome screens from the top)
-export const cameBackFromRedirect = () => { try { return !!sessionStorage.getItem(REDIRECT_KEY); } catch (e) { return false; } };
+export const cameBackFromRedirect = () => { try { const t = +localStorage.getItem(REDIRECT_KEY); return !!t && Date.now() - t < 15 * 60000; } catch (e) { return false; } };
 export async function finishRedirect() {
-  try { sessionStorage.removeItem(REDIRECT_KEY); } catch (e) {}
+  unstashRedirect();
   try { const f = await load(); await f.auth.authStateReady(); if (f.auth.currentUser) save(f.auth.currentUser); } catch (e) {}
   return current;
 }
@@ -79,8 +83,8 @@ export async function signIn() {
     // installed apps on some phones can't open popups: fall back to a full-page redirect
     if (e.code !== 'auth/popup-blocked' && e.code !== 'auth/operation-not-supported-in-this-environment') throw friendly(e);
   }
-  try { sessionStorage.setItem(REDIRECT_KEY, '1'); } catch (e) {}
-  try { await f.A.signInWithRedirect(f.auth, p); return null; } catch (e) { try { sessionStorage.removeItem(REDIRECT_KEY); } catch (er) {} throw friendly(e); }
+  stashRedirect();
+  try { await f.A.signInWithRedirect(f.auth, p); return null; } catch (e) { unstashRedirect(); throw friendly(e); }
 }
 
 // Google Calendar access through the person's Google sign-in: asks Google for the extra permissions

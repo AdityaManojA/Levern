@@ -199,8 +199,15 @@ export function open(startTour) {
 
 async function googleSignIn() {
   busy = true; refresh();
+  // if Google never opens (blocked, or the page never moves on), don't leave the button on "Signing in…" for ever
+  const stuck = setTimeout(() => {
+    if (!busy) return;
+    busy = false; if (isOpen()) refresh();
+    toast("Google didn't open. Check your connection, then tap Continue with Google again.");
+  }, 20000);
   try { const u = await account.signIn(); if (u) return afterSignIn(u); }
   catch (e) { toast(e.message); }
+  finally { clearTimeout(stuck); }
   busy = false;
   if (isOpen()) refresh();
 }
