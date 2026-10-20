@@ -120,6 +120,25 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .qbell { flex: none; width: 34px; height: 34px; border-radius: 10px; border: none; background: none; display: grid; place-items: center; }
 .qbell:hover { background: rgba(30,27,24,.08); }
 .qbell.set svg { fill: var(--butter); }
+/* a quest opened in place: subtasks to tick, or its details, and an Edit button */
+.q { flex-wrap: wrap; }
+.qb { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; cursor: pointer; }
+.q.open { padding-bottom: 12px; }
+.qx { flex: 1 0 calc(100% - 40px); max-width: calc(100% - 40px); margin: 4px 0 0 40px; padding-top: 10px; border-top: 2px solid rgba(30,27,24,.14); min-width: 0; }
+.qx-subs { display: grid; gap: 2px; }
+.qx-sub { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 4px; border: none; background: none; border-radius: 10px; text-align: left; font-weight: 600; font-size: 14px; }
+.qx-sub:hover { background: rgba(255,255,255,.35); }
+.qx-box { flex: none; width: 20px; height: 20px; border-radius: 7px; border: 2px solid var(--ink); background: #fff; display: grid; place-items: center; transition: background .25s var(--ease); }
+.qx-sub.done .qx-box { background: var(--ink); }
+.qx-sub.done .qx-box::after { content: ""; width: 8px; height: 4px; border-left: 2.2px solid #fff; border-bottom: 2.2px solid #fff; transform: translateY(-1px) rotate(-45deg); }
+.qx-sub.done > span:last-child { text-decoration: line-through; opacity: .6; }
+.qx-info { display: grid; gap: 4px; margin: 0 0 2px; font-size: 13px; }
+.qx-info > div { display: flex; gap: 10px; }
+.qx-info dt { flex: none; width: 72px; font-weight: 700; }
+.qx-info dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.qx-notes dd { white-space: pre-wrap; }
+.qx-subs + .qx-info { margin-top: 8px; }
+.qx-acts { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
 .rchip { border: 1.5px solid var(--ink); border-radius: 8px; padding: 0 6px; background: #fff; font-weight: 700; }
 .rchip.due { background: var(--p1); }
 .empty { text-align: center; padding: 28px 16px; }

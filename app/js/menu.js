@@ -51,7 +51,7 @@ function open(row, x, y) {
     const k = b.dataset.m;
     close(false);
     const press = sel => row.querySelector(sel)?.click();
-    if (k === 'open') press('[data-act="open"]');
+    if (k === 'open') location.hash = '#/quest/' + q.id;
     if (k === 'toggle') press('[data-act="toggle"]');
     if (k === 'remind') press('[data-act="remind-edit"]');
     if (k === 'delete' && await confirmBox(`Delete "${q.title}"?`)) { deleteQuest(q.id); toast(`Deleted: ${q.title}`); }
@@ -59,10 +59,14 @@ function open(row, x, y) {
 }
 
 export function startMenu() {
+  // on touch, a long press on a quest opens it to edit (main.js), so the menu is for right-click and the keyboard
+  let lastPointer = 'mouse';
+  document.addEventListener('pointerdown', e => { lastPointer = e.pointerType; }, true);
   document.addEventListener('contextmenu', e => {
     const row = e.target.closest('.q[data-key]');
     if (!row || e.target.closest('input, textarea, [contenteditable]')) return;
     e.preventDefault();
+    if (lastPointer === 'touch' || lastPointer === 'pen') return;
     // the menu key / Shift+F10 come from the keyboard: anchor under the focused row instead of the pointer
     if (e.button !== 2 && !e.clientX && !e.clientY) { const r = row.getBoundingClientRect(); open(row, r.left + 16, r.bottom + 4); }
     else open(row, e.clientX, e.clientY);

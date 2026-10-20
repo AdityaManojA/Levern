@@ -35,7 +35,7 @@ export function render(params) {
   } else body = list.map(q => questRow(q)).join('');
   const count = f => all.filter(q => inFilter(q, f)).length;
   return `
-    <div class="h-sub">Your tasks. Tap one for details.</div>
+    <div class="h-sub">Your tasks. Tap one to open it, hold to edit.</div>
     <h1 class="h-title">Quests</h1>
     <div class="seg" role="tablist">${FILTERS.map(([k, l]) => `<button role="tab" aria-selected="${k === filter}" class="${k === filter ? 'on' : ''}" data-act="filter" data-f="${k}">${l}<span class="n">${count(k)}</span></button>`).join('')}</div>
     <div class="toolbar">

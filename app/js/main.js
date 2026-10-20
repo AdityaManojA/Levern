@@ -5,7 +5,8 @@ import { startReminders, paintBadges } from './reminders.js';
 import { watchInstall } from './install.js';
 import { $, toast, play, sheet, ICON } from './ui.js';
 import { completeQuest } from './complete.js';
-import { pageTransition, morph } from './motion.js';
+import { pageTransition, morph, reduced, EASE } from './motion.js';
+import { questRow, expanded } from './views/common.js';
 import * as home from './views/home.js';
 import * as quests from './views/quests.js';
 import * as detail from './views/detail.js';
@@ -107,7 +108,45 @@ const ACTIONS = {
   bell: () => remindersPanel.toggle(),
   onboard: () => onboarding.open(() => tour.start()),
   tour: () => tour.start(),
+  // a quest row opens and closes in place
+  expand: el => {
+    const id = el.dataset.id, q = store.findQuest(id), row = el.closest('.q');
+    if (!q || !row) return;
+    const opening = !expanded.has(id);
+    opening ? expanded.add(id) : expanded.delete(id);
+    play('click', 0.35);
+    const tmp = document.createElement('div'); tmp.innerHTML = questRow(q);
+    const next = tmp.firstElementChild;
+    row.replaceWith(next);
+    next.querySelector('.qb')?.focus({ preventScroll: true });
+    const panel = next.querySelector('.qx');
+    if (panel && !reduced()) panel.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EASE });
+  },
+  'sub-toggle': el => {
+    const q = store.findQuest(el.dataset.id), s = q?.subtasks.find(x => x.id === el.dataset.sid);
+    if (!s) return;
+    store.updateSubtask(q.id, s.id, { done: !s.done });
+    play(s.done ? 'tick' : 'click', 0.5);
+  },
 };
+// long-press a quest to edit it (touch, pen or mouse held); a right-click still opens the quest menu
+let press = null, pressedAt = 0;
+const endPress = () => { if (press) { clearTimeout(press.t); press = null; } };
+document.addEventListener('pointerdown', e => {
+  const qb = e.target.closest('.q .qb');
+  if (!qb || e.button > 0) return;
+  endPress();
+  press = { x: e.clientX, y: e.clientY, t: setTimeout(() => {
+    press = null; pressedAt = Date.now();
+    try { navigator.vibrate?.(12); } catch (err) {}
+    location.hash = '#/quest/' + qb.dataset.id;
+  }, 520) };
+});
+document.addEventListener('pointermove', e => { if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) endPress(); });
+['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, endPress));
+addEventListener('scroll', endPress, true);
+// the click that ends a long press must not also open/close the row
+document.addEventListener('click', e => { if (Date.now() - pressedAt < 700 && e.target.closest('.q')) { e.preventDefault(); e.stopPropagation(); } }, true);
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (!el || el.closest('#sheet')) return;
