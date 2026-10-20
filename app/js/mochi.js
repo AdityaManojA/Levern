@@ -21,7 +21,7 @@ const SPEED = { slow: 28, normal: 50, zoomy: 95 }, SPRINT = 170, SINK = 2;
 // Tempo on top of the art's own fps: reactions and idles play much slower so they read as calm,
 // walking and running a little faster (stride and ground speed scale together, so his feet don't slide).
 // His breathing (rest) and sleep are slowed a little too. Every Mochi animation goes through this, sprites included.
-const ACT_TEMPO = 0.4, BREATH_TEMPO = 0.75, MOVE_TEMPO = 1.15;
+const ACT_TEMPO = 0.8, BREATH_TEMPO = 0.75, MOVE_TEMPO = 1.15;
 const MOVES = new Set(['walk', 'sprint', 'sprint-stop', 'get-up-left', 'get-up-right']);
 const tempo = n => (MOVES.has(n) ? MOVE_TEMPO : n === 'rest' || n === 'sleep' ? BREATH_TEMPO : ACT_TEMPO);
 const fpsOf = n => A[n].fps * tempo(n);
@@ -356,6 +356,7 @@ export function createMochi(env) {
   }
   function drop() {
     const d = M.dragTo; M.dragTo = null;
+    env.onDrop && env.onDrop();   // the tour's drag step finishes once he's let go
     M.state = 'fall';
     M.fall = { vx: Math.max(-600, Math.min(600, d.vx)), vy: Math.max(-900, Math.min(600, d.vy)) };
     if (reduced()) { M.lift = 0; land(); }
@@ -477,9 +478,11 @@ export function createMochi(env) {
     requestAnimationFrame(tick);
   }
   // window resized or zoomed: keep him on the bar, and redraw straight away (pinch zoom fires no resize)
+  // the bar and the sheet are still moving when the resize event fires, so clamp again once they settle
   const refit = () => { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); render(); };
-  addEventListener('resize', refit);
-  window.visualViewport?.addEventListener('resize', refit);
+  const refitSettled = () => { refit(); requestAnimationFrame(refit); setTimeout(refit, 120); setTimeout(refit, 450); setTimeout(refit, 900); };
+  addEventListener('resize', refitSettled);
+  window.visualViewport?.addEventListener('resize', refitSettled);
   window.visualViewport?.addEventListener('scroll', render);
 
   const LINES = { home: 'hi again!', quests: 'so many quests', calendar: 'what’s coming up?', focus: 'shh… focusing', stats: 'look at you go', settings: 'make it cozy' };
@@ -495,7 +498,7 @@ export function createMochi(env) {
       if (page === 'quests' && urgent) { M.p1Seen++; if (M.p1Seen > 1 && M.p1Seen % 3 === 0) strike('grumpy', 'that P1 is STILL open!', true); else if (M.p1Seen === 1) strike('surprised', 'a P1 is due!'); }
       else if (page === 'focus') { say(LINES.focus, 1300); }
       else if (page === 'settings') strike('sitting-pretty', LINES.settings);
-      else if (page === 'home' && M.homeVisits++ % 3 === 0) { voice('sweet', { vol: 0.8 }); strike('wave', 'hi again!'); }
+      else if (page === 'home' && M.homeVisits++ % 2 === 0) { voice('sweet', { vol: 0.8 }); strike('wave', 'hi again!'); }
       else if (Math.random() < 0.5 && LINES[page]) say(LINES[page], 1300);
       schedule(1.5, 3);
     },

@@ -1,7 +1,7 @@
 // Calendar export: an .ics file (Apple Calendar, Outlook, Google import) and Google Calendar "add event" links.
 import { addDays, at } from './dates.js';
 
-const RRULE = { daily: 'FREQ=DAILY', weekdays: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', weekly: 'FREQ=WEEKLY', monthly: 'FREQ=MONTHLY' };
+const RRULE = { daily: 'FREQ=DAILY', alternate: 'FREQ=DAILY;INTERVAL=2', weekdays: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', weekly: 'FREQ=WEEKLY', monthly: 'FREQ=MONTHLY' };
 export const rrule = r => r && RRULE[r.freq] ? RRULE[r.freq] + (r.interval > 1 ? `;INTERVAL=${r.interval}` : '') : '';
 
 const esc = s => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');

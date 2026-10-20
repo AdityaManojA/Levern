@@ -5,7 +5,7 @@ import { rollForward } from './recur.js';
 import { parseQuest } from './parse.js';
 
 const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const FREQS = ['daily', 'weekdays', 'weekly', 'monthly'];
+const FREQS = ['daily', 'alternate', 'weekdays', 'weekly', 'monthly'];
 const isDate = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(new Date(s + 'T00:00:00'));
 const isTime = s => typeof s === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
 export const reminderBase = q => q.due ? at(q.due, q.time || '09:00') : null;

@@ -191,6 +191,7 @@ const mochi = createMochi({
   quests: () => store.getState().quests,
   paused: () => onboarding.isOpen() || tour.isOpen(),
   onTap: () => tour.mochiTapped(),
+  onDrop: () => tour.mochiDropped(),
   onHoldTap: () => { if (!remindersPanel.isOpen()) remindersPanel.open(); },
 });
 setMascot(mochi);
@@ -209,8 +210,10 @@ document.addEventListener('sheet:open', () => mascot.setPerch('sheet'));
 document.addEventListener('sheet:close', () => mascot.setPerch('nav'));
 // the visible screen height on phones (address bar, on-screen keyboard), for sheets: --vvh and --kb
 const vv = window.visualViewport;
+// pinch-zoomed too: vv.height and vv.offsetTop describe what is on screen at the current zoom, so the
+// sheet keeps its top and fields in view instead of staying sized for the unzoomed page
 const fitViewport = () => {
-  if (!vv || Math.abs(vv.scale - 1) > 0.01) return;   // pinch-zoomed: leave the sheet as it is
+  if (!vv) return;
   const layout = document.documentElement.clientHeight;
   document.documentElement.style.setProperty('--vvh', `${Math.round(vv.height)}px`);
   document.documentElement.style.setProperty('--kb', `${Math.max(0, Math.round(layout - vv.height - vv.offsetTop))}px`);

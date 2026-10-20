@@ -20,7 +20,8 @@ const STEPS = [
   { route: '#/focus', target: '.focus-card', title: 'Focus mode', text: 'Pick a quest, start the timer and earn 1 EXP for every 5 minutes. Mochi naps while you focus.' },
   { route: '#/home', target: '#nav', title: 'Get around', text: 'Home, Quests, Calendar and Focus. The + in the middle adds a quest from anywhere.' },
   { route: '#/settings', target: '[data-tour="mochi-settings"]', title: 'Make it yours', text: 'Set your daily target, reminders, calendars and sounds, rename priorities and tune Mochi here.' },
-  { route: '#/home', target: 'mochi', title: 'Meet Mochi', text: 'Mochi walks along the nav bar, naps, and reacts to what you do. Tap him, he likes it.', last: true },
+  { route: '#/home', target: 'mochi', title: 'Meet Mochi', text: 'Mochi walks along the nav bar, naps, and reacts to what you do. Tap him, he likes it.' },
+  { route: '#/home', target: 'mochi', title: 'Pick him up', text: 'Drag Mochi anywhere along the bar and let go. He lands where you drop him, and he loves it.', last: true, drag: true },
 ];
 
 function subtaskQuest() {
@@ -55,7 +56,7 @@ function card() {
     <p class="tour-text">${esc(s.text)}</p>
     ${s.extra ? s.extra() : ''}
     <div class="tour-dots">${STEPS.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>
-    ${s.last && hasMochi ? '<div class="tour-tapmochi">Tap Mochi to finish the tour</div>'
+    ${s.last && hasMochi ? `<div class="tour-tapmochi">${s.drag ? 'Drag him, or tap him, to finish' : 'Tap Mochi to finish the tour'}</div>`
       : `<div class="tour-foot"><button type="button" class="link" data-tour-skip>${s.last ? '' : 'Skip tour'}</button><button type="button" class="btn sm" data-tour-next>${s.last ? 'Finish' : 'Next'}</button></div>`}`;
 }
 
@@ -160,7 +161,7 @@ async function showStep() {
   await fade(c, 1, 380);
   if (stale()) return;
   const h = c.querySelector('.tour-title'); if (h) h.focus({ preventScroll: true });
-  if (s.last) mascot.say('tap me!', 2500);
+  if (s.last) mascot.say(s.drag ? 'drag me!' : 'tap me!', 2500);
 }
 
 // once a step has settled, the spotlight and card stay on the target if it moves (Mochi walking)
@@ -203,5 +204,10 @@ export function end(finished) {
 export function mochiTapped() {
   if (i === STEPS.length - 1) { end(true); return true; }
   return false;
+}
+// ...and when he's dropped: on the drag step he cheers, then the tour ends once he has landed
+export function mochiDropped() {
+  if (i < 0 || !STEPS[i].drag || !settled) return;
+  setTimeout(() => end(true), 1100);
 }
 export { findQuest };

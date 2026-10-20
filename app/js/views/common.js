@@ -19,7 +19,7 @@ export function questRow(q, now = new Date()) {
   const meta = [
     `<span>${esc(tierLabel(q.tier))}</span>`,
     q.due ? `<span class="${st === 'overdue' ? 'od' : ''}">${esc(dueLabel(q, now))}</span>` : '',
-    q.repeat ? `<span class="tag">${ICON.repeat}${{ daily: 'daily', weekdays: 'weekdays', weekly: 'weekly', monthly: 'monthly' }[q.repeat.freq] || ''}</span>` : '',
+    q.repeat ? `<span class="tag">${ICON.repeat}${{ daily: 'daily', alternate: 'alternate days', weekdays: 'weekdays', weekly: 'weekly', monthly: 'monthly' }[q.repeat.freq] || ''}</span>` : '',
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',
     q.sketches?.length ? `<span class="tag" title="Sketches">${ICON.sketch}${q.sketches.length}</span>` : '',
     reminderChip(q),

@@ -722,3 +722,111 @@ button.wq.ev { width: 100%; border: none; background: none; padding: 0; text-ali
 .legal-table th, .legal-table td { text-align: left; vertical-align: top; padding: 10px 12px; border-top: 2px solid rgba(30,27,24,.08); }
 .legal-table thead th { border-top: none; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .legal-foot { margin-top: 32px; padding-top: 14px; border-top: 2px solid rgba(30,27,24,.1); text-align: center; }
+
+/* phone: behaves like an app (no zoom-on-focus, no browser pull-to-refresh, instant taps) */
+html { overscroll-behavior-y: none; }
+body { overscroll-behavior-y: none; }
+button, a, [role=button], label, summary, .tab, .add, .qb { touch-action: manipulation; }
+@media (max-width: 640px) {
+  input, select, textarea, .field, .search { font-size: 16px !important; }   /* iOS zooms the page on focus below 16px */
+  .app { min-height: 100dvh; }
+  .sheet { padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right)); }
+}
+
+/* form fields use the app's type (Inter, the same weights as the labels around them) */
+input.field, select.field, textarea.field, .field { font-family: inherit; font-weight: 600; color: var(--ink); }
+.field::placeholder { font-weight: 500; color: var(--muted); }
+
+/* ---------- calendar: month grid and day panel ---------- */
+.cal-h { margin: 14px 0 12px; }
+.cal-h b { font-size: 20px; letter-spacing: -.01em; }
+.cal-h .navs { gap: 8px; }
+.cal-h .iconbtn { width: 40px; height: 40px; border-radius: 13px; }
+.month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.month .wd { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding: 0 0 4px; letter-spacing: .05em; }
+.day { position: relative; min-width: 0; aspect-ratio: 1 / 1.1; padding: 6px 2px 5px; border: 2px solid rgba(30,27,24,.1); border-radius: 14px; background: #fff; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background .3s var(--ease), border-color .3s var(--ease), box-shadow .3s var(--ease), transform .25s var(--ease), opacity .3s var(--ease); }
+.day:hover { border-color: rgba(30,27,24,.3); }
+.day:active { transform: scale(.92); }
+.day .dn { font-weight: 700; font-size: 14px; line-height: 1; min-width: 22px; height: 22px; display: grid; place-items: center; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.day .dots { display: flex; align-items: center; justify-content: center; gap: 3px; height: 10px; }
+.day .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); border: 1.5px solid var(--ink); transition: transform .3s var(--ease); }
+.day .dots em { font-style: normal; font-size: 9px; font-weight: 700; line-height: 1; margin-left: 1px; }
+.day.out { opacity: .4; background: transparent; border-color: transparent; }
+.day.has { border-color: rgba(30,27,24,.18); }
+.day.today .dn { background: var(--ink); color: #fff; }
+.day.sel { background: var(--butter); border-color: var(--ink); box-shadow: 0 3px 0 var(--ink); transform: translateY(-1px); }
+.day.sel .dots i { transform: scale(1.15); }
+.day.out.sel { opacity: .75; }
+
+/* the grid's entrance: a slide from the side the month moved from, then the days pop in one by one */
+@keyframes slide-r { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes slide-l { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+@keyframes day-in { from { opacity: 0; transform: translateY(8px) scale(.86); } to { opacity: 1; transform: none; } }
+@keyframes wday-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.month.from-r { animation: slide-r .42s var(--ease) both; }
+.month.from-l { animation: slide-l .42s var(--ease) both; }
+.month.enter .day { animation: day-in .46s var(--ease) both; animation-delay: calc(var(--i, 0) * 14ms); }
+.week.enter .wday { animation: wday-in .45s var(--ease) both; animation-delay: calc(var(--i, 0) * 45ms); }
+.gap { height: 14px; }
+
+/* the day panel */
+.dayp { margin-top: 14px; padding: 14px 14px 12px; }
+.dayp-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.dayp-h b { display: block; font-size: 18px; letter-spacing: -.01em; }
+.dayp-h small { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.dayp-empty { margin: 12px 0 4px; }
+.dq-list { display: grid; gap: 8px; margin-top: 12px; }
+.dq { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 11px 13px; border: 2px solid var(--ink); border-radius: 14px; background: var(--c, #fff); color: var(--ink);
+  text-decoration: none; font-weight: 700; font-size: 14.5px; text-align: left; transition: transform .2s var(--ease), opacity .3s var(--ease); }
+.dq:active { transform: scale(.98); }
+.dq .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dq .m { flex: none; font-size: 12px; font-weight: 700; opacity: .75; font-variant-numeric: tabular-nums; }
+.dq.is-done { opacity: .5; }
+.dq.is-done .t { text-decoration: line-through; }
+.dq.ev { background: #fff; border-style: dashed; }
+.dq.ev .dotc { flex: none; }
+.dq .dotc { width: 12px; height: 12px; }
+.dayp .ev-h { margin-top: 14px; }
+
+/* week view */
+.week { display: flex; flex-direction: column; gap: 10px; }
+.wday { border: 2px solid rgba(30,27,24,.12); border-radius: 16px; background: #fff; padding: 10px 12px; }
+.wday.today { border-color: var(--ink); background: #EAF5FC; }
+.wday .wh { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 13.5px; }
+.wday .dq { margin-top: 8px; padding: 9px 11px; font-size: 14px; }
+.wday .dq.ev { margin-top: 8px; }
+.wday-free { margin-top: 4px; color: var(--muted); }
+
+/* Google / .ics export: tucked away under the calendar */
+.ics-card { margin-top: 18px; padding: 12px 16px; }
+.ics-card summary { cursor: pointer; font-weight: 700; font-size: 15px; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ics-card summary::-webkit-details-marker { display: none; }
+.ics-card summary::after { content: ""; width: 9px; height: 9px; border-right: 2.5px solid var(--ink); border-bottom: 2.5px solid var(--ink); transform: rotate(45deg); transition: transform .35s var(--ease); flex: none; margin-right: 4px; }
+.ics-card[open] summary::after { transform: rotate(-135deg); }
+.ics-card[open] { padding-bottom: 16px; }
+.day { overflow: hidden; }
+.day .dots { flex-wrap: nowrap; gap: 3px; height: 10px; }
+.day .dots i { width: 6px; height: 6px; }
+.day .more { position: absolute; top: 4px; right: 5px; font-size: 9px; font-weight: 700; line-height: 1; font-style: normal; color: var(--ink); }
+
+/* calendar on a phone: denser grid and day panel, so the month and the day fit on one screen */
+.dayp-more { display: block; width: 100%; margin-top: 8px; padding: 8px; border: 2px dashed var(--ink); border-radius: 12px; background: transparent; font-weight: 700; font-size: 13px; cursor: pointer; }
+.dayp-more:hover { background: rgba(255,255,255,.6); }
+@media (max-width: 640px) {
+  .cal-h { margin: 10px 0 8px; }
+  .cal-h b { font-size: 18px; }
+  .month { gap: 4px; }
+  .day { aspect-ratio: 1 / 1.02; padding: 4px 1px 3px; border-radius: 12px; }
+  .day .dn { font-size: 13px; min-width: 20px; height: 20px; }
+  .day .dots { height: 8px; gap: 2px; }
+  .day .dots i { width: 5px; height: 5px; border-width: 1px; }
+  .gap { height: 10px; }
+  .dayp { padding: 12px 12px 10px; margin-top: 10px; }
+  .dayp-h b { font-size: 16px; }
+  .dq-list { gap: 6px; margin-top: 10px; }
+  .dq { padding: 8px 11px; font-size: 14px; border-radius: 12px; min-height: 0; }
+  .ev-h { margin-top: 10px; }
+}
+@media (max-width: 640px) { .ics-card summary .small { display: none; } }
