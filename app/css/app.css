@@ -156,6 +156,7 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .ob-card.nudges { padding: 4px 14px; }
 .exchip { border: 1.5px dashed var(--ink); border-radius: 8px; padding: 0 6px; font-weight: 700; font-size: 11px; line-height: 16px; background: rgba(255,255,255,.55); }
 .empty { text-align: center; padding: 28px 16px; }
+.sync-wait { text-align: center; padding: 48px 16px; color: var(--muted); font-weight: 600; }
 .empty b { display: block; font-size: 16px; margin-bottom: 4px; }
 
 /* nav */
@@ -886,7 +887,8 @@ body.mochi-held { overflow: hidden; touch-action: none; overscroll-behavior: non
 .tw { position: relative; }
 .tw-btn { width: 100%; border: var(--line); border-radius: 14px; padding: 12px 14px; background: #fff; font-weight: 600; font-size: 16px; text-align: left; color: var(--ink); }
 .tw-btn:disabled { opacity: .5; }
-.tw-panel { position: relative; margin-top: 8px; border: var(--line); border-radius: 18px; background: #fff; display: flex; padding: 0 8px; height: 220px; overflow: hidden; }
+/* floats over the card, so opening it doesn't stretch the form (a narrow grid cell on phones) */
+.tw-panel { position: absolute; top: calc(100% + 6px); right: 0; z-index: 30; width: 240px; max-width: calc(100vw - 32px); border: var(--line); border-radius: 18px; background: #fff; display: flex; padding: 0 8px; height: 220px; overflow: hidden; box-shadow: 0 12px 30px rgba(30,27,24,.16); }
 .tw-panel[hidden] { display: none; }
 .tw-col { flex: 1; height: 176px; margin-top: 22px; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior: contain; touch-action: pan-y; }
 .tw-col::-webkit-scrollbar { display: none; }

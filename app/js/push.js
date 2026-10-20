@@ -3,17 +3,21 @@
 import { VAPID_PUBLIC_KEY } from '../config.js';
 import * as account from './account.js';
 import { slog, serr } from './signinlog.js';
+import { dlog } from './debuglog.js';
 
 const toKey = b64 => { const pad = '='.repeat((4 - b64.length % 4) % 4); const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
 
 // call from a tap, after notification permission is granted
 export async function enablePush() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !VAPID_PUBLIC_KEY) return false;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !VAPID_PUBLIC_KEY) {
+    dlog('push', 'not available on this device', { serviceWorker: 'serviceWorker' in navigator, pushManager: 'PushManager' in window, key: !!VAPID_PUBLIC_KEY });
+    return false;
+  }
   try {
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toKey(VAPID_PUBLIC_KEY) });
-    slog('push subscription ready');
+    slog('push subscription ready', { existing: !!sub });
     await saveSubscription(sub);
     return true;
   } catch (e) { serr('push subscription', e); return false; }

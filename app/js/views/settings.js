@@ -11,6 +11,21 @@ import { buildICS } from '../ics.js';
 import * as account from '../account.js';
 import * as cloud from '../cloud.js';
 import * as nudges from '../nudges.js';
+import { debugOn, setDebug, logCount, clearLog, reportText, dlog } from '../debuglog.js';
+
+// the diagnostic log for testers (see debuglog.js): on/off, copy, show, a test notification and clear
+let logShown = false, lastReport = '';
+const debugRows = () => {
+  const on = debugOn();
+  return `<div class="sec">Debugging</div>
+    <div class="card">
+      <div class="srow"><div class="l"><b>Record diagnostic logs</b><small>Notes what sign-in, sync and notifications do on this device. No quest names, emails or tokens. Turn on when you're asked to send a log.</small></div><button class="tog" role="switch" aria-checked="${on}" aria-label="Record diagnostic logs" data-act="dbg-toggle"></button></div>
+      ${on ? `<div class="srow"><div class="l"><b>${logCount()} entries</b><small>Copy the log and send it back</small></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="mini" data-act="dbg-copy">Copy log</button><button class="mini" data-act="dbg-show">${logShown ? 'Hide' : 'Show'} log</button></div></div>
+      <div class="srow"><div class="l"><b>Test notification</b><small>Shows one notification now, to check this device</small></div><button class="mini" data-act="dbg-test">Send test</button></div>
+      <div class="srow"><div class="l"><b>Clear log</b><small>Starts a fresh log</small></div><button class="mini" data-act="dbg-clear">Clear</button></div>
+      ${logShown ? `<textarea class="field" readonly rows="12" style="width:100%;font:12px/1.4 ui-monospace,monospace" aria-label="Diagnostic log">${esc(lastReport)}</textarea>` : ''}` : ''}
+    </div>`;
+};
 
 const tog = (k, on, label) => `<button class="tog" role="switch" aria-checked="${on}" aria-label="${esc(label)}" data-act="tog" data-k="${k}"></button>`;
 const step = (k, v, unit = '') => `<div class="step"><button data-act="step" data-k="${k}" data-d="-1" aria-label="Less">−</button><b>${v}${unit}</b><button data-act="step" data-k="${k}" data-d="1" aria-label="More">+</button></div>`;
@@ -110,6 +125,7 @@ export function render() {
       <div class="srow"><div class="l"><b>Privacy policy</b><small>What TaskFlow stores and where it goes</small></div><a class="mini" href="privacy.html">Read</a></div>
       <div class="srow"><div class="l"><b>Cookies</b><small>No tracking cookies. What's kept in your browser</small></div><a class="mini" href="cookies.html">Read</a></div>
     </div>
+    ${debugRows()}
     ${account.user() ? `<button class="btn block signout" data-act="acct-out" style="margin-top:22px">Sign out</button>
     <p class="small" style="text-align:center;margin-top:8px">Signed in as ${esc(account.user().email || account.user().name)}</p>` : ''}
     <p class="small" style="text-align:center;margin:16px 0">TaskFlow web 0.1 · light mode</p>`;
@@ -171,6 +187,28 @@ export const actions = {
   gdisconnect: async () => { if (await confirmBox('Stop syncing with Google Calendar? The TaskFlow calendar stays in your Google account.', 'Disconnect')) { try { await cal.disconnectGoogle(); toast('Disconnected'); } catch (e) { toast(e.message); } rerender(); } },
   'copy-feed': async () => { try { await navigator.clipboard.writeText(cal.feedUrl()); toast('Link copied'); } catch (e) { toast(cal.feedUrl()); } },
   'ics-download': () => { download('taskflow.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
+  'dbg-toggle': () => { setDebug(!debugOn()); if (!debugOn()) { logShown = false; } rerender(); },
+  'dbg-clear': () => { clearLog(); logShown = false; toast('Log cleared'); rerender(); },
+  'dbg-show': async () => { logShown = !logShown; if (logShown) lastReport = await reportText({ signedIn: !!account.user() }); rerender(); },
+  'dbg-copy': async () => {
+    const text = await reportText({ signedIn: !!account.user() });
+    try { await navigator.clipboard.writeText(text); toast('Log copied. Send it back to the developer.', 'good'); }
+    catch (e) {
+      // no clipboard access here: show the text so it can be copied by hand
+      lastReport = text; logShown = true; rerender(); toast('Couldn\'t copy automatically. Select the text below and copy it.');
+    }
+  },
+  'dbg-test': async () => {
+    const p = permission();
+    dlog('notify', 'test notification requested', { permission: p });
+    if (p !== 'granted') { toast('Allow notifications first'); return; }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification('TaskFlow test', { body: 'If you can read this, notifications work on this device.', tag: 'taskflow-test', icon: 'icons/icon-192.png' });
+      dlog('notify', 'test notification shown');
+      toast('Test sent');
+    } catch (e) { dlog('notify', 'test notification failed', { name: e?.name || null, message: String(e?.message || e) }); toast('Test failed. Turn on logging and copy the log.'); }
+  },
   tog: async el => {
     const k = el.dataset.k, on = !getState().settings[k];
     el.setAttribute('aria-checked', on);   // flip in place so the knob glides

@@ -1,6 +1,7 @@
 // An iOS-style time picker: scrolling wheels for the hour, the minute and AM/PM. The value is a 24-hour
 // "HH:MM" string kept in a hidden input, so the forms that read a time field keep working unchanged.
-// A change is announced with a bubbling "change" event on that input, as for a normal time field.
+// While a wheel moves only the picker's own label changes. A "change" event (bubbling, as for a normal time
+// field) is sent once, when the panel closes, so the form isn't redrawn under the finger.
 import { esc } from './ui.js';
 
 const ITEM = 44;           // height of one wheel row (px)
@@ -78,7 +79,24 @@ export function setTimeWheel(tw, value, disabled = false) {
   input.disabled = !!disabled;
 }
 
-// one set of listeners for the whole app: opening, scrolling, tapping a row, Done and No time
+// show a value on the picker without telling the form yet (used while a wheel is moving)
+function showValue(tw, value) {
+  const input = tw.querySelector('input[type="hidden"]');
+  input.value = value;
+  tw.querySelector('.tw-btn').textContent = fmtTime(value);
+}
+
+// close a panel and announce the value if it changed since it opened
+function closePanel(tw) {
+  const panel = tw.querySelector('.tw-panel');
+  if (panel.hidden) return;
+  panel.hidden = true;
+  tw.querySelector('[data-tw-open]').setAttribute('aria-expanded', 'false');
+  const input = tw.querySelector('input[type="hidden"]');
+  if (input.value !== tw.dataset.start) input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+// one set of listeners for the whole app: opening, scrolling, tapping a row, Done, No time and taps outside
 export function initTimeWheels() {
   const timers = new WeakMap();
   document.addEventListener('click', e => {
@@ -86,9 +104,12 @@ export function initTimeWheels() {
     if (open) {
       const tw = open.closest('[data-tw]'); const panel = tw.querySelector('.tw-panel');
       const willOpen = panel.hidden;
-      document.querySelectorAll('.tw-panel').forEach(p => { if (p !== panel) p.hidden = true; });
-      panel.hidden = !willOpen; open.setAttribute('aria-expanded', willOpen);
-      if (willOpen) showWheel(tw, tw.querySelector('input[type="hidden"]').value);
+      document.querySelectorAll('[data-tw]').forEach(other => { if (other !== tw) closePanel(other); });
+      if (willOpen) {
+        tw.dataset.start = tw.querySelector('input[type="hidden"]').value;
+        panel.hidden = false; open.setAttribute('aria-expanded', 'true');
+        showWheel(tw, tw.dataset.start);
+      } else closePanel(tw);
       return;
     }
     const row = e.target.closest('.tw-item');
@@ -98,24 +119,28 @@ export function initTimeWheels() {
       return;
     }
     const done = e.target.closest('[data-tw-done]');
-    if (done) { const tw = done.closest('[data-tw]'); tw.querySelector('.tw-panel').hidden = true; tw.querySelector('[data-tw-open]').setAttribute('aria-expanded', 'false'); return; }
+    if (done) { closePanel(done.closest('[data-tw]')); return; }
     const clear = e.target.closest('[data-tw-clear]');
-    if (clear) commit(clear.closest('[data-tw]'), '');
+    if (clear) { const tw = clear.closest('[data-tw]'); showValue(tw, ''); closePanel(tw); return; }
+    // a tap anywhere else closes an open picker
+    document.querySelectorAll('[data-tw]').forEach(tw => { if (!tw.contains(e.target)) closePanel(tw); });
   });
-  // a wheel reports its value once it has stopped moving
+  // a wheel shows its value once it has stopped moving; the form is told when the panel closes
   document.addEventListener('scroll', e => {
     const col = e.target.closest?.('.tw-col');
     if (!col) return;
     highlight(col);
     clearTimeout(timers.get(col));
     timers.set(col, setTimeout(() => {
-      // snap to the nearest row, then report the value
+      // snap to the nearest row, then show the value
       col.scrollTo({ top: Math.round(col.scrollTop / ITEM) * ITEM, behavior: 'smooth' });
-      commit(col.closest('[data-tw]'), readWheel(col.closest('[data-tw]')));
+      const tw = col.closest('[data-tw]');
+      showValue(tw, readWheel(tw));
     }, 140));
   }, true);
 }
 
+// clear the value and announce it straight away
 function commit(tw, value) {
   const input = tw.querySelector('input[type="hidden"]');
   if (input.value === value) return;

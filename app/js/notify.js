@@ -1,6 +1,7 @@
 // System notifications through the service worker, the app-icon badge, and the reminder schedule
 // the service worker reads when it wakes up without the page.
 import { kv } from './storage.js';
+import { dlog } from './debuglog.js';
 
 export const supported = 'Notification' in window;
 let reg = null;
@@ -21,7 +22,12 @@ export const onMessage = fn => listeners.add(fn);
 export const permission = () => supported ? Notification.permission : 'unsupported';
 export async function requestPermission() {
   if (!supported || Notification.permission !== 'default') return permission();
-  try { const p = await Notification.requestPermission(); if (p === 'granted') { tryPeriodicSync(); import('./push.js').then(m => m.enablePush()); } return p; } catch (e) { return permission(); }
+  try {
+    const p = await Notification.requestPermission();
+    dlog('notify', 'permission answered', { result: p });
+    if (p === 'granted') { tryPeriodicSync(); import('./push.js').then(m => m.enablePush()); }
+    return p;
+  } catch (e) { dlog('notify', 'permission request failed', { message: String(e?.message || e) }); return permission(); }
 }
 
 // Shows a notification through the service worker when there is one (needed on Android and for the

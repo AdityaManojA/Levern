@@ -4,7 +4,7 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v28';
+const VERSION = 'taskflow-v29';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
@@ -72,7 +72,16 @@ self.addEventListener('message', e => {
   const m = e.data || {};
   if (m.type === 'schedule') e.waitUntil(kvSet('schedule', m.items || []));
   if (m.type === 'check') e.waitUntil(checkDue());
+  if (m.type === 'debug') e.waitUntil(kvSet('debugOn', !!m.on));
+  if (m.type === 'get-debug' && e.ports[0]) e.waitUntil(kvGet('debuglog').then(l => e.ports[0].postMessage(l || [])));
 });
+// diagnostics for testers (Settings > Debugging): recorded only while the app has logging turned on
+async function swlog(msg, data) {
+  if (!(await kvGet('debugOn'))) return;
+  const lines = (await kvGet('debuglog')) || [];
+  lines.push({ t: new Date().toISOString(), area: 'sw', msg, ...(data === undefined ? {} : { data }) });
+  await kvSet('debuglog', lines.slice(-300));
+}
 self.addEventListener('periodicsync', e => { if (e.tag === 'taskflow-reminders') e.waitUntil(checkDue()); });
 self.addEventListener('notificationclick', e => {
   const n = e.notification, data = n.data || {}, action = e.action || 'open';
@@ -95,9 +104,19 @@ self.addEventListener('notificationclick', e => {
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'TaskFlow', body: e.data ? e.data.text() : '' }; }
-  if (d.id) { e.waitUntil(self.registration.showNotification(d.title || 'TaskFlow', notifyOpts(d))); return; }
-  e.waitUntil(self.registration.showNotification(d.title || 'TaskFlow', {
-    body: d.body || '', tag: d.tag || 'taskflow', renotify: true,
-    icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: d.url || '#/home' },
-  }));
+  // the log keeps the kind of reminder, not its title (titles name the person's quests)
+  e.waitUntil((async () => {
+    await swlog('push received', { tag: d.tag || null, hasTitle: !!d.title });
+    try {
+      if (d.id) await self.registration.showNotification(d.title || 'TaskFlow', notifyOpts(d));
+      else await self.registration.showNotification(d.title || 'TaskFlow', {
+        body: d.body || '', tag: d.tag || 'taskflow', renotify: true,
+        icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: d.url || '#/home' },
+      });
+      await swlog('notification shown', { tag: d.tag || null });
+    } catch (err) {
+      await swlog('notification failed', { name: err?.name || null, message: String(err?.message || err) });
+      throw err;
+    }
+  })());
 });

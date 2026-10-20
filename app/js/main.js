@@ -33,6 +33,7 @@ import { startControls } from './controls.js';
 import { startMenu } from './menu.js';
 import { startAccount } from './account.js';
 import * as account from './account.js';
+import * as cloud from './cloud.js';
 import { initTimeWheels } from './timewheel.js';
 initTimeWheels();   // the iOS-style time pickers, app-wide
 
@@ -65,6 +66,14 @@ function draw(keep) {
   const v = VIEWS[route.name], main = $('#view');
   spriteStops.forEach(s => s());
   if (v.unmount) v.unmount();
+  if (!cloud.cloudReady()) {
+    // signed in: wait for the account's quests rather than show this device's sample ones for a moment
+    main.innerHTML = '<p class="sync-wait" role="status">Loading your quests…</p>';
+    main.dataset.view = route.name;
+    renderNav();
+    scrollTo(0, keep);
+    return;
+  }
   main.innerHTML = v.render(route.params);
   main.dataset.view = route.name;
   renderNav();
@@ -104,6 +113,9 @@ function go() {
 }
 addEventListener('hashchange', go);
 store.subscribe((s, opts) => render({ keepScroll: true, ...opts }));
+// the account's quests arrived (or sign-in started): redraw once when that changes
+let cloudWasReady = cloud.cloudReady();
+cloud.onCloud(() => { if (cloud.cloudReady() !== cloudWasReady) { cloudWasReady = cloud.cloudReady(); render({ keepScroll: true }); } });
 
 /* ---------- shared actions (data-act="...") ---------- */
 const ACTIONS = {

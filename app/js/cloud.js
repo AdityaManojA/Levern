@@ -10,6 +10,7 @@
 import { getState, onSave, syncDoc, adoptSynced, commit, resetAll } from './store.js';
 import { mergeDocs } from './syncmerge.js';
 import * as account from './account.js';
+import { dlog } from './debuglog.js';
 
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 const CHUNK = 700 * 1024;
@@ -20,6 +21,11 @@ const emit = () => listeners.forEach(f => f(info));
 export const onCloud = fn => { listeners.add(fn); return () => listeners.delete(fn); };
 export const cloudInfo = () => info;
 export const cloudOn = () => !!account.user();
+// Until the account's copy has been read (or the attempt failed), a signed-in person's screens wait, so the
+// sample quests on this device never flash on screen before their own quests load.
+let ready = !account.user();
+export const cloudReady = () => ready;
+const becomeReady = () => { if (!ready) { ready = true; emit(); } };
 
 /* ---------- packing ---------- */
 const canZip = typeof CompressionStream === 'function';
@@ -60,9 +66,15 @@ export async function syncNow() {
     const read = async get => {
       const m = await get(meta);
       const md = m.exists() ? m.data() : {};
-      if (!md.chunks) return { md, doc: null };
+      if (!md.chunks) {
+        // the account has a revision but no data we can read: stop, rather than write this device over it
+        if (md.rev) throw new Error('account data could not be read');
+        return { md, doc: null };
+      }
       const snaps = await Promise.all(Array.from({ length: md.chunks }, (_, i) => get(F.doc(db, 'taskflowUsers', u.uid, 'chunks', String(i)))));
-      return { md, doc: await unpack(snaps.map(s => s.exists() ? s.get('b').toUint8Array() : new Uint8Array(0)), md.z) };
+      const doc = await unpack(snaps.map(s => s.exists() ? s.get('b').toUint8Array() : new Uint8Array(0)), md.z);
+      if (!doc) throw new Error('account data could not be read');
+      return { md, doc };
     };
     const { md, doc } = await read(F.getDoc);
     // sample quests that an earlier version copied into the account are removed on the next sync
@@ -97,14 +109,16 @@ export async function syncNow() {
     dirty = false;
     info = { lastSync: Date.now(), error: null };
     result = { ok: true, hadData };
+    dlog('sync', 'synced with account', { quests: merged.quests.length, hadData, rev: nextRev, localChanged: theirs !== now });
     queueShare();
   } catch (e) {
     console.warn('TaskFlow: account sync failed', e);
+    dlog('sync', 'account sync failed', { code: e?.code || null, message: String(e?.message || e), online: navigator.onLine });
     info = { ...info, error: !navigator.onLine ? 'Offline. Changes will be saved when you\'re back online.'
       : e.code === 'permission-denied' ? 'Your account storage isn\'t set up yet (database rules).'
       : "Couldn't save to your account right now. TaskFlow will try again. If you use an ad blocker, allow TaskFlow in it." };
   } finally {
-    busy = false; emit();
+    busy = false; becomeReady(); emit();
     if (again) { again = false; schedule(300); }
   }
   return result;
@@ -166,8 +180,11 @@ export function startCloud() {
   onSave((s, opts) => { if (!opts.fromSync && account.user()) { dirty = true; schedule(); } });
   account.onAccount(u => {
     rev = -1; dirty = true; lastShare = '';
-    if (u) { syncNow().then(listen); } else { unlisten?.(); unlisten = null; info = { lastSync: null, error: null }; emit(); }
+    if (u) { if (ready) { ready = false; emit(); } syncNow().then(listen); }
+    else { unlisten?.(); unlisten = null; info = { lastSync: null, error: null }; ready = true; emit(); }
   });
+  // offline or slow: never keep the screens waiting for more than a few seconds
+  if (!ready) setTimeout(becomeReady, 6000);
   addEventListener('online', () => { if (dirty) schedule(50); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && dirty) schedule(50); });
   setInterval(() => { if (dirty && account.user()) syncNow(); }, 20000);
