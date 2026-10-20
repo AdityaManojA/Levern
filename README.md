@@ -1,5 +1,9 @@
 # TaskFlow
 
+<p align="center">
+  <img src="docs/screenshots/mochi-welcome.png" width="220" alt="Mochi the cat on the TaskFlow welcome screen" />
+</p>
+
 A calm to-do list that feels like a game. Finish quests, build a streak, earn EXP, and keep Mochi the cat company as he walks along the bottom bar.
 
 TaskFlow is an installable web app (PWA). It's plain HTML, CSS and ES modules, with no build step and no dependencies.
