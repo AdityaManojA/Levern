@@ -33,6 +33,8 @@ import { startControls } from './controls.js';
 import { startMenu } from './menu.js';
 import { startAccount } from './account.js';
 import * as account from './account.js';
+import { initTimeWheels } from './timewheel.js';
+initTimeWheels();   // the iOS-style time pickers, app-wide
 
 store.init();
 

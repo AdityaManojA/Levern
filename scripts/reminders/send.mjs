@@ -1,4 +1,4 @@
-// TaskFlow reminder job. Runs every 15 minutes from .github/workflows/reminders.yml.
+// TaskFlow reminder job. Runs every 5 minutes from .github/workflows/reminders.yml.
 //
 // For each person who turned on notifications on a device (taskflowUsers/{uid}/push/sub), it works out what
 // is due now and sends a web push. Nothing is sent twice: what was sent is recorded in taskflowUsers/{uid}/push/state.
@@ -12,7 +12,9 @@ import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import webpush from 'web-push';
 
-const WINDOW_MIN = 15;                       // the job runs every 15 minutes
+const WINDOW_MIN = 5;                        // the job runs every 5 minutes
+// deadline reminders, in minutes before the deadline, by priority (tier 0 = P1). Adjust to taste.
+export const LEADS = { 0: [20, 15, 10, 5], 1: [15, 10, 5], 2: [10, 5], 3: [5], 4: [], 5: [] };
 const KEEP = 600;                            // how many sent-keys to remember per person
 
 // ---- pure helpers (exported for tests) -------------------------------------------------------------
@@ -55,7 +57,7 @@ export function dueNow({ quests = [], settings = {}, tz = 'UTC', now = Date.now(
   // 1. quest reminders at their exact moment (a reminder that came due in the last window)
   for (const q of open) {
     if (q.remind && q.remind.at && q.remind.at <= now && q.remind.at > now - WINDOW_MIN * 60000) {
-      out.push({ key: `rem-${q.id}-${q.remind.at}`, title: `Reminder: ${q.title}`, body: q.due ? `Due ${q.due}${q.time ? ` at ${q.time}` : ''}` : 'Time for this one', url: `#/quest/${encodeURIComponent(q.id)}` });
+      out.push({ key: `rem-${q.id}-${q.remind.at}`, title: `Reminder: ${q.title}`, body: q.due ? `Due ${q.due}${q.time ? ` at ${q.time}` : ''}` : 'Time for this one', url: `#/quest/${encodeURIComponent(q.id)}`, tier: q.tier ?? 3 });
     }
   }
 
@@ -64,14 +66,17 @@ export function dueNow({ quests = [], settings = {}, tz = 'UTC', now = Date.now(
     if (!q.due) continue;
     if (q.due === lp.date && q.time) {
       const t = toMinutes(q.time), diff = t - lp.minutes;
-      if (diff > 0 && diff <= 60) out.push({ key: `soon-${q.id}-${q.due}-${q.time}`, title: `Coming up: ${q.title}`, body: `Due at ${q.time}`, url: `#/quest/${encodeURIComponent(q.id)}` });
-      if (diff <= 0 && diff > -WINDOW_MIN) out.push({ key: `now-${q.id}-${q.due}-${q.time}`, title: `Due now: ${q.title}`, body: `It was due at ${q.time}`, url: `#/quest/${encodeURIComponent(q.id)}` });
+      const tier = q.tier ?? 3;
+      for (const lead of LEADS[tier] || []) {
+        if (diff > lead - WINDOW_MIN && diff <= lead) out.push({ key: `lead-${q.id}-${q.due}-${q.time}-${lead}`, title: `Due in ${lead} min: ${q.title}`, body: `P${tier + 1} · due at ${q.time}`, url: `#/quest/${encodeURIComponent(q.id)}`, tier });
+      }
+      if (diff <= 0 && diff > -WINDOW_MIN) out.push({ key: `now-${q.id}-${q.due}-${q.time}`, title: `Due now: ${q.title}`, body: `It was due at ${q.time}`, url: `#/quest/${encodeURIComponent(q.id)}`, tier: q.tier ?? 3 });
     }
     if (q.due === lp.date && !q.time && inWindow(lp.minutes, '09:00')) {
-      out.push({ key: `today-${q.id}-${q.due}`, title: `Due today: ${q.title}`, body: 'Finish it, or move its date', url: `#/quest/${encodeURIComponent(q.id)}` });
+      out.push({ key: `today-${q.id}-${q.due}`, title: `Due today: ${q.title}`, body: 'Finish it, or move its date', url: `#/quest/${encodeURIComponent(q.id)}`, tier: q.tier ?? 3 });
     }
     if (q.due < lp.date && inWindow(lp.minutes, '09:00')) {
-      out.push({ key: `overdue-${q.id}-${lp.date}`, title: `Overdue: ${q.title}`, body: `Was due ${q.due}`, url: `#/quest/${encodeURIComponent(q.id)}` });
+      out.push({ key: `overdue-${q.id}-${lp.date}`, title: `Overdue: ${q.title}`, body: `Was due ${q.due}`, url: `#/quest/${encodeURIComponent(q.id)}`, tier: q.tier ?? 3 });
     }
   }
 
@@ -88,7 +93,8 @@ export function dueNow({ quests = [], settings = {}, tz = 'UTC', now = Date.now(
       }
     }
   }
-  return out;
+  // the most important first: when several arrive together, P1 goes out before P2, and so on
+  return out.sort((a, b) => (a.tier ?? 9) - (b.tier ?? 9));
 }
 const NUDGE_BODY = { water: 'Time for a glass of water.', eat: 'Time to eat something.', walk: 'Stand up and move for a few minutes.' };
 

@@ -74,12 +74,6 @@ self.addEventListener('message', e => {
   if (m.type === 'check') e.waitUntil(checkDue());
 });
 self.addEventListener('periodicsync', e => { if (e.tag === 'taskflow-reminders') e.waitUntil(checkDue()); });
-// a future sync server can push { title, body, id } and it is shown the same way
-self.addEventListener('push', e => {
-  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'TaskFlow', d.id ? notifyOpts(d) : { body: d.body || '', icon: 'icons/icon-192.png' }));
-});
-
 self.addEventListener('notificationclick', e => {
   const n = e.notification, data = n.data || {}, action = e.action || 'open';
   n.close();
@@ -96,10 +90,12 @@ self.addEventListener('notificationclick', e => {
   })());
 });
 
-// reminders pushed from the server (scripts/reminders): shown even when the app is closed
+// reminders pushed from the server (scripts/reminders): shown even when the app is closed.
+// One handler only, so each push shows once. A payload with an `id` uses the local reminder options.
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'TaskFlow', body: e.data ? e.data.text() : '' }; }
+  if (d.id) { e.waitUntil(self.registration.showNotification(d.title || 'TaskFlow', notifyOpts(d))); return; }
   e.waitUntil(self.registration.showNotification(d.title || 'TaskFlow', {
     body: d.body || '', tag: d.tag || 'taskflow', renotify: true,
     icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: d.url || '#/home' },

@@ -7,6 +7,7 @@ import { esc, ICON, toast, play, confirmBox, download } from '../ui.js';
 import { tierPicker, reminderPicker, bindPicker } from './common.js';
 import { requestPermission } from '../notify.js';
 import { sketchThumbs, openInk, openSketch } from './ink.js';
+import { timeWheelHTML } from '../timewheel.js';
 
 let current = null;
 
@@ -32,7 +33,7 @@ export function render(params) {
     <label class="lbl">Due</label>
     <div class="two">
       <input class="field" type="date" value="${q.due || ''}" data-change="due" aria-label="Due date">
-      <input class="field" type="time" value="${q.time || ''}" data-change="time" aria-label="Due time" ${q.due ? '' : 'disabled'}>
+      ${timeWheelHTML(q.time || '', { name: 'time', label: 'Due time', attrs: 'data-change="time"', disabled: !q.due })}
     </div>
     <div class="chips" style="margin-top:8px">
       <button class="chip chip-btn" data-act="due-quick" data-d="0">Today</button><button class="chip chip-btn" data-act="due-quick" data-d="1">Tomorrow</button>

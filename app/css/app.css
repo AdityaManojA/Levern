@@ -881,3 +881,18 @@ body.mochi-held { overflow: hidden; touch-action: none; overscroll-behavior: non
 
 /* the welcome screens and the tour stay out of the page until the app decides to show them (no flash on refresh) */
 .onboard[hidden], .tour[hidden] { display: none !important; }
+
+/* iOS-style time picker: wheels for hour, minute and AM/PM */
+.tw { position: relative; }
+.tw-btn { width: 100%; border: var(--line); border-radius: 14px; padding: 12px 14px; background: #fff; font-weight: 600; font-size: 16px; text-align: left; color: var(--ink); }
+.tw-btn:disabled { opacity: .5; }
+.tw-panel { position: relative; margin-top: 8px; border: var(--line); border-radius: 18px; background: #fff; display: flex; padding: 0 8px; height: 220px; overflow: hidden; }
+.tw-panel[hidden] { display: none; }
+.tw-col { flex: 1; height: 176px; margin-top: 22px; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior: contain; touch-action: pan-y; }
+.tw-col::-webkit-scrollbar { display: none; }
+.tw-list { padding: 66px 0; }
+.tw-item { height: 44px; scroll-snap-align: center; display: grid; place-items: center; font-weight: 700; font-size: 22px; color: var(--muted); opacity: .45; transition: opacity .2s var(--ease), color .2s var(--ease); cursor: pointer; font-variant-numeric: tabular-nums; }
+.tw-item.on { color: var(--ink); opacity: 1; }
+.tw-band { position: absolute; left: 8px; right: 8px; top: 88px; height: 44px; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); pointer-events: none; }
+.tw-foot { position: absolute; left: 0; right: 0; bottom: 4px; display: flex; justify-content: space-between; padding: 0 14px; }
+.tw-foot .link { font-size: 14px; }

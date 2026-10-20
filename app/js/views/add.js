@@ -4,6 +4,7 @@ import { addQuest, tierLabel, TIER_COLORS, findQuest, getState } from '../store.
 import { parseQuest } from '../parse.js';
 import { fmtDate, fmtTime, fmtStamp } from '../dates.js';
 import { REPEATS, dayChips } from '../recur.js';
+import { timeWheelHTML, setTimeWheel } from '../timewheel.js';
 import { sheet, esc, toast, play, ICON } from '../ui.js';
 import { speechSupported, speechBroken, browserName, listen, speechError } from '../speech.js';
 import { reminderPicker, bindPicker, readPicker, pickerKey } from './common.js';
@@ -55,7 +56,7 @@ export function openAdd(prefill = {}) {
     <label class="lbl">Priority</label>
     <div data-pick></div>
     <label class="lbl">Due</label>
-    <div class="two"><input class="field" type="date" name="due" aria-label="Due date"><input class="field" type="time" name="time" aria-label="Due time"></div>
+    <div class="two"><input class="field" type="date" name="due" aria-label="Due date">${timeWheelHTML('', { name: 'time', label: 'Due time', disabled: true })}</div>
     <label class="lbl">Repeat</label>
     <select class="field" name="repeat">${REPEATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
     <div data-days></div>
@@ -77,8 +78,7 @@ export function openAdd(prefill = {}) {
       : '<span class="small">Nothing yet. Try "tomorrow at 6pm", "every Monday" or "exam".</span>';
     $f('[data-pick]').innerHTML = `<div class="pick">${TIER_COLORS.map((c, i) => `<button type="button" data-tier="${i}" class="${i === f.tier ? 'on' : ''}" style="--c:${c}">P${i + 1}</button>`).join('')}</div><div class="small" style="margin-top:6px">${esc(tierLabel(f.tier))}</div>`;
     $f('[name=due]').value = f.due || '';
-    $f('[name=time]').value = f.time || '';
-    $f('[name=time]').disabled = !f.due;
+    setTimeWheel($f('[data-tw]'), f.time || '', !f.due);
     $f('[name=repeat]').value = f.repeat?.freq || '';
     $f('[data-days]').innerHTML = f.repeat?.freq === 'custom' ? dayChips(f.repeat.days) : '';
     $f('[data-multi]').innerHTML = f.repeat && f.due ? multiBlock(f.multi) : '';

@@ -1,10 +1,10 @@
 name: TaskFlow reminders
 
-# Sends due reminders and daily nudges as web push notifications. Runs every 15 minutes
+# Sends due reminders, priority lead-up reminders and daily nudges as web push notifications. Runs every 5 minutes
 # (GitHub may run it a few minutes late). Needs the secrets listed in scripts/reminders/send.mjs.
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 permissions:
