@@ -65,7 +65,11 @@ export async function syncNow() {
       return { md, doc: await unpack(snaps.map(s => s.exists() ? s.get('b').toUint8Array() : new Uint8Array(0)), md.z) };
     };
     const { md, doc } = await read(F.getDoc);
+    // sample quests that an earlier version copied into the account are removed on the next sync
+    if (doc?.quests) doc.quests = doc.quests.filter(q => !q.sample);
     const hadData = !!doc?.quests?.length;
+    // example quests are never part of an account, new or old: they're this device's sample, not the person's quests
+    mine.quests = (mine.quests || []).filter(q => !q.sample);
     // signing in to an account that has quests: don't mix this device's sample quests into it
     if (hadData && samples) { mine.quests = []; mine.tombstones = []; }
     const merged = mergeDocs(doc || {}, mine);
