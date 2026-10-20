@@ -4,12 +4,14 @@
   "description": "TaskFlow server: per-account sync, private calendar feeds, Google Calendar in the background",
   "type": "module",
   "main": "index.js",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
     "test": "node ../scripts/copy-shared.mjs && node --test test/*.test.js"
   },
   "dependencies": {
-    "firebase-admin": "^12.7.0",
+    "firebase-admin": "^14.5.0",
     "firebase-functions": "^6.1.0"
   }
 }

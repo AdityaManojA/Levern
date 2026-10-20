@@ -77,10 +77,16 @@ export function createMochi(env) {
   const nav = () => document.getElementById('nav');
   const sheetEl = () => document.getElementById('sheet');
   function groundY() { return M.perch === 'sheet' ? sheetEl().getBoundingClientRect().top : nav().getBoundingClientRect().top + SINK; }
+  // Where his body centre may go. His picture (from its body centre out to its paws/tail) always stays inside
+  // the screen with a small margin, and on the bar he sits a little in from the bar's ends, so he never runs off.
+  const EDGE = 6, BAR_INSET = 26;
   function bounds() {
-    if (M.perch === 'sheet') { const r = sheetEl().getBoundingClientRect(); return [r.right - 130, r.right - 70]; }
+    const a = A[M.anim] || A.rest;
+    const left = a.ax + EDGE, right = a.w - a.ax + EDGE;   // picture room on each side of the body centre
+    const vw = document.documentElement.clientWidth;
+    if (M.perch === 'sheet') { const r = sheetEl().getBoundingClientRect(); return [Math.max(left, r.right - 130), Math.min(vw - right, r.right - 70)]; }
     const r = nav().getBoundingClientRect();
-    return [r.left + 52, r.right - 52];
+    return [Math.max(left, r.left + BAR_INSET), Math.min(vw - right, r.right - BAR_INSET)];
   }
   const addX = () => { const a = document.querySelector('.navadd .add'); if (!a) return innerWidth / 2; const r = a.getBoundingClientRect(); return r.left + r.width / 2; };
   // Where a fixed element at (0, 0) actually is, in the same coordinates as getBoundingClientRect.
@@ -497,7 +503,7 @@ export function createMochi(env) {
     }
     if (M.state === 'drag' && M.dragTo) {
       const a = A[M.anim];
-      M.cx = Math.max(24, Math.min(innerWidth - 24, M.dragTo.x));
+      { const a = A[M.anim] || A.rest; M.cx = Math.max(a.ax + EDGE, Math.min(document.documentElement.clientWidth - (a.w - a.ax) - EDGE, M.dragTo.x)); }   // held: picture stays on screen
       M.lift = (Math.max(8, M.dragTo.y) - 12) - (groundY() - a.gy);   // the top of his head just under the finger
       M.liftTo = M.lift;
     } else if (M.state === 'fall' && M.fall) {

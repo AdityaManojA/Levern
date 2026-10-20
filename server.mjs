@@ -7,7 +7,7 @@
 //   HOST=0.0.0.0 node server.mjs  to let other devices on your network reach it (and the feed)
 import { createServer } from 'node:http';
 import { readFile, writeFile, stat, mkdir } from 'node:fs/promises';
-import { join, normalize, extname, dirname } from 'node:path';
+import { join, normalize, extname, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDb } from './server/db.mjs';
 import { createApi } from './server/api.mjs';
@@ -59,10 +59,12 @@ const server = createServer(async (req, res) => {
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405).end(); return; }
     let file = normalize(join(ROOT, path));
-    if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
+    // inside the app folder only: the root itself, or a path under it (a bare prefix match would let app-old/ through)
+    if (file !== ROOT && !file.startsWith(ROOT + sep)) { res.writeHead(403).end(); return; }
     if ((await stat(file).catch(() => null))?.isDirectory()) file = join(file, 'index.html');
     const data = await readFile(file);
-    res.writeHead(200, { 'Content-Type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    // same policy as firebase.json (keep the two in step)
+    res.writeHead(200, { 'Content-Type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'Content-Security-Policy': "default-src 'self'; script-src 'self' https://www.gstatic.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://www.gstatic.com https://accounts.google.com; frame-src 'self' https://accounts.google.com https://*.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" });
     res.end(req.method === 'HEAD' ? undefined : data);
   } catch (e) {
     res.writeHead(e.code === 'ENOENT' ? 404 : 500, { 'Content-Type': 'text/plain' }).end(e.code === 'ENOENT' ? 'Not found' : 'Server error');

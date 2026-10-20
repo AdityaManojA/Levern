@@ -10,9 +10,9 @@
 // Firestore (only this server can read it; firestore.rules denies the app):
 //   users/{uid}                  rev, chunk count, time zone, feed token, Google Calendar status
 //   users/{uid}/chunks/{i}       the person's TaskFlow data, deflated (lib/blob.js)
-//   users/{uid}/private/google   Google refresh token, TaskFlow calendar id, quest â†’ event mapping
+//   users/{uid}/private/google   Google refresh token, TaskFlow calendar id, quest → event mapping
 //   users/{uid}/private/events   their upcoming Google events, as shown in the app
-//   feeds/{token}                feed token â†’ uid
+//   feeds/{token}                feed token → uid
 //   oauthStates/{state}          short-lived, links Google's redirect back to the person who started it
 import { onRequest } from 'firebase-functions/v2/https';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
@@ -220,7 +220,7 @@ export const feed = onRequest({ cors: false }, async (req, res) => {
   const m = /^\/feed\/([A-Za-z0-9_-]{20,64})\.ics$/.exec(req.path);
   if (!m) return res.status(404).send('Not found');
   const f = await db.collection('feeds').doc(m[1]).get();
-  if (!f.exists) return res.status(404).send('This calendar link was replaced or removed. Get the new one in TaskFlow â†’ Settings â†’ Calendars.');
+  if (!f.exists) return res.status(404).send('This calendar link was replaced or removed. Get the new one in TaskFlow → Settings → Calendars.');
   const { doc } = await loadDoc(f.get('uid'));
   res.set('Cache-Control', 'private, max-age=300').type('text/calendar; charset=utf-8').send(buildICS(doc?.quests || []));
 });
