@@ -13,6 +13,7 @@ import * as account from '../account.js';
 import { buildICS } from '../ics.js';
 import * as cloud from '../cloud.js';
 import * as nudges from '../nudges.js';
+import { slog, serr } from '../signinlog.js';
 document.addEventListener('nudges:change', () => { if (isOpen() && STEPS[step] === 'remind') refresh(); });
 
 const STEPS = ['welcome', 'account', 'quests', 'use', 'target', 'remind', 'yours', 'tour'];
@@ -187,7 +188,7 @@ export function open(startTour) {
     if (tog) { const k = tog.dataset.obTog, on = !getState().settings[k]; tog.setAttribute('aria-checked', on); setSetting(k, on, { quiet: true }); play('click', 0.4); return; }
     const c = t.closest('[data-ob-connect]');
     if (c) return connect(c.dataset.obConnect);
-    if (t.closest('[data-ob-google]')) return googleSignIn();
+    if (t.closest('[data-ob-google]')) { slog('Continue with Google tapped', { busy }); return googleSignIn(); }
     if (t.closest('[data-ob-signout]')) { await cloud.signOutAndReset({ force: true }); return refresh(); }
   });
   root.addEventListener('keydown', e => {
@@ -199,14 +200,16 @@ export function open(startTour) {
 
 async function googleSignIn() {
   busy = true; refresh();
+  slog('sign-in button: starting');
   // if Google never opens (blocked, or the page never moves on), don't leave the button on "Signing in…" for ever
   const stuck = setTimeout(() => {
     if (!busy) return;
+    serr('sign-in button', { code: 'timeout', message: 'Google did not open within 20 s' });
     busy = false; if (isOpen()) refresh();
     toast("Google didn't open. Check your connection, then tap Continue with Google again.");
   }, 20000);
-  try { const u = await account.signIn(); if (u) return afterSignIn(u); }
-  catch (e) { toast(e.message); }
+  try { const u = await account.signIn(); slog('sign-in returned', { gotUser: !!u }); if (u) return afterSignIn(u); }
+  catch (e) { serr('sign-in button', e); toast(e.message); }
   finally { clearTimeout(stuck); }
   busy = false;
   if (isOpen()) refresh();

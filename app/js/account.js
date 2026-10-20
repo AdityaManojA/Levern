@@ -23,12 +23,14 @@ function save(u) {
 async function load() {
   if (fb) return fb;
   if (!loading) loading = (async () => {
-    const [{ initializeApp }, A] = await Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-auth.js')]);
+    slog('loading Google sign-in library');
+    const [{ initializeApp }, A] = await Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-auth.js')]).catch(e => { serr('loading the library', e); throw e; });
+    slog('library loaded');
     const app = initializeApp(FIREBASE);
     const auth = A.getAuth(app);
     auth.useDeviceLanguage();
     A.onAuthStateChanged(auth, u => { if (u || current) save(u); });
-    try { await A.getRedirectResult(auth); } catch (e) {}   // back from a redirect sign-in
+    try { const r = await A.getRedirectResult(auth); slog('redirect result', { signedIn: !!r }); } catch (e) { serr('redirect result', e); }   // back from a redirect sign-in
     fb = { app, auth, A };
     return fb;
   })().catch(e => { loading = null; throw e; });
@@ -57,6 +59,7 @@ export async function database() {
 // Load Firebase before the sign-in button is tapped: the popup must open straight from the tap,
 // or phones block it and we'd fall back to a full-page redirect.
 export const preload = () => load().catch(() => {});
+import { slog, serr } from './signinlog.js';
 const REDIRECT_KEY = 'taskflow-signin-redirect';
 // kept in localStorage (not sessionStorage): the browser can hand the sign-in to another tab or window, which loses
 // sessionStorage and would restart the welcome screens. Expires after 15 minutes.
@@ -72,19 +75,23 @@ export async function finishRedirect() {
 }
 
 export async function signIn() {
-  if (!navigator.onLine) throw new Error("You're offline. Sign in once you're back online.");
+  slog('sign-in started', { online: navigator.onLine, cameBackFromRedirect: cameBackFromRedirect(), host: location.host });
+  if (!navigator.onLine) { slog('offline: stopped'); throw new Error("You're offline. Sign in once you're back online."); }
   let f = fb;
-  if (!f) { try { f = await load(); } catch (e) { throw new Error("Couldn't reach Google. Check your connection and try again."); } }
+  if (!f) { try { f = await load(); } catch (e) { serr('starting Google', e); throw new Error("Couldn't reach Google. Check your connection and try again."); } }
   const p = new f.A.GoogleAuthProvider();
   p.setCustomParameters({ prompt: 'select_account' });
-  try { save((await f.A.signInWithPopup(f.auth, p)).user); return current; }
+  slog('opening Google popup');
+  try { save((await f.A.signInWithPopup(f.auth, p)).user); slog('popup signed in'); return current; }
   catch (e) {
+    serr('popup', e);
     if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return null;
     // installed apps on some phones can't open popups: fall back to a full-page redirect
     if (e.code !== 'auth/popup-blocked' && e.code !== 'auth/operation-not-supported-in-this-environment') throw friendly(e);
   }
   stashRedirect();
-  try { await f.A.signInWithRedirect(f.auth, p); return null; } catch (e) { unstashRedirect(); throw friendly(e); }
+  slog('going to Google (redirect)');
+  try { await f.A.signInWithRedirect(f.auth, p); return null; } catch (e) { serr('redirect', e); unstashRedirect(); throw friendly(e); }
 }
 
 // Google Calendar access through the person's Google sign-in: asks Google for the extra permissions

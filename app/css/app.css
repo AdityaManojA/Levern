@@ -878,3 +878,6 @@ input.field, select.field, textarea.field, .field { font-family: inherit; font-w
 .mochi::before { content: ""; position: absolute; inset: -22px; border-radius: 50%; touch-action: none; }
 /* while he's picked up, the page doesn't scroll under the finger */
 body.mochi-held { overflow: hidden; touch-action: none; overscroll-behavior: none; }
+
+/* the welcome screens and the tour stay out of the page until the app decides to show them (no flash on refresh) */
+.onboard[hidden], .tour[hidden] { display: none !important; }
