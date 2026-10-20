@@ -236,20 +236,29 @@ export function createMochi(env) {
   // Idles and tap reactions are drawn from weighted pools, never repeating any of the last few,
   // so he doesn't fall into a visible cycle. Seamless ones (start and end on the resting pose) are favoured.
   const pool = list => list.filter(([n]) => has(n)).map(([n, w]) => { const j = A[n].join || []; return [n, j[0] === 'R' && j[1] === 'R' ? w * 1.5 : w]; });
-  const IDLES = pool([['ear-twitch', 8], ['look-around', 8], ['yawn', 5], ['sneeze', 3], ['sniff', 4], ['face-wash', 4], ['groom', 4], ['scratch', 3], ['spot', 3],
-    ['stretch', 3], ['back-stretch', 2], ['tail-wrap', 3], ['look-back', 3], ['sitting-pretty', 3], ['happy-wiggle', 3], ['confused', 2], ['eat', 2],
-    ['tail-chase', 2], ['cursor-swipe', 2], ['follow-finger', 2], ['excited', 1.5], ['sad', 0.6], ['wave', 1.5]]);
-  const TAPS = pool([['boop', 5], ['happy-wiggle', 3], ['excited', 2.5], ['confused', 2], ['wave', 2], ['surprised', 1.5], ['cursor-swipe', 1.5],
-    ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 1], ['heart-eyes', 1.5]]);
+  // every calm or playful animation of the set takes part; weights say how often each comes round in a deck
+  const IDLES = pool([['ear-twitch', 3], ['look-around', 3], ['yawn', 2], ['sneeze', 2], ['sniff', 2], ['face-wash', 2], ['groom', 2], ['scratch', 2], ['spot', 2],
+    ['stretch', 2], ['back-stretch', 2], ['tail-wrap', 2], ['look-back', 2], ['sitting-pretty', 2], ['happy-wiggle', 2], ['confused', 2], ['eat', 2],
+    ['tail-chase', 2], ['cursor-swipe', 2], ['follow-finger', 2], ['excited', 2], ['sad', 1], ['wave', 2], ['heart-eyes', 2], ['startled', 1.5],
+    ['surprised', 1.5], ['suspicious', 1.5], ['celebrate', 1.5], ['victory', 1], ['happy-spin', 1.5]]);
+  const TAPS = pool([['boop', 4], ['happy-wiggle', 2], ['excited', 2], ['confused', 2], ['wave', 2], ['surprised', 2], ['cursor-swipe', 1.5],
+    ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 2], ['heart-eyes', 2], ['startled', 1.5], ['happy-spin', 1.5], ['suspicious', 1], ['victory', 1]]);
   const TAP_LINES = { boop: ['boop', 'mrp!', ':3'], 'happy-wiggle': ['♪', 'hehe'], excited: ['!!', 'ooh!'], confused: ['?', 'huh?'], wave: ['hi!', 'hello!'],
     surprised: ['!', 'oh!'], 'cursor-swipe': ['gotcha', 'swipe!'], 'sitting-pretty': ['ta-da'], sneeze: ['achoo!'], celebrate: ['yay!'], 'heart-eyes': ['♥', 'purr…'] };
   const recent = [];
+  // A shuffled deck per pool: each animation comes round once (more often if weighted) before any repeats,
+  // so the mix is always varied instead of falling back on the same few.
+  const decks = new Map();
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   function pickFrom(list, avoid = 3) {
+    let deck = decks.get(list);
+    if (!deck || !deck.length) { deck = shuffle(list.flatMap(([n, w]) => Array(Math.max(1, Math.round(w))).fill(n))); decks.set(list, deck); }
     const blocked = new Set(recent.slice(-avoid));
-    const ok = list.filter(([n]) => !blocked.has(n)), use = ok.length ? ok : list;
-    let r = Math.random() * use.reduce((t, [, w]) => t + w, 0);
-    for (const [n, w] of use) { r -= w; if (r <= 0) { recent.push(n); if (recent.length > 8) recent.shift(); return n; } }
-    return use[0][0];
+    let i = deck.findIndex(n => !blocked.has(n));
+    if (i < 0) i = 0;   // every card left was just played: take the first anyway
+    const [n] = deck.splice(i, 1);
+    recent.push(n); if (recent.length > 8) recent.shift();
+    return n;
   }
   const pickIdle = () => pickFrom(IDLES, 3);
   const canMove = () => !reduced() && !M.hidden && !env.paused();

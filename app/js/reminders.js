@@ -44,6 +44,7 @@ let lastCount = null;
 export function paintBadges() {
   const n = dueReminders().length, txt = n > 99 ? '99+' : String(n);
   const grew = lastCount !== null && n > lastCount;
+  const cleared = lastCount > 0 && n === 0;
   lastCount = n;
   document.querySelectorAll('[data-rcount]').forEach(b => {
     b.textContent = txt; b.hidden = !n;
@@ -51,7 +52,7 @@ export function paintBadges() {
   });
   document.querySelectorAll('.bell').forEach(b => b.classList.toggle('has-due', !!n));
   // he only holds a card while something is due; keep its count in step
-  if (!n) mascot.release();
+  if (!n) { mascot.release(); if (cleared) mascot.react('celebrate', 'all caught up!'); }
   else if (mascot.holding()) { const d = dueReminders(); mascot.hold({ count: n, title: d[d.length - 1].title }); }
   document.title = n ? `(${txt}) ${baseTitle}` : baseTitle;
   N.setBadge(n);
