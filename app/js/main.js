@@ -2,7 +2,7 @@
 import * as store from './store.js';
 import { registerSW } from './notify.js';
 import { startReminders, paintBadges } from './reminders.js';
-import { watchInstall } from './install.js';
+import { watchInstall, canInstall, isInstalled, install } from './install.js';
 import { $, toast, play, sheet, ICON } from './ui.js';
 import { completeQuest } from './complete.js';
 import { pageTransition, morph, reduced, EASE } from './motion.js';
@@ -119,6 +119,7 @@ cloud.onCloud(() => { if (cloud.cloudReady() !== cloudWasReady) { cloudWasReady 
 
 /* ---------- shared actions (data-act="...") ---------- */
 const ACTIONS = {
+  install: () => install(),
   toggle: el => completeQuest(el.dataset.id),
   open: el => { location.hash = '#/quest/' + el.dataset.id; },
   add: el => openAdd({ due: el.dataset.due }),
@@ -188,13 +189,23 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---------- install prompt ---------- */
-watchInstall(() => { if (route.name === 'settings') render({ keepScroll: true }); });
-addEventListener('appinstalled', () => toast('TaskFlow installed'));
+// on a computer, the header offers "Install TaskFlow" whenever the browser says it can be installed
+const desktopView = () => matchMedia('(min-width: 641px)').matches;
+function paintTopActions() {
+  // one click installs when the browser allows it; otherwise the button opens the steps in Settings
+  const install = desktopView() && !isInstalled()
+    ? (canInstall() ? `<button class="btn sm dark install-btn" data-act="install">Install TaskFlow</button>`
+      : `<a class="btn sm dark install-btn" href="#/settings">Install TaskFlow</a>`) : '';
+  $('#top-actions').innerHTML = `${install}<button class="iconbtn bell" data-act="bell" aria-label="Reminders">${ICON.bell}<b class="rcount" data-rcount hidden></b></button>
+  <a class="iconbtn" href="#/stats" aria-label="Stats">${ICON.stats}</a><a class="iconbtn" href="#/settings" aria-label="Settings">${ICON.settings}</a>`;
+}
+watchInstall(() => { paintTopActions(); if (route.name === 'settings') render({ keepScroll: true }); });
+matchMedia('(min-width: 641px)').addEventListener('change', paintTopActions);
+addEventListener('appinstalled', () => { toast('TaskFlow installed'); paintTopActions(); });
 addEventListener('online', () => toast('Back online')); addEventListener('offline', () => toast("You're offline. Everything still works."));
 
 /* ---------- start ---------- */
-$('#top-actions').innerHTML = `<button class="iconbtn bell" data-act="bell" aria-label="Reminders">${ICON.bell}<b class="rcount" data-rcount hidden></b></button>
-  <a class="iconbtn" href="#/stats" aria-label="Stats">${ICON.stats}</a><a class="iconbtn" href="#/settings" aria-label="Settings">${ICON.settings}</a>`;
+paintTopActions();
 unlockOnGesture();
 preloadSounds();
 startControls();
