@@ -82,7 +82,15 @@ export function createMochi(env) {
     const r = nav().getBoundingClientRect();
     return [r.left + 52, r.right - 52];
   }
-  const addX = () => { const a = nav().querySelector('.add'); if (!a) return innerWidth / 2; const r = a.getBoundingClientRect(); return r.left + r.width / 2; };
+  const addX = () => { const a = document.querySelector('.navadd .add'); if (!a) return innerWidth / 2; const r = a.getBoundingClientRect(); return r.left + r.width / 2; };
+  // Where a fixed element at (0, 0) actually is, in the same coordinates as getBoundingClientRect.
+  // Usually (0, 0); while the page is pinch-zoomed or browser-zoomed on a phone it isn't, and
+  // placing Mochi relative to it keeps him on the bar instead of drifting over the list.
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;visibility:hidden';
+  document.body.append(probe);
+  const origin = () => { const r = probe.getBoundingClientRect(); return { x: r.left, y: r.top }; };
+  const vw = () => document.documentElement.clientWidth;
   const mirrored = (a, fi) => a.face === 'R' && !a.lock[fi - 1] && !(a.noflip && a.noflip.includes(fi)) && M.dir < 0;
   let shown = '';
   function render() {
@@ -93,23 +101,24 @@ export function createMochi(env) {
     let y = groundY() - a.gy;
     if (M.perch === 'sheet' && a.edge != null) y = sheetEl().getBoundingClientRect().top - a.edge;
     y += M.lift;
-    el.style.transform = `translate(${M.cx - a.ax}px, ${y}px)`;
+    const o = origin();
+    el.style.transform = `translate(${M.cx - a.ax - o.x}px, ${y - o.y}px)`;
     flip.style.transform = mirrored(a, M.fi) ? 'scaleX(-1)' : '';
     el.style.clipPath = (M.perch === 'sheet' && a.edge != null) ? `inset(0 0 ${Math.max(0, a.h - a.edge + M.lift)}px 0)` : '';
     if (M.holding && !M.hidden) {
       const cw = card.offsetWidth || 150, ch = card.offsetHeight || 40;
       const pawX = M.cx + (mirrored(a, M.fi) ? -20 : 20), top = y + a.gy - V.sit + 12 - ch;   // resting on his raised paw
-      card.style.transform = `translate(${Math.round(Math.max(8, Math.min(innerWidth - 8 - cw, pawX - cw / 2)))}px, ${Math.round(top)}px)`;
+      card.style.transform = `translate(${Math.round(Math.max(8, Math.min(vw() - 8 - cw, pawX - cw / 2)) - o.x)}px, ${Math.round(top - o.y)}px)`;
     }
     if (Date.now() < M.bubbleUntil && !M.holding) {
       const w = bub.offsetWidth, h = bub.offsetHeight || 26, by = y + a.gy - V.sit - 44;
-      let bx = Math.max(8, Math.min(innerWidth - 8 - w, M.cx - w / 2));
+      let bx = Math.max(8, Math.min(vw() - 8 - w, M.cx - w / 2));
       // never cover a red count badge (Quests tab, bell)
       for (const b of document.querySelectorAll('[data-rcount]:not([hidden])')) {
         const r = b.getBoundingClientRect();
         if (r.width && bx < r.right + 6 && bx + w > r.left - 6 && by < r.bottom + 6 && by + h > r.top - 6) bx = r.left - 6 - w > 8 ? r.left - 6 - w : r.right + 6;
       }
-      bub.style.transform = `translate(${bx}px, ${by}px)`;
+      bub.style.transform = `translate(${bx - o.x}px, ${by - o.y}px)`;
     } else bub.classList.remove('show');
   }
   let ghostEl = null;
@@ -467,7 +476,11 @@ export function createMochi(env) {
     if (!M.hidden) render();
     requestAnimationFrame(tick);
   }
-  addEventListener('resize', () => { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); });
+  // window resized or zoomed: keep him on the bar, and redraw straight away (pinch zoom fires no resize)
+  const refit = () => { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); render(); };
+  addEventListener('resize', refit);
+  window.visualViewport?.addEventListener('resize', refit);
+  window.visualViewport?.addEventListener('scroll', render);
 
   const LINES = { home: 'hi again!', quests: 'so many quests', calendar: 'what’s coming up?', focus: 'shh… focusing', stats: 'look at you go', settings: 'make it cozy' };
   const busyMoving = () => M.state === 'walk' || M.state === 'prep' || M.state === 'drag' || M.state === 'fall';

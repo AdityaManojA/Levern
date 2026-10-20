@@ -199,22 +199,31 @@ export function open(startTour) {
 
 async function googleSignIn() {
   busy = true; refresh();
-  try {
-    const u = await account.signIn();
-    if (u) {
-      const first = (u.name || '').split(' ')[0];
-      play('click', 0.4);
-      // bring in the account's quests; someone who already has them skips the rest of the setup
-      const r = await cloud.syncNow();
-      if (first && !getState().settings.name) setSetting('name', first, { quiet: true });
-      busy = false;
-      if (r.hadData || returning) { toast(`Welcome back${first ? `, ${first}` : ''}`, 'good'); return close(); }
-      toast(`Signed in${first ? ` as ${first}` : ''}`, 'good');
-      if (isOpen()) return go(1);
-    }
-  } catch (e) { toast(e.message); }
+  try { const u = await account.signIn(); if (u) return afterSignIn(u); }
+  catch (e) { toast(e.message); }
   busy = false;
   if (isOpen()) refresh();
+}
+// bring in the account's quests; someone who already has them skips the rest of the setup
+async function afterSignIn(u) {
+  const first = (u.name || '').split(' ')[0];
+  play('click', 0.4);
+  const r = await cloud.syncNow();
+  if (first && !getState().settings.name) setSetting('name', first, { quiet: true });
+  busy = false;
+  if (r.hadData || returning) { toast(`Welcome back${first ? `, ${first}` : ''}`, 'good'); return close(); }
+  toast(`Signed in${first ? ` as ${first}` : ''}`, 'good');
+  if (isOpen()) go(1);
+}
+// Back from a full-page Google sign-in (phones that block the popup): carry on from the sign-in step
+// instead of starting the welcome screens again.
+export async function resumeSignIn(startTour) {
+  open(startTour);
+  step = STEPS.indexOf('account'); busy = true; draw();
+  const u = await account.finishRedirect();
+  if (u) return afterSignIn(u);
+  busy = false; refresh();
+  toast('Google sign-in didn\'t finish. Please try again.');
 }
 
 async function connect(kind) {

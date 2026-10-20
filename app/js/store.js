@@ -139,7 +139,7 @@ export const tierLabel = t => `P${t + 1} · ${state.settings.tierNames[t]}`;
 export function addQuest(data) {
   const q = { id: uid(), title: data.title, tier: data.tier ?? 3, due: data.due || null, time: data.time || null, notes: data.notes || '',
     subtasks: (data.subtasks || []).map(s => typeof s === 'string' ? { id: uid(), title: s, done: false, tier: data.tier ?? 3 } : s),
-    repeat: data.repeat || null, remind: null, done: false, doneAt: null, createdAt: Date.now() };
+    repeat: data.repeat || null, remind: null, done: false, doneAt: null, createdAt: Date.now(), sample: false };
   if (data.sketches && data.sketches.length) q.sketches = data.sketches.map(k => ({ id: uid(), createdAt: Date.now(), ...k }));
   commit(s => { s.quests.push(q); s.seeded = false; });
   if (data.remind) setReminder(q.id, data.remind);

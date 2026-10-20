@@ -54,10 +54,23 @@ export async function database() {
   return store;
 }
 
+// Load Firebase before the sign-in button is tapped: the popup must open straight from the tap,
+// or phones block it and we'd fall back to a full-page redirect.
+export const preload = () => load().catch(() => {});
+const REDIRECT_KEY = 'taskflow-signin-redirect';
+// After a redirect sign-in the page reloads: true when that's what just happened (the caller then waits
+// for finishRedirect() instead of starting the welcome screens from the top)
+export const cameBackFromRedirect = () => { try { return !!sessionStorage.getItem(REDIRECT_KEY); } catch (e) { return false; } };
+export async function finishRedirect() {
+  try { sessionStorage.removeItem(REDIRECT_KEY); } catch (e) {}
+  try { const f = await load(); await f.auth.authStateReady(); if (f.auth.currentUser) save(f.auth.currentUser); } catch (e) {}
+  return current;
+}
+
 export async function signIn() {
   if (!navigator.onLine) throw new Error("You're offline. Sign in once you're back online.");
-  let f;
-  try { f = await load(); } catch (e) { throw new Error("Couldn't reach Google. Check your connection and try again."); }
+  let f = fb;
+  if (!f) { try { f = await load(); } catch (e) { throw new Error("Couldn't reach Google. Check your connection and try again."); } }
   const p = new f.A.GoogleAuthProvider();
   p.setCustomParameters({ prompt: 'select_account' });
   try { save((await f.A.signInWithPopup(f.auth, p)).user); return current; }
@@ -66,7 +79,8 @@ export async function signIn() {
     // installed apps on some phones can't open popups: fall back to a full-page redirect
     if (e.code !== 'auth/popup-blocked' && e.code !== 'auth/operation-not-supported-in-this-environment') throw friendly(e);
   }
-  try { await f.A.signInWithRedirect(f.auth, p); return null; } catch (e) { throw friendly(e); }
+  try { sessionStorage.setItem(REDIRECT_KEY, '1'); } catch (e) {}
+  try { await f.A.signInWithRedirect(f.auth, p); return null; } catch (e) { try { sessionStorage.removeItem(REDIRECT_KEY); } catch (er) {} throw friendly(e); }
 }
 
 // Google Calendar access through the person's Google sign-in: asks Google for the extra permissions

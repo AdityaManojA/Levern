@@ -165,13 +165,20 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .tab .ic { position: relative; width: 48px; height: 30px; border-radius: 15px; display: grid; place-items: center; border: 2px solid transparent; }
 .tab.on .ic { background: #fff; border-color: var(--ink); }
 .tab .rcount { top: -7px; right: -2px; }
-.add { flex: none; width: 60px; height: 60px; border-radius: 50%; background: var(--ink); color: #fff; border: none; display: grid; place-items: center; margin: -30px 4px 0; box-shadow: 0 0 0 5px var(--cream); }
+.add { flex: none; width: 60px; height: 60px; border-radius: 50%; background: var(--ink); color: #fff; border: none; display: grid; place-items: center; box-shadow: 0 0 0 5px var(--cream); }
 .add:active { transform: scale(.94); }
+/* the + sits in its own layer above the bar, so Mochi (on the bar, z-index 31) walks behind it;
+   the bar keeps an empty slot of the same size where it used to be */
+.nav .add-slot { flex: none; width: 68px; }
+.navadd { position: fixed; left: 50%; bottom: calc(33px + var(--safe-b)); transform: translateX(-50%); z-index: 32; view-transition-name: navadd; }
 
 /* sheet, panel, dialog, toast */
 .scrim { position: fixed; inset: 0; background: rgba(30,27,24,.35); z-index: 40; opacity: 0; pointer-events: none; transition: opacity .45s var(--ease); }
 .scrim.on { opacity: 1; pointer-events: auto; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
-.sheet { position: fixed; left: 50%; bottom: 0; width: min(640px, 100%); max-height: 92vh; transform: translate(-50%, 105%); z-index: 41; background: var(--cream); border: var(--line); border-bottom: none;
+/* height follows the part of the screen you can actually see (phone address bars and the on-screen
+   keyboard shrink it: --vvh and --kb come from main.js), so the top and the fields never end up off-screen */
+.sheet { position: fixed; left: 50%; bottom: var(--kb, 0px); width: min(640px, 100%); max-height: 92vh; max-height: 92dvh; max-height: calc(var(--vvh, 100dvh) - 20px);
+  transform: translate(-50%, 105%); z-index: 41; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; background: var(--cream); border: var(--line); border-bottom: none;
   border-radius: 28px 28px 0 0; padding: 10px 18px calc(22px + var(--safe-b)); overflow-y: auto; transition: transform .38s var(--ease-in), visibility 0s linear .38s; visibility: hidden; }
 .sheet.open { transform: translate(-50%, 0); visibility: visible; transition: transform .55s var(--ease), visibility 0s; }
 .sheet.open > * { animation: rise .55s var(--ease) both; }

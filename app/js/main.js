@@ -50,8 +50,9 @@ function renderNav() {
   const active = route.name === 'quest' ? 'quests' : route.name, nav = $('#nav');
   if (nav.dataset.active === active) return;   // unchanged: keep it (and its animations) as is
   nav.dataset.active = active;
+  if (!document.querySelector('.navadd')) nav.insertAdjacentHTML('afterend', `<div class="navadd"><button class="add" data-act="add" aria-label="New quest">${ICON.plus}</button></div>`);
   nav.innerHTML = NAV.map(([k, label]) => k === 'add'
-    ? `<button class="add" data-act="add" aria-label="New quest">${ICON.plus}</button>`
+    ? '<span class="add-slot" aria-hidden="true"></span>'
     : `<a class="tab${k === active ? ' on' : ''}" href="#/${k}"${k === active ? ' aria-current="page"' : ''}><span class="ic">${ICON[k]}${k === 'quests' ? '<b class="rcount" data-rcount hidden></b>' : ''}</span><span>${label}</span></a>`).join('');
 }
 
@@ -206,9 +207,23 @@ setupPullToRefresh({
 });
 document.addEventListener('sheet:open', () => mascot.setPerch('sheet'));
 document.addEventListener('sheet:close', () => mascot.setPerch('nav'));
+// the visible screen height on phones (address bar, on-screen keyboard), for sheets: --vvh and --kb
+const vv = window.visualViewport;
+const fitViewport = () => {
+  if (!vv || Math.abs(vv.scale - 1) > 0.01) return;   // pinch-zoomed: leave the sheet as it is
+  const layout = document.documentElement.clientHeight;
+  document.documentElement.style.setProperty('--vvh', `${Math.round(vv.height)}px`);
+  document.documentElement.style.setProperty('--kb', `${Math.max(0, Math.round(layout - vv.height - vv.offsetTop))}px`);
+};
+vv?.addEventListener('resize', fitViewport); vv?.addEventListener('scroll', fitViewport); fitViewport();
+// a field focused in a sheet scrolls into the visible part once the keyboard is up
+$('#sheet').addEventListener('focusin', e => { if (e.target.matches('input, textarea')) setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320); });
+
 // TaskFlow needs a signed-in account: signed out, you're back at the start of the welcome screens
 const toStart = () => { if (!onboarding.isOpen()) { sheet.close(); location.hash = '#/home'; onboarding.open(() => tour.start()); } };
-if (!store.getState().onboarded || !account.user()) onboarding.open(() => tour.start());
+if (account.cameBackFromRedirect()) onboarding.resumeSignIn(() => tour.start());   // phone sign-in came back to a fresh page
+else if (!store.getState().onboarded || !account.user()) onboarding.open(() => tour.start());
+if (!account.user()) account.preload();   // ready before the sign-in tap, so Google's popup isn't blocked
 account.onAccount(u => { if (!u) setTimeout(toStart, 0); });   // after sign-out has cleared the device
 registerSW().finally(startReminders);
 startCalendars();
