@@ -142,7 +142,7 @@ export function setSharedEvents(items) { sharedEvents = items || []; queueShare(
 function queueShare() { clearTimeout(shareT); shareT = setTimeout(writeShare, 1500); }
 async function writeShare() {
   const u = account.user(); if (!u) return;
-  const quests = getState().quests.filter(q => !q.done).map(q => ({
+  const quests = getState().quests.filter(q => !q.done && !q.sample).map(q => ({
     id: q.id, title: q.title, tier: q.tier, due: q.due || null, time: q.time || null, repeat: q.repeat?.freq || null,
     notes: q.notes || '', subtasks: (q.subtasks || []).map(s => ({ title: s.title, done: !!s.done })), updatedAt: q.updatedAt || q.createdAt || null,
   }));

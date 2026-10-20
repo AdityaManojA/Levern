@@ -135,3 +135,23 @@ test('Google event priorities merge per event, the later choice wins', async () 
   assert.deepEqual(mergeEventMeta(a, b), { e1: { tier: 2, at: 20 }, e2: { tier: 3, at: 50 }, e3: { tier: 5, at: 5 } });
   assert.deepEqual(mergeDocs({ eventMeta: a }, {}).eventMeta, a);
 });
+
+test('example quests never go to calendars; editing one makes it yours', async () => {
+  const { syncable } = await import('../js/gcalmap.js');
+  const { buildICS } = await import('../js/ics.js');
+  const S = await import('../js/store.js');
+  const { memoryAdapter } = await import('../js/storage.js');
+  const ex = { id: 'a', title: 'Book dentist', due: T, done: false, sample: true }, mine = { id: 'b', title: 'Mine', due: T, done: false };
+  assert.equal(syncable(ex), false); assert.equal(syncable(mine), true);
+  const ics = buildICS([ex, mine]);
+  assert.ok(ics.includes('Mine') && !ics.includes('Book dentist'));
+  assert.ok(buildICS([ex]).includes('Book dentist'));   // one quest asked for by name still exports
+  // saved before the flag: untouched example titles are recognised, edited ones are not
+  const legacy = [{ id: 'x', title: 'Book dentist', createdAt: 1000, updatedAt: 1500 }, { id: 'y', title: 'Book dentist', createdAt: 1000, updatedAt: 999999 }];
+  S.markSamples(legacy);
+  assert.equal(legacy[0].sample, true); assert.equal(legacy[1].sample, undefined);
+  S.init(memoryAdapter());
+  const q = S.getState().quests.find(x => x.sample);
+  S.updateQuest(q.id, { title: 'My own title' });
+  assert.equal(S.findQuest(q.id).sample, false);
+});

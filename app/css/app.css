@@ -139,8 +139,22 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .qx-notes dd { white-space: pre-wrap; }
 .qx-subs + .qx-info { margin-top: 8px; }
 .qx-acts { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
-.rchip { border: 1.5px solid var(--ink); border-radius: 8px; padding: 0 6px; background: #fff; font-weight: 700; }
+.rchip { display: inline-flex; align-items: center; gap: 4px; border: 1.5px solid var(--ink); border-radius: 8px; padding: 0 7px 0 5px; background: #fff; font-weight: 700; line-height: 18px; }
+.rchip .rbell { flex: none; fill: var(--butter); }
 .rchip.due { background: var(--p1); }
+.rchip.due .rbell { fill: #fff; }
+/* daily reminders: times as chips, × to remove, "+ Add a time" opens the time picker */
+.nrow + .nrow { border-top: 2px solid rgba(30,27,24,.08); }
+.nrow .srow { border-top: none; }
+.ntimes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 0 12px; }
+.ntime { display: inline-flex; align-items: center; gap: 2px; border: 2px solid var(--ink); border-radius: 999px; background: var(--butter); padding: 2px 4px 2px 10px; font-size: 13px; font-weight: 700; }
+.ntime button { width: 22px; height: 22px; border: none; background: none; border-radius: 50%; font-size: 15px; line-height: 1; display: grid; place-items: center; }
+.ntime button:hover { background: rgba(30,27,24,.12); }
+.nadd .cdate { width: auto; border: 2px dashed var(--ink); border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 700; background: transparent; min-height: 0; }
+.nadd .cdate .ci { display: none; }
+.nadd .cdate.is-empty .cv-t { color: var(--ink); }
+.ob-card.nudges { padding: 4px 14px; }
+.exchip { border: 1.5px dashed var(--ink); border-radius: 8px; padding: 0 6px; font-weight: 700; font-size: 11px; line-height: 16px; background: rgba(255,255,255,.55); }
 .empty { text-align: center; padding: 28px 16px; }
 .empty b { display: block; font-size: 16px; margin-bottom: 4px; }
 

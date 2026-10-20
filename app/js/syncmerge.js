@@ -7,7 +7,12 @@ const qTime = q => q.updatedAt || q.createdAt || 0;
 
 export function mergeQuests(aQuests = [], aTombs = [], bQuests = [], bTombs = []) {
   const best = new Map();
-  for (const q of [...aQuests, ...bQuests]) { const cur = best.get(q.id); if (!cur || qTime(q) > qTime(cur)) best.set(q.id, q); }
+  for (const q of [...aQuests, ...bQuests]) {
+    const cur = best.get(q.id);
+    // same moment: prefer the copy that knows whether it's an example quest (older saves lack the flag),
+    // so the two sides agree instead of trading the quest back and forth
+    if (!cur || qTime(q) > qTime(cur) || (qTime(q) === qTime(cur) && cur.sample === undefined && q.sample !== undefined)) best.set(q.id, q);
+  }
   const tombs = new Map();
   for (const t of [...aTombs, ...bTombs]) { const cur = tombs.get(t.id); if (!cur || t.deletedAt > cur.deletedAt) tombs.set(t.id, t); }
   const quests = [];

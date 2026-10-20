@@ -9,6 +9,7 @@ import { mascot } from '../mascot.js';
 import { buildICS } from '../ics.js';
 import * as account from '../account.js';
 import * as cloud from '../cloud.js';
+import * as nudges from '../nudges.js';
 
 const tog = (k, on, label) => `<button class="tog" role="switch" aria-checked="${on}" aria-label="${esc(label)}" data-act="tog" data-k="${k}"></button>`;
 const step = (k, v, unit = '') => `<div class="step"><button data-act="step" data-k="${k}" data-d="-1" aria-label="Less">−</button><b>${v}${unit}</b><button data-act="step" data-k="${k}" data-d="1" aria-label="More">+</button></div>`;
@@ -43,6 +44,12 @@ export function render() {
       <div class="srow"><div class="l"><b>Snooze length</b></div>${step('snoozeMin', s.snoozeMin, ' min')}</div>
       <div class="srow"><div class="l"><b>Try it</b><small>Adds a quest with a reminder in 10 seconds</small></div><button class="mini" data-act="test-remind">Test reminder</button></div>
       <p class="small" style="margin-top:6px">Reminders go off on time while TaskFlow is open, even in a background tab. With it fully closed, an installed app can still show them when the browser checks in (Chrome/Edge, roughly every 15 min or more${hasPeriodicSync() ? '' : '; not available in this browser'}). Exact timing with the app closed will come with the sync server or the mobile app.</p>
+    </div>
+
+    <div class="sec">Daily reminders</div>
+    <div class="card nudges" data-tour="nudges">
+      <p class="small" style="margin-bottom:4px">Pick when TaskFlow reminds you. Add as many times a day as you like; tap × on a time to remove it.</p>
+      ${nudges.editor()}
     </div>
 
     <div class="sec">Calendars</div>

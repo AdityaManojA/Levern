@@ -4,12 +4,14 @@ import { dueLabel, dueStatus, relTime, fmtStamp, todayStr, addDays, at } from '.
 import { esc, ICON } from '../ui.js';
 import { describe } from '../recur.js';
 
+// the app's own bell (same drawing as the top bar), small, instead of the 🔔 emoji
+const BELL = '<svg class="rbell" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
 export function reminderChip(q) {
   if (!q.remind || q.done) return '';
-  if (isReminderDue(q)) return '<span class="rchip due">🔔 due now</span>';
+  if (isReminderDue(q)) return `<span class="rchip due">${BELL}due now</span>`;
   if (q.remind.fired) return '';
   const soon = q.remind.at - Date.now() < 86400000;
-  return `<span class="rchip">🔔 ${esc(soon ? relTime(q.remind.at) : fmtStamp(q.remind.at))}</span>`;
+  return `<span class="rchip">${BELL}${esc(soon ? relTime(q.remind.at) : fmtStamp(q.remind.at))}</span>`;
 }
 
 export function questRow(q, now = new Date()) {
@@ -21,6 +23,7 @@ export function questRow(q, now = new Date()) {
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',
     q.sketches?.length ? `<span class="tag" title="Sketches">${ICON.sketch}${q.sketches.length}</span>` : '',
     reminderChip(q),
+    q.sample ? '<span class="exchip" title="An example to show how TaskFlow works. It stays out of your calendar. Edit it to make it yours.">Example</span>' : '',
   ].join('');
   const open = expanded.has(q.id);
   // tap the quest to open it in place (subtasks, or its details); tap again to close; long-press or Edit to edit

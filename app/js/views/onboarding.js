@@ -12,8 +12,10 @@ import * as cal from '../calendars.js';
 import * as account from '../account.js';
 import { buildICS } from '../ics.js';
 import * as cloud from '../cloud.js';
+import * as nudges from '../nudges.js';
+document.addEventListener('nudges:change', () => { if (isOpen() && STEPS[step] === 'remind') refresh(); });
 
-const STEPS = ['welcome', 'account', 'quests', 'use', 'target', 'yours', 'tour'];
+const STEPS = ['welcome', 'account', 'quests', 'use', 'target', 'remind', 'yours', 'tour'];
 const G_LOGO = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.5 30.3 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
 let step = 0, root = null, profile = '', stops = [], onFinish = null, linked = {}, busy = false, returning = false;
 
@@ -80,6 +82,10 @@ function screen(name) {
       <div class="ob-card" style="background:var(--mint)"><b>Your streak</b><p>Finish ${t} today and your streak grows by 1 day. Miss a day and it starts again from 0.</p></div>
       <div class="ob-card" style="background:var(--butter)"><b>EXP = points</b><p>You earn EXP for each quest you finish.<br>${t > 1 ? `${some} of ${t} done = ${dayExp(some, t)} EXP · ` : ''}all ${t} done = ${dayExp(t, t)} EXP (includes a +10 bonus).</p></div>`;
     }
+    case 'remind': return `
+      <h1 class="ob-h">When should I remind you?</h1>
+      <p class="ob-p muted">Pick a time for a look at today's quests, and turn on any nudges you'd like. Add as many times a day as you want. You can change all of this later in Settings.</p>
+      <div class="ob-card nudges" style="background:#fff">${nudges.editor()}</div>`;
     case 'yours': {
       const g = cal.googleState();
       const pill = (key, label, on) => `<button type="button" class="ob-pill${on ? ' done' : ''}" data-ob-connect="${key}">${esc(label)}</button>`;

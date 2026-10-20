@@ -21,9 +21,19 @@ const subs = new Set();
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
+// Example quests (the samples and the onboarding starters) are marked sample: true. They stay in the app
+// to show how it works, but never go to anyone's calendar or to Solodesk. Editing one makes it yours.
+const SAMPLE_TITLES = new Set(['Submit lab report', 'Book dentist', 'Read chapter 4', 'Water the plants', 'Organise notes folder', 'Learn to bake sourdough',
+  'Revise for the maths test', 'Finish history essay draft', 'Pack bag for tomorrow', 'Reply to client email', 'Prepare Monday slides', 'Weekly team sync',
+  'Update project tracker', 'Clear out downloads folder', 'Call mum', 'Go for a walk']);
+// quests saved before the flag existed: an untouched example still has its original title and was never edited
+const looksLikeSample = q => q.sample === undefined && SAMPLE_TITLES.has(q.title) && Math.abs((q.updatedAt || q.createdAt || 0) - (q.createdAt || 0)) < 5000;
+export function markSamples(quests) { for (const q of quests || []) if (looksLikeSample(q)) q.sample = true; return quests; }
+const sampleKey = q => JSON.stringify([q.title, q.tier, q.due, q.time, q.notes, q.repeat, (q.subtasks || []).map(s => s.title)]);
+
 function seed() {
   const t = todayStr();
-  const q = (title, tier, due, extra = {}) => ({ id: uid(), title, tier, due, time: null, notes: '', subtasks: [], repeat: null, remind: null, done: false, doneAt: null, createdAt: Date.now(), ...extra });
+  const q = (title, tier, due, extra = {}) => ({ id: uid(), title, tier, due, time: null, notes: '', subtasks: [], repeat: null, remind: null, done: false, doneAt: null, createdAt: Date.now(), sample: true, ...extra });
   return [
     q('Submit lab report', 0, t, { time: '17:00', subtasks: [{ id: uid(), title: 'Write up method', done: true, tier: 0 }, { id: uid(), title: 'Add graphs', done: false, tier: 1 }],
       remind: { at: at(t, '17:00') - 3600000, offset: 3600000, fired: false, dismissed: false } }),
@@ -45,7 +55,7 @@ export function applyStarter(kind) {
   commit(s => {
     if (!s.seeded || s.history.length) return;
     const t = todayStr();
-    s.quests = kind === 'empty' ? [] : (STARTERS[kind] || []).map(([title, tier, inDays, extra = {}]) => ({ id: uid(), title, tier, due: inDays == null ? null : addDays(t, inDays), time: null, notes: '', subtasks: [], repeat: null, remind: null, done: false, doneAt: null, createdAt: Date.now(), ...extra }));
+    s.quests = kind === 'empty' ? [] : (STARTERS[kind] || []).map(([title, tier, inDays, extra = {}]) => ({ id: uid(), title, tier, due: inDays == null ? null : addDays(t, inDays), time: null, notes: '', subtasks: [], repeat: null, remind: null, done: false, doneAt: null, createdAt: Date.now(), sample: true, ...extra }));
   });
 }
 export function finishOnboarding() { commit(s => { s.onboarded = true; }); }
@@ -66,6 +76,7 @@ function migrate(s) {
   s.quests ||= []; s.history ||= []; s.sessions ||= []; s.timer ??= null; s.notifs ||= []; s.tombstones ||= [];
   for (const q of s.quests) q.updatedAt ??= q.createdAt || 0;
   for (const q of s.quests) { q.subtasks ||= []; q.notes ??= ''; if (q.sketches) q.sketches = cleanSketches(q.sketches); }
+  markSamples(s.quests);
   // saves from v1 never had seeded cleared when quests were added, so never swap their quests for starters
   if ((s.v || 1) < 2) s.seeded = false;
   s.v = VERSION;
@@ -83,14 +94,21 @@ export const onSave = fn => { saveSubs.add(fn); return () => saveSubs.delete(fn)
 export function commit(fn, opts = {}) {
   const track = !opts.fromSync && state;
   let before, hBefore, sBefore, stBefore;
+  let samplesBefore;
   if (track) {
     before = new Map(state.quests.map(q => [q.id, JSON.stringify(q)]));
+    samplesBefore = new Map(state.quests.filter(q => q.sample).map(q => [q.id, sampleKey(q)]));
     hBefore = JSON.stringify(state.history); sBefore = JSON.stringify(state.sessions); stBefore = JSON.stringify(state.settings);
   }
   const r = fn(state);
   if (track) {
     const now = Date.now(), ids = new Set();
-    for (const q of state.quests) { ids.add(q.id); if (before.get(q.id) !== JSON.stringify(q)) q.updatedAt = now; }
+    for (const q of state.quests) {
+      ids.add(q.id);
+      // an example quest the person rewrote (name, date, notes…) is now really theirs
+      if (q.sample && samplesBefore.has(q.id) && samplesBefore.get(q.id) !== sampleKey(q)) q.sample = false;
+      if (before.get(q.id) !== JSON.stringify(q)) q.updatedAt = now;
+    }
     state.tombstones ||= [];
     for (const id of before.keys()) if (!ids.has(id)) state.tombstones.push({ id, deletedAt: now });
     if (JSON.stringify(state.history) !== hBefore) state.historyUpdatedAt = now;
@@ -112,7 +130,7 @@ export function setEventTier(id, tier) {
   commit(s => { s.eventMeta = { ...(s.eventMeta || {}), [id]: { tier, at: Date.now() } }; });
 }
 export const syncDoc = () => Object.fromEntries(SYNC_KEYS.map(k => [k, state[k]]));
-export function adoptSynced(doc) { commit(s => { for (const k of SYNC_KEYS) if (doc[k] !== undefined) s[k] = k === 'settings' ? { ...DEFAULT_SETTINGS, ...doc[k] } : doc[k]; }, { fromSync: true }); }
+export function adoptSynced(doc) { markSamples(doc.quests); commit(s => { for (const k of SYNC_KEYS) if (doc[k] !== undefined) s[k] = k === 'settings' ? { ...DEFAULT_SETTINGS, ...doc[k] } : doc[k]; }, { fromSync: true }); }
 
 export const findQuest = id => state.quests.find(q => q.id === id);
 export const tierLabel = t => `P${t + 1} · ${state.settings.tierNames[t]}`;

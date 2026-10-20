@@ -46,11 +46,14 @@ const kvGet = async k => { const d = await db(); return new Promise(res => { con
 const kvSet = async (k, v) => { const d = await db(); return new Promise(res => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = res; t.onerror = res; }); };
 
 const key = it => `${it.id}@${it.at}`;
-const notifyOpts = it => ({
-  body: it.body, tag: 'quest-' + it.id, renotify: true, icon: 'icons/icon-192.png', badge: 'icons/badge-96.png',
-  data: { id: it.id, url: '#/quest/' + it.id },
-  actions: [{ action: 'done', title: 'Done' }, { action: 'snooze', title: 'Snooze 10 min' }],
-});
+// daily nudges (kind 'nudge': water, meals, a walk, today's quests) have no Done/Snooze and open Home
+const notifyOpts = it => it.kind === 'nudge'
+  ? { body: it.body, tag: 'nudge-' + it.id, renotify: true, icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: '#/home' } }
+  : {
+    body: it.body, tag: 'quest-' + it.id, renotify: true, icon: 'icons/icon-192.png', badge: 'icons/badge-96.png',
+    data: { id: it.id, url: '#/quest/' + it.id },
+    actions: [{ action: 'done', title: 'Done' }, { action: 'snooze', title: 'Snooze 10 min' }],
+  };
 
 // show every scheduled reminder whose time has come and that nobody has shown yet
 async function checkDue() {
@@ -60,9 +63,9 @@ async function checkDue() {
   // an open, visible app shows them itself
   const wins = await self.clients.matchAll({ type: 'window' });
   if (wins.some(w => w.visibilityState === 'visible')) return;
-  for (const it of fresh) { shown.add(key(it)); await self.registration.showNotification('Reminder: ' + it.title, notifyOpts(it)); }
+  for (const it of fresh) { shown.add(key(it)); await self.registration.showNotification(it.kind === 'nudge' ? it.title : 'Reminder: ' + it.title, notifyOpts(it)); }
   await kvSet('shown', [...shown].slice(-200));
-  try { const n = items.filter(it => it.at <= now).length; if (self.navigator.setAppBadge) self.navigator.setAppBadge(n); } catch (e) {}
+  try { const n = items.filter(it => it.at <= now && it.kind !== 'nudge').length; if (self.navigator.setAppBadge) self.navigator.setAppBadge(n); } catch (e) {}
 }
 
 self.addEventListener('message', e => {

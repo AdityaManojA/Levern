@@ -9,8 +9,9 @@ const EVENT_MIN = 30;
 const pad = n => String(n).padStart(2, '0');
 const localDateTime = ms => { const d = new Date(ms); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`; };
 
-// a quest belongs in the calendar when it has a date and is still open (repeating quests stay open)
-export const syncable = q => !!q.due && !q.done;
+// a quest belongs in the calendar when it has a date and is still open (repeating quests stay open);
+// example quests never do: people only get the quests they made themselves
+export const syncable = q => !!q.due && !q.done && !q.sample;
 
 export function questToEvent(q, tz = 'UTC') {
   const ev = {
