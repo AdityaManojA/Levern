@@ -4,7 +4,7 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v27';
+const VERSION = 'taskflow-v28';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
@@ -94,4 +94,14 @@ self.addEventListener('notificationclick', e => {
     if (wins.length) { await wins[0].focus(); wins[0].postMessage({ type: 'navigate', url: data.url || '#/home' }); }
     else await self.clients.openWindow(url);
   })());
+});
+
+// reminders pushed from the server (scripts/reminders): shown even when the app is closed
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'TaskFlow', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'TaskFlow', {
+    body: d.body || '', tag: d.tag || 'taskflow', renotify: true,
+    icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: d.url || '#/home' },
+  }));
 });

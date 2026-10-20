@@ -5,7 +5,7 @@
 import { getState, setSetting, applyStarter, finishOnboarding, TIER_COLORS } from '../store.js';
 import { dayExp } from '../stats.js';
 import { speechSupported } from '../speech.js';
-import { esc, play, toast, download } from '../ui.js';
+import { esc, play, toast, download, confirmBox } from '../ui.js';
 import { EASE, EASE_IN, reduced } from '../motion.js';
 import { portrait, sprite } from '../mochi.js';
 import * as cal from '../calendars.js';
@@ -14,6 +14,14 @@ import { buildICS } from '../ics.js';
 import * as cloud from '../cloud.js';
 import * as nudges from '../nudges.js';
 import { slog, serr } from '../signinlog.js';
+
+// Set up on this device: kept apart from the account and survives sign-out, so signing back in
+// doesn't walk someone through the welcome steps again.
+const DEVICE_KEY = 'taskflow-device-setup';
+export const deviceSetupDone = () => { try { return localStorage.getItem(DEVICE_KEY) === '1' || !!getState().onboarded; } catch (e) { return !!getState().onboarded; } };
+const markDeviceSetup = () => { try { localStorage.setItem(DEVICE_KEY, '1'); } catch (e) {} };
+// the one question a returning, signed-in person gets instead of the steps
+export const welcomeBack = startTour => confirmBox('Welcome back. Want the quick tour?', 'Show tour').then(yes => { if (yes && startTour) startTour(); });
 document.addEventListener('nudges:change', () => { if (isOpen() && STEPS[step] === 'remind') refresh(); });
 
 const STEPS = ['welcome', 'account', 'quests', 'use', 'target', 'remind', 'yours', 'tour'];
@@ -154,6 +162,7 @@ export const isOpen = () => !!root && root.classList.contains('open');
 export function close(then) {
   if (!root) return;
   finishOnboarding();
+  markDeviceSetup();
   root.classList.remove('open');
   document.body.classList.remove('ob-lock');
   const r = root;
@@ -221,7 +230,13 @@ async function afterSignIn(u) {
   const r = await cloud.syncNow();
   if (first && !getState().settings.name) setSetting('name', first, { quiet: true });
   busy = false;
-  if (r.hadData || returning) { toast(`Welcome back${first ? `, ${first}` : ''}`, 'good'); return close(); }
+  const back = deviceSetupDone();
+  if (back || r.hadData || returning) {
+    toast(`Welcome back${first ? `, ${first}` : ''}`, 'good');
+    const tour = onFinish; close();
+    if (back) setTimeout(() => welcomeBack(tour), 600);
+    return;
+  }
   toast(`Signed in${first ? ` as ${first}` : ''}`, 'good');
   if (isOpen()) go(1);
 }

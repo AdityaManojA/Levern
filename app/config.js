@@ -16,3 +16,6 @@ export const FIREBASE = {
   messagingSenderId: '1033081200615',
   appId: '1:1033081200615:web:8890deabb080b7044a6742',
 };
+
+// Web push (reminders): the public half of the VAPID key pair. The private half is a GitHub secret.
+export const VAPID_PUBLIC_KEY = 'BFFYPUwZevP1hkruSRWVdhcjH8aI0oBBRj_wtq8IJSneQZ90C1BZ5znqAE0bSSkg7PB98E4c1Gng4yJiTw1RCVs';

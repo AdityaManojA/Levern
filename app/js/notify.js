@@ -21,7 +21,7 @@ export const onMessage = fn => listeners.add(fn);
 export const permission = () => supported ? Notification.permission : 'unsupported';
 export async function requestPermission() {
   if (!supported || Notification.permission !== 'default') return permission();
-  try { const p = await Notification.requestPermission(); if (p === 'granted') tryPeriodicSync(); return p; } catch (e) { return permission(); }
+  try { const p = await Notification.requestPermission(); if (p === 'granted') { tryPeriodicSync(); import('./push.js').then(m => m.enablePush()); } return p; } catch (e) { return permission(); }
 }
 
 // Shows a notification through the service worker when there is one (needed on Android and for the

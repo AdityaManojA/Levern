@@ -228,10 +228,11 @@ $('#sheet').addEventListener('focusin', e => { if (e.target.matches('input, text
 // TaskFlow needs a signed-in account: signed out, you're back at the start of the welcome screens
 const toStart = () => { if (!onboarding.isOpen()) { sheet.close(); location.hash = '#/home'; onboarding.open(() => tour.start()); } };
 if (account.cameBackFromRedirect()) onboarding.resumeSignIn(() => tour.start());   // phone sign-in came back to a fresh page
-else if (!store.getState().onboarded || !account.user()) onboarding.open(() => tour.start());
+else if (!onboarding.deviceSetupDone() || !account.user()) onboarding.open(() => tour.start());
+else setTimeout(() => onboarding.welcomeBack(() => tour.start()), 1200);   // set up before and signed in: no steps, just the question
 if (!account.user()) account.preload();   // ready before the sign-in tap, so Google's popup isn't blocked
 account.onAccount(u => { if (!u) setTimeout(toStart, 0); });   // after sign-out has cleared the device
-registerSW().finally(startReminders);
+registerSW().finally(() => { startReminders(); if ('Notification' in window && Notification.permission === 'granted') import('./push.js').then(m => m.enablePush()); });
 startCalendars();
 // share data with the TaskFlow server (API, webhooks); the app works the same without it
 startSync();

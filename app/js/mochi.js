@@ -260,11 +260,11 @@ export function createMochi(env) {
     ['tail-chase', 2], ['cursor-swipe', 2], ['follow-finger', 2], ['excited', 2], ['sad', 1], ['wave', 2], ['heart-eyes', 2], ['startled', 1.5],
     ['surprised', 1.5], ['suspicious', 1.5], ['celebrate', 1.5], ['victory', 1], ['happy-spin', 1.5],
     ['tail-balance', 2], ['curious-sniff', 1.5], ['seated-turn', 1.5], ['play-bow', 1.5], ['roll', 1.5], ['tail-puff', 1.5], ['relax', 1.5],
-    ['window-watch', 1], ['drink', 1.5], ['play-with-yarn', 1.5], ['shake-off', 1], ['dry-off', 1], ['chasing-butterfly', 1.5], ['side-roll', 1.5],
-    ['play-in-leaves', 1], ['play-flip', 1.5], ['peek', 1]]);
+    ['shake-off', 1], ['dry-off', 1], ['side-roll', 1.5],
+    ['play-flip', 1.5]]);
   const TAPS = pool([['boop', 4], ['happy-wiggle', 2], ['excited', 2], ['confused', 2], ['wave', 2], ['surprised', 2], ['cursor-swipe', 1.5],
     ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 2], ['heart-eyes', 2], ['startled', 1.5], ['happy-spin', 1.5], ['suspicious', 1], ['victory', 1],
-    ['belly-flop', 2], ['startled-jump', 2], ['angry-stomp', 1], ['knock-over', 1.5], ['scared', 1.5], ['play-pounce', 1.5], ['play-in-water', 1], ['shake-off', 1]]);
+    ['belly-flop', 2], ['startled-jump', 2], ['angry-stomp', 1], ['knock-over', 1.5], ['scared', 1.5], ['play-pounce', 1.5], ['shake-off', 1]]);
   const TAP_LINES = { boop: ['boop', 'mrp!', ':3'], 'happy-wiggle': ['♪', 'hehe'], excited: ['!!', 'ooh!'], confused: ['?', 'huh?'], wave: ['hi!', 'hello!'],
     surprised: ['!', 'oh!'], 'cursor-swipe': ['gotcha', 'swipe!'], 'sitting-pretty': ['ta-da'], sneeze: ['achoo!'], celebrate: ['yay!'], 'heart-eyes': ['♥', 'purr…'] };
   const recent = [];
@@ -507,7 +507,10 @@ export function createMochi(env) {
     }
     if (M.state === 'drag' && M.dragTo) {
       const a = A[M.anim];
-      { const a = A[M.anim] || A.rest; M.cx = Math.max(a.ax + EDGE, Math.min(document.documentElement.clientWidth - (a.w - a.ax) - EDGE, M.dragTo.x)); }   // held: picture stays on screen
+      // held: picture stays inside the app's own column (on a wide screen, the page around it is not his to walk on)
+      { const a = A[M.anim] || A.rest, col = document.querySelector('.app')?.getBoundingClientRect();
+        const L = col ? Math.max(0, col.left) : 0, R = col ? Math.min(document.documentElement.clientWidth, col.right) : document.documentElement.clientWidth;
+        M.cx = Math.max(L + a.ax + EDGE, Math.min(R - (a.w - a.ax) - EDGE, M.dragTo.x)); }
       // held: his head follows the finger, but never lower than where he sits on the bar (lift 0) and never above the screen top
       const restTop = groundY() - a.gy;
       M.lift = Math.max(8 - restTop, Math.min(0, (M.dragTo.y - 12) - restTop));
