@@ -21,7 +21,7 @@ const SPEED = { slow: 28, normal: 50, zoomy: 95 }, SPRINT = 170, SINK = 2;
 // Tempo on top of the art's own fps: reactions and idles play much slower so they read as calm,
 // walking and running a little faster (stride and ground speed scale together, so his feet don't slide).
 // His breathing (rest) and sleep are slowed a little too. Every Mochi animation goes through this, sprites included.
-const ACT_TEMPO = 0.8, BREATH_TEMPO = 0.75, MOVE_TEMPO = 1.15;
+const ACT_TEMPO = 0.3, BREATH_TEMPO = 0.75, MOVE_TEMPO = 1.15;
 const MOVES = new Set(['walk', 'sprint', 'sprint-stop', 'get-up-left', 'get-up-right']);
 const tempo = n => (MOVES.has(n) ? MOVE_TEMPO : n === 'rest' || n === 'sleep' ? BREATH_TEMPO : ACT_TEMPO);
 const fpsOf = n => A[n].fps * tempo(n);
@@ -406,7 +406,7 @@ export function createMochi(env) {
       press.t = setTimeout(endHeld, 6000);   // never loops forever
     }, 450);
   });
-  el.addEventListener('pointermove', e => {
+  document.addEventListener('pointermove', e => {
     if (!press || e.pointerId !== press.id) return;
     if (!press.drag) {
       if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < DRAG_START || Date.now() < M.annoyedUntil) return;
@@ -423,9 +423,13 @@ export function createMochi(env) {
     if (M.held) { endHeld(); return; }
     if (!cancelled) tap(e);
   };
-  el.addEventListener('pointerup', e => release(e, false));
-  el.addEventListener('pointercancel', e => release(e, true));
-  el.addEventListener('lostpointercapture', e => { if (press && press.drag) release(e, true); else if (M.held && !press) endHeld(); });
+  // Safari and Brave don't keep pointer capture reliably on touch, so the press follows the finger
+  // on the whole page. Losing capture no longer drops him: only the finger lifting does.
+  document.addEventListener('pointerup', e => release(e, false));
+  document.addEventListener('pointercancel', e => release(e, true));
+  // phones: no long-press callout, context menu or native image drag fighting the pickup
+  el.addEventListener('contextmenu', e => e.preventDefault());
+  el.addEventListener('dragstart', e => e.preventDefault());
   el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } });
   el.addEventListener('click', e => e.stopPropagation());
 

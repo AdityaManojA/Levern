@@ -3,7 +3,7 @@
 import { addQuest, tierLabel, TIER_COLORS, findQuest, getState } from '../store.js';
 import { parseQuest } from '../parse.js';
 import { fmtDate, fmtTime, fmtStamp } from '../dates.js';
-import { REPEATS } from '../recur.js';
+import { REPEATS, dayChips } from '../recur.js';
 import { sheet, esc, toast, play, ICON } from '../ui.js';
 import { speechSupported, speechBroken, browserName, listen, speechError } from '../speech.js';
 import { reminderPicker, bindPicker, readPicker, pickerKey } from './common.js';
@@ -46,6 +46,7 @@ export function openAdd(prefill = {}) {
     <div class="two"><input class="field" type="date" name="due" aria-label="Due date"><input class="field" type="time" name="time" aria-label="Due time"></div>
     <label class="lbl">Repeat</label>
     <select class="field" name="repeat">${REPEATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
+    <div data-days></div>
     <label class="lbl">Reminder</label>
     <div data-picker></div>
     <label class="lbl">Subtasks</label>
@@ -66,6 +67,7 @@ export function openAdd(prefill = {}) {
     $f('[name=time]').value = f.time || '';
     $f('[name=time]').disabled = !f.due;
     $f('[name=repeat]').value = f.repeat?.freq || '';
+    $f('[data-days]').innerHTML = f.repeat?.freq === 'custom' ? dayChips(f.repeat.days) : '';
     $f('[data-subs]').innerHTML = f.subtasks.map((t, i) => `<span class="chip">${esc(t)} <button type="button" data-subdel="${i}" aria-label="Remove" style="border:none;background:none;font-weight:700">×</button></span>`).join('');
   }
   function paintPicker() { $f('[data-picker]').innerHTML = reminderPicker({ due: f.due, time: f.time, remind: null }, f.remindKey); }
@@ -87,9 +89,25 @@ export function openAdd(prefill = {}) {
     const n = e.target.name;
     if (n === 'due') { manual.add('due'); f.due = e.target.value || null; if (!f.due) { f.time = null; f.repeat = null; } paint(); paintPicker(); }
     if (n === 'time') { manual.add('due'); f.time = e.target.value || null; }
-    if (n === 'repeat') { manual.add('repeat'); f.repeat = e.target.value ? { freq: e.target.value } : null; if (f.repeat && !f.due) { f.due = todayLocal(); } paint(); paintPicker(); }
+    if (n === 'repeat') {
+      manual.add('repeat');
+      if (e.target.value === 'custom') {
+        // "on the days I choose" starts on the due day, so the person only has to add or remove days
+        if (!f.due) f.due = todayLocal();
+        f.repeat = { freq: 'custom', days: [new Date(f.due + 'T12:00:00').getDay()] };
+      } else f.repeat = e.target.value ? { freq: e.target.value } : null;
+      if (f.repeat && !f.due) { f.due = todayLocal(); }
+      paint(); paintPicker();
+    }
   });
   form.addEventListener('click', e => {
+    const dd = e.target.closest('[data-day]');
+    if (dd && f.repeat?.freq === 'custom') {
+      const d = +dd.dataset.day, days = f.repeat.days || [];
+      f.repeat = { freq: 'custom', days: days.includes(d) ? days.filter(x => x !== d) : [...days, d] };
+      play('click', 0.4); paint();
+      return;
+    }
     if (e.target.closest('[data-close]')) { stop && stop(); dropInk(); sheet.close(); setTimeout(() => mascot.react('look-back', 'pfft'), 420); return; }
     const t = e.target.closest('[data-tier]');
     if (t) { manual.add('tier'); f.tier = +t.dataset.tier; play('click', 0.5); return paint(); }
@@ -172,6 +190,7 @@ export function openAdd(prefill = {}) {
     if (sk && sketchBytes(sk) > MAX_SKETCH_BYTES) { toast('That page is too detailed to save. Try clearing a few strokes.'); return; }
     const raw = form.title.value.trim() || (sk ? (sk.kind === 'writing' ? 'Handwritten note' : 'Sketch') : '');
     if (!raw) { toast('Your quest needs a name'); mascot.grumpy('name it first!'); form.title.focus(); return; }
+    if (f.due && f.repeat?.freq === 'custom' && !f.repeat.days?.length) { toast('Pick at least one day'); return; }
     const spec = readPicker($f('[data-picker]'), pickerKey($f('[data-picker]')));
     const q = addQuest({ title: f.title || raw, tier: f.tier, due: f.due, time: f.due ? f.time : null, repeat: f.due ? f.repeat : null, subtasks: f.subtasks, remind: spec || null, sketches: sk ? [sk] : [] });
     dropInk();

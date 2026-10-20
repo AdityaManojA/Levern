@@ -2,7 +2,10 @@
 import { addDays, at } from './dates.js';
 
 const RRULE = { daily: 'FREQ=DAILY', alternate: 'FREQ=DAILY;INTERVAL=2', weekdays: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', weekly: 'FREQ=WEEKLY', monthly: 'FREQ=MONTHLY' };
-export const rrule = r => r && RRULE[r.freq] ? RRULE[r.freq] + (r.interval > 1 ? `;INTERVAL=${r.interval}` : '') : '';
+const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+// the chosen weekdays, weekly
+const customRule = r => r.days?.length ? `FREQ=WEEKLY;BYDAY=${[...r.days].sort().map(d => BYDAY[d]).join(',')}` : '';
+export const rrule = r => r && r.freq === 'custom' ? customRule(r) : r && RRULE[r.freq] ? RRULE[r.freq] + (r.interval > 1 ? `;INTERVAL=${r.interval}` : '') : '';
 
 const esc = s => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 const pad = n => String(n).padStart(2, '0');

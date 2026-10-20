@@ -171,6 +171,8 @@ export function toggleDone(id) {
       if (i >= 0) s.history.splice(i, 1);
       return { done: false };
     }
+    // a repeating quest counts once per occurrence: once its next date is ahead, today's is already done
+    if (q.repeat && q.due && q.due > todayStr()) return { done: false, blocked: true, next: q.due };
     s.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: Date.now() });
     noteNotif(s, q.id, 'done');
     if (q.repeat && q.due) {

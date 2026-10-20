@@ -378,7 +378,8 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 
 
 /* ---------- Mochi (art moves only by its own frames: no CSS animation or transition on him) ---------- */
-.mochi { position: fixed; left: 0; top: 0; z-index: 31; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; outline: none; }
+.mochi { position: fixed; left: 0; top: 0; z-index: 31; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; outline: none;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .mochi.over { z-index: 42; }
 .mochi.raised { z-index: 82; }
 .mochi .flip, .mochi .act { width: 100%; height: 100%; }
@@ -866,3 +867,9 @@ input.field, select.field, textarea.field, .field { font-family: inherit; font-w
   .day.sel { outline: none; box-shadow: none; transform: none; border: 2px solid var(--ink); background: var(--butter); }
   .day.sel.out { opacity: .75; }
 }
+
+/* repeat on chosen days: seven day buttons under the Repeat menu */
+.daychips { display: flex; gap: 6px; margin-top: 8px; }
+.daychips button { flex: 1; min-width: 0; padding: 9px 0; border: 2px solid var(--ink); border-radius: 12px; background: #fff; font-weight: 700; font-size: 13px; transition: background .25s var(--ease), transform .2s var(--ease); }
+.daychips button:active { transform: scale(.94); }
+.daychips button.on { background: var(--butter); }
