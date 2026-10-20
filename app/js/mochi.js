@@ -508,7 +508,9 @@ export function createMochi(env) {
     if (M.state === 'drag' && M.dragTo) {
       const a = A[M.anim];
       { const a = A[M.anim] || A.rest; M.cx = Math.max(a.ax + EDGE, Math.min(document.documentElement.clientWidth - (a.w - a.ax) - EDGE, M.dragTo.x)); }   // held: picture stays on screen
-      M.lift = (Math.max(8, M.dragTo.y) - 12) - (groundY() - a.gy);   // the top of his head just under the finger
+      // held: his head follows the finger, but never lower than where he sits on the bar (lift 0) and never above the screen top
+      const restTop = groundY() - a.gy;
+      M.lift = Math.max(8 - restTop, Math.min(0, (M.dragTo.y - 12) - restTop));
       M.liftTo = M.lift;
     } else if (M.state === 'fall' && M.fall) {
       M.fall.vy += GRAVITY * dt; M.lift += M.fall.vy * dt;
