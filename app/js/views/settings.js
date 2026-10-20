@@ -28,6 +28,7 @@ const debugRows = () => {
     </div>`;
 };
 
+const desktopView = () => matchMedia('(min-width: 641px)').matches;
 const tog = (k, on, label) => `<button class="tog" role="switch" aria-checked="${on}" aria-label="${esc(label)}" data-act="tog" data-k="${k}"></button>`;
 const step = (k, v, unit = '') => `<div class="step"><button data-act="step" data-k="${k}" data-d="-1" aria-label="Less">−</button><b>${v}${unit}</b><button data-act="step" data-k="${k}" data-d="1" aria-label="More">+</button></div>`;
 const LIMITS = { annoy: [3, 10], target: [1, 10], focusMin: [5, 90], breakMin: [1, 30], snoozeMin: [5, 60] };
@@ -103,8 +104,12 @@ export function render() {
 
     <div class="sec">App</div>
     <div class="card">
-      <div class="srow"><div class="l"><b>Install TaskFlow</b><small>${isInstalled() ? 'Installed. Running as an app.' : canInstall() ? 'Adds it to your home screen or Start menu and works offline.' : 'Use your browser menu: "Install app" (Chrome/Edge) or Share → "Add to Home Screen" (Safari).'}</small></div>
-        ${canInstall() && !isInstalled() ? '<button class="mini" data-act="install">Install</button>' : ''}</div>
+      <div class="srow" style="display:block"><div class="l"><b>Install TaskFlow</b>
+        <small>${isInstalled() ? 'Installed. Running as an app.'
+          : canInstall() ? 'Adds it to your Start menu or home screen and works offline.'
+          : desktopView() ? 'Your browser hasn\'t offered the install yet. In Chrome or Edge, click the install icon at the right of the address bar, or open the menu and choose Install TaskFlow.'
+          : 'In Safari, tap Share, then Add to Home Screen. In Chrome, open the menu and choose Install app.'}</small></div>
+        ${canInstall() && !isInstalled() ? '<div style="margin-top:10px"><button class="btn sm dark" data-act="install">Install TaskFlow</button></div>' : ''}</div>
       <div class="srow"><div class="l"><b>Offline</b><small>${'serviceWorker' in navigator && navigator.serviceWorker.controller ? 'Ready. TaskFlow works without internet.' : 'Getting ready (reload once to finish).'}</small></div></div>
     </div>
 
