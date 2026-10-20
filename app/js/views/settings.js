@@ -11,6 +11,7 @@ import { buildICS } from '../ics.js';
 import * as account from '../account.js';
 import * as cloud from '../cloud.js';
 import * as nudges from '../nudges.js';
+import { notifyCard } from '../notifyhelp.js';
 import { debugOn, setDebug, logCount, clearLog, reportText, dlog } from '../debuglog.js';
 
 // the diagnostic log for testers (see debuglog.js): on/off, copy, show, a test notification and clear
@@ -56,7 +57,7 @@ export function render() {
     <div class="sec">Reminders</div>
     <div class="card">
       <div class="srow"><div class="l"><b>System notifications</b><small>${pText}</small></div>${tog('notify', s.notify, 'System notifications')}</div>
-      ${s.notify && p === 'default' ? '<div class="srow"><div class="l"><b>Allow notifications</b><small>Your browser will ask once</small></div><button class="mini" data-act="perm">Allow</button></div>' : ''}
+      ${p === 'granted' ? '' : `<div class="srow" style="display:block"><div class="l"><b>Set up notifications</b><small>Steps for the device you're using</small></div><div style="margin-top:8px">${notifyCard()}</div></div>`}
       <div class="srow"><div class="l"><b>Snooze length</b></div>${step('snoozeMin', s.snoozeMin, ' min')}</div>
       <div class="srow"><div class="l"><b>Try it</b><small>Adds a quest with a reminder in 10 seconds</small></div><button class="mini" data-act="test-remind">Test reminder</button></div>
       <p class="small" style="margin-top:6px">Reminders go off on time while TaskFlow is open, even in a background tab. With it fully closed, an installed app can still show them when the browser checks in (Chrome/Edge, roughly every 15 min or more${hasPeriodicSync() ? '' : '; not available in this browser'}). Exact timing with the app closed will come with the sync server or the mobile app.</p>

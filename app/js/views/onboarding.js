@@ -14,6 +14,7 @@ import { buildICS } from '../ics.js';
 import * as cloud from '../cloud.js';
 import * as nudges from '../nudges.js';
 import { slog, serr } from '../signinlog.js';
+import { notifyCard } from '../notifyhelp.js';
 
 // Set up on this device: kept apart from the account and survives sign-out, so signing back in
 // doesn't walk someone through the welcome steps again.
@@ -24,7 +25,7 @@ const markDeviceSetup = () => { try { localStorage.setItem(DEVICE_KEY, '1'); } c
 export const welcomeBack = startTour => confirmBox('Welcome back. Want the quick tour?', 'Show tour').then(yes => { if (yes && startTour) startTour(); });
 document.addEventListener('nudges:change', () => { if (isOpen() && STEPS[step] === 'remind') refresh(); });
 
-const STEPS = ['welcome', 'account', 'quests', 'use', 'target', 'remind', 'yours', 'tour'];
+const STEPS = ['welcome', 'account', 'quests', 'use', 'target', 'remind', 'notify', 'yours', 'tour'];
 const G_LOGO = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.5 30.3 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
 let step = 0, root = null, profile = '', stops = [], onFinish = null, linked = {}, busy = false, returning = false;
 
@@ -95,6 +96,10 @@ function screen(name) {
       <h1 class="ob-h">When should I remind you?</h1>
       <p class="ob-p muted">Pick a time for a look at today's quests, and turn on any nudges you'd like. Add as many times a day as you want. You can change all of this later in Settings.</p>
       <div class="ob-card nudges" style="background:#fff">${nudges.editor()}</div>`;
+    case 'notify': return `
+      <h1 class="ob-h">Turn on notifications</h1>
+      <p class="ob-p muted">So reminders reach you on time, even when TaskFlow is in the background. Here's how on the device you're using.</p>
+      ${notifyCard()}`;
     case 'yours': {
       const g = cal.googleState();
       const pill = (key, label, on) => `<button type="button" class="ob-pill${on ? ' done' : ''}" data-ob-connect="${key}">${esc(label)}</button>`;
@@ -122,7 +127,7 @@ function footer() {
   if (name === 'tour') return `${dots}<button type="button" class="btn block" data-ob-tour>Show me around</button><button type="button" class="btn white block" data-ob-skiptour style="margin-top:12px">Skip tour</button>`;
   const label = { welcome: 'Get started', quests: 'Got it' }[name] || 'Continue';
   const below = name === 'welcome' ? '<button type="button" class="link ob-under" data-ob-skip>I\'ve used TaskFlow before</button>'
-    : name === 'yours' ? '<button type="button" class="link ob-under" data-ob-next>Skip for now</button>' : '';
+    : name === 'yours' || name === 'notify' ? '<button type="button" class="link ob-under" data-ob-next>Skip for now</button>' : '';
   // sign-in is required: no way past this step until it's done
   if (name === 'account' && !account.user()) return `${dots}<button type="button" class="btn block" disabled aria-describedby="ob-need">Continue</button><p class="small ob-under" id="ob-need" style="text-align:center">Sign in with Google to continue</p>`;
   const perch = name === 'quests' ? '<span class="ob-perch" data-anim="rest" data-scale=".62" aria-hidden="true"></span>' : '';

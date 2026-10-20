@@ -81,12 +81,18 @@ html, .sheet, .rpanel, .clist, .ctime-l, textarea { scrollbar-width: thin; scrol
 .btn:disabled { opacity: .45; cursor: default; }
 .row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .row-btns > * { flex: 1; }
+/* three or more buttons on a phone: two per row, the last one full width (so the labels don't wrap into slivers) */
+@media (max-width: 480px) {
+  .row-btns:has(> :nth-child(3)) { display: grid; grid-template-columns: 1fr 1fr; }
+  .row-btns:has(> :nth-child(3)) > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
 .mini { border: 2px solid var(--ink); border-radius: 12px; padding: 6px 12px; background: #fff; font-weight: 700; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
 .mini:disabled { opacity: .4; cursor: default; }
 
 /* segmented controls and chips */
-.seg { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: none; }
-.seg button, .seg a { flex: 1; border: var(--line); border-radius: 14px; padding: 8px 10px; background: #fff; font-weight: 600; font-size: 13px; text-align: center; text-decoration: none; white-space: nowrap; }
+/* options wrap onto a second row when they don't fit, rather than running off the screen */
+.seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.seg button, .seg a { flex: 1 1 auto; border: var(--line); border-radius: 14px; padding: 8px 10px; background: #fff; font-weight: 600; font-size: 13px; text-align: center; text-decoration: none; white-space: nowrap; }
 .seg .on { background: var(--ink); color: #fff; }
 .seg .n { font-size: 11px; opacity: .7; margin-left: 3px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -157,6 +163,33 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .exchip { border: 1.5px dashed var(--ink); border-radius: 8px; padding: 0 6px; font-weight: 700; font-size: 11px; line-height: 16px; background: rgba(255,255,255,.55); }
 .empty { text-align: center; padding: 28px 16px; }
 .sync-wait { text-align: center; padding: 48px 16px; color: var(--muted); font-weight: 600; }
+/* how to turn notifications on, for the device the person is using (notifyhelp.js) */
+.notify-card { background: #fff; border: var(--line); border-radius: 18px; padding: 14px 16px; }
+.notify-card > .small { margin-bottom: 4px; }
+.notify-kind { margin-top: 10px; }
+.notify-kind b { display: block; font-size: 15px; margin-bottom: 2px; }
+.notify-kind ol { margin: 6px 0; padding-left: 20px; font-size: 14px; line-height: 1.5; }
+.notify-kind li + li { margin-top: 4px; }
+.notify-act { margin-top: 14px; }
+.notify-act p { margin: 0; }
+
+/* phones: bigger tap targets and easier-to-read small controls (the look stays the same on larger screens) */
+@media (max-width: 640px) {
+  .chips { gap: 8px; }
+  .chips .chip, .chip-btn { min-height: 38px; padding: 8px 14px; font-size: 14px; display: inline-flex; align-items: center; }
+  .seg button, .seg a { min-height: 42px; font-size: 14px; padding: 9px 12px; }
+  .pick button, .ropts button { min-height: 42px; }
+  .daychips button { min-height: 44px; font-size: 14px; }
+  .mini { min-height: 40px; padding: 8px 14px; font-size: 14px; }
+  .chk { min-width: 36px; min-height: 36px; }
+  .srow { padding: 12px 0; }
+  .field, input.field, select.field { min-height: 46px; }
+  .btn { min-height: 52px; }
+  .qbell { width: 40px; height: 40px; display: grid; place-items: center; }
+  .view .step button { width: 40px; height: 40px; }
+  .link, .sec a { min-height: 36px; display: inline-flex; align-items: center; }
+  .chip > button { min-width: 30px; min-height: 30px; }
+}
 .empty b { display: block; font-size: 16px; margin-bottom: 4px; }
 
 /* nav */
