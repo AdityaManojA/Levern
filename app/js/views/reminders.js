@@ -1,9 +1,9 @@
 // The bell panel (due and upcoming reminders) and the quick "remind me" sheet from a quest's bell.
-import { dueReminders, upcomingReminders, findQuest, tierLabel, TIER_COLORS, snooze, dismissReminder, setReminder, getState } from '../store.js';
+import { dueReminders, upcomingReminders, findQuest, tierLabel, TIER_COLORS, snooze, dismissReminder, setReminder, setAlerts, getState } from '../store.js';
 import { fmtStamp, relTime } from '../dates.js';
 import { $, esc, sheet, toast, play, ICON } from '../ui.js';
 import { permission, requestPermission, supported } from '../notify.js';
-import { reminderPicker, bindPicker } from './common.js';
+import { reminderPicker, bindPicker, bindAlerts } from './common.js';
 import { morph } from '../motion.js';
 import { mascot } from '../mascot.js';
 import { recentNotifs } from '../store.js';
@@ -53,6 +53,16 @@ export function openRemindSheet(id) {
     if (e.target.closest('[data-close]')) sheet.close();
     if (e.target.closest('[data-act="allow-notify"]')) requestPermission().then(p => toast(p === 'granted' ? 'Notifications allowed' : 'Notifications not allowed'));
   };
+  if (q.due) {
+    // a dated quest: its reminders are a list before the due time (the sheet stays open to add more)
+    bindAlerts(s.querySelector('[data-picker]'), list => {
+      if (list.length) requestPermission();
+      setAlerts(id, list);
+      play('click', 0.6);
+      toast(list.length ? `${list.length} reminder${list.length === 1 ? '' : 's'} saved` : 'Reminders off for this quest');
+    });
+    return;
+  }
   bindPicker(s.querySelector('[data-picker]'), (spec, key) => {
     if (spec) requestPermission();
     setReminder(id, spec);

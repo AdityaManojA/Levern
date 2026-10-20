@@ -172,6 +172,20 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .notify-kind li + li { margin-top: 4px; }
 .notify-act { margin-top: 14px; }
 .notify-act p { margin: 0; }
+/* weekly goals (goals.js): the progress tag on a quest, the times-a-week stepper, and the detail controls */
+.tag.goal { background: var(--mint); }
+.tag.goal.met { background: var(--butter); font-weight: 700; }
+.goalstep { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.goalstep b { min-width: 28px; text-align: center; font-size: 16px; }
+.step-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; font-weight: 700; font-size: 16px; }
+.goalbox { margin-top: 10px; }
+/* a dated quest's reminders: presets, then "how many before" (alertPicker in common.js) */
+.alerts .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.alerts .chip-btn { border: 2px solid var(--ink); border-radius: 999px; padding: 7px 12px; background: #fff; font-weight: 600; font-size: 13px; color: var(--ink); white-space: nowrap; }
+.alerts .chip-btn.on { background: var(--ink); color: #fff; }
+.alert-add { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+.alert-add .field { width: 74px; flex: none; }
+.alert-add select.field { flex: 1; min-width: 0; }
 
 /* phones: bigger tap targets and easier-to-read small controls (the look stays the same on larger screens) */
 @media (max-width: 640px) {

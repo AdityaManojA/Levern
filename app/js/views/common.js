@@ -1,8 +1,29 @@
 // Pieces several screens share: the quest row, the priority picker and the reminder picker.
 import { getState, tierLabel, TIER_COLORS, isReminderDue, reminderBase } from '../store.js';
 import { dueLabel, dueStatus, relTime, fmtStamp, todayStr, addDays, at } from '../dates.js';
-import { esc, ICON } from '../ui.js';
+import { esc, ICON, toast } from '../ui.js';
 import { describe, repeatShort } from '../recur.js';
+import { PRESETS, MAX_ALERT, cleanAlerts, alertLabel, alertShort } from '../alerts.js';
+import { goalProgress } from '../goals.js';
+
+// a weekly goal's progress for this week, e.g. "Goal 2/3 this week" (or "Goal met · +1 extra")
+export function goalChip(q) {
+  const p = goalProgress(q);
+  const text = p.extra ? `Goal met · +${p.extra} extra` : p.met ? 'Goal met this week' : `${p.count}/${p.target} this week`;
+  return `<span class="tag goal${p.met ? ' met' : ''}">${ICON.repeat}${esc(text)}</span>`;
+}
+// "Times a week" stepper on the new-quest sheet
+export const goalStepper = target => `<div class="goalstep"><span class="small">Times a week</span>
+  <button type="button" class="step-btn" data-goal-step="-1" aria-label="Fewer times">−</button><b>${target}×</b><button type="button" class="step-btn" data-goal-step="1" aria-label="More times">+</button></div>`;
+// the goal's controls on the detail screen: the target, this week's progress, and undo
+export function goalBlock(q) {
+  const p = goalProgress(q);
+  return `<div class="goalbox">
+    <div class="srow"><div class="l"><b>Weekly goal</b><small>${p.extra ? `${p.count} this week: goal met, +${p.extra} extra` : `${p.count} of ${p.target} this week`}. Times past the goal count as extra.</small></div>
+      <div class="step"><button data-act="goal-step" data-d="-1" aria-label="Fewer times">−</button><b>${p.target}×</b><button data-act="goal-step" data-d="1" aria-label="More times">+</button></div></div>
+    <div class="row-btns"><button class="mini" data-act="goal-undo" data-id="${q.id}" ${p.count ? '' : 'disabled'}>Undo last time</button></div>
+  </div>`;
+}
 
 // the app's own bell (same drawing as the top bar), small, instead of the 🔔 emoji
 const BELL = '<svg class="rbell" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
@@ -20,6 +41,7 @@ export function questRow(q, now = new Date()) {
     `<span>${esc(tierLabel(q.tier))}</span>`,
     q.due ? `<span class="${st === 'overdue' ? 'od' : ''}">${esc(dueLabel(q, now))}</span>` : '',
     q.repeat ? `<span class="tag">${ICON.repeat}${repeatShort(q.repeat)}</span>` : '',
+    q.goal ? goalChip(q) : '',
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',
     q.sketches?.length ? `<span class="tag" title="Sketches">${ICON.sketch}${q.sketches.length}</span>` : '',
     reminderChip(q),
@@ -76,7 +98,48 @@ function selected(q) {
   if (q.remind.offset != null) { const r = REL.find(x => x[2] * 60000 === q.remind.offset); if (r) return r[0]; }
   return 'custom';
 }
-export function reminderPicker(q, sel = selected(q)) {
+// the reminders a quest has: its alerts, or (older quests) the one reminder it had
+export const alertsFor = q => Array.isArray(q.alerts) ? q.alerts : (q.remind && q.remind.offset != null ? [Math.round(q.remind.offset / 60000)] : []);
+
+// a dated quest: any number of reminders before its due time (0 = at the due time). Tap presets, or add your own.
+export function alertPicker(list) {
+  const on = cleanAlerts(list);
+  const custom = on.filter(m => !PRESETS.includes(m));
+  return `<div class="alerts" data-alerts data-list="${esc(JSON.stringify(on))}">
+    <div class="chips">${PRESETS.map(m => `<button type="button" class="chip-btn${on.includes(m) ? ' on' : ''}" data-alert="${m}" aria-pressed="${on.includes(m)}">${esc(alertShort(m))}${m ? ' before' : ''}</button>`).join('')}</div>
+    <div class="alert-add">
+      <input class="field" type="number" min="1" max="999" inputmode="numeric" value="1" data-alert-n aria-label="How many">
+      <select class="field" data-alert-u aria-label="Unit"><option value="1">minutes</option><option value="60" selected>hours</option><option value="1440">days</option></select>
+      <button type="button" class="mini" data-alert-add>Add</button>
+    </div>
+    ${custom.length ? `<div class="chips" style="margin-top:8px">${custom.map(m => `<span class="chip on">${esc(alertLabel(m))} <button type="button" data-alert-del="${m}" aria-label="Remove ${esc(alertLabel(m))}">×</button></span>`).join('')}</div>` : ''}
+    <p class="small" style="margin-top:8px">${on.length ? on.map(alertLabel).map(esc).join(' · ') : 'No reminders for this quest.'}</p>
+  </div>`;
+}
+// wire the alert picker inside root; onChange(list) runs after every change (the list is saved by the caller)
+export function bindAlerts(root, onChange) {
+  root.addEventListener('click', e => {
+    const box = root.querySelector('[data-alerts]'); if (!box) return;
+    let list = readAlerts(root), changed = false;
+    const preset = e.target.closest('[data-alert]'), del = e.target.closest('[data-alert-del]'), add = e.target.closest('[data-alert-add]');
+    if (preset) { const m = +preset.dataset.alert; list = list.includes(m) ? list.filter(x => x !== m) : [...list, m]; changed = true; }
+    else if (del) { const m = +del.dataset.alertDel; list = list.filter(x => x !== m); changed = true; }
+    else if (add) {
+      const n = Math.floor(+root.querySelector('[data-alert-n]').value), unit = +root.querySelector('[data-alert-u]').value;
+      if (!(n >= 1)) { toast('Enter a number, like 2'); return; }
+      if (n * unit > MAX_ALERT) { toast('A reminder can be up to a week before'); return; }
+      list = [...list, n * unit]; changed = true;
+    }
+    if (!changed) return;
+    list = cleanAlerts(list);
+    box.outerHTML = alertPicker(list);
+    onChange(list);
+  });
+}
+export const readAlerts = root => { try { return JSON.parse(root.querySelector('[data-alerts]')?.dataset.list || '[]'); } catch (e) { return []; } };
+
+export function reminderPicker(q, sel = selected(q), alerts) {
+  if (q.due) return alertPicker(alerts ?? alertsFor(q)) + (q.remind && !q.remind.dismissed && !q.done ? `<div class="small" style="margin-top:6px">Next: ${esc(fmtStamp(q.remind.at))}</div>` : '');
   const opts = [['none', 'None'], ...(q.due ? REL : []), ...ABS, ['custom', 'Pick a time']];
   const base = q.remind && !q.remind.dismissed ? q.remind.at : (q.due ? reminderBase(q) : Date.now() + 3600000);
   return `<div class="ropts" data-ropts>${opts.map(([k, l]) => `<button type="button" data-r="${k}" class="${k === sel ? 'on' : ''}">${l}</button>`).join('')}</div>

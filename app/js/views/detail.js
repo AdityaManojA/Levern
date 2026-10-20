@@ -1,10 +1,12 @@
 // Quest detail: edit everything about one quest. Fields save as you go.
-import { findQuest, updateQuest, deleteQuest, addSubtask, updateSubtask, removeSubtask, setReminder, tierLabel, TIER_COLORS, getState } from '../store.js';
+import { findQuest, updateQuest, deleteQuest, addSubtask, updateSubtask, removeSubtask, setReminder, setAlerts, tierLabel, TIER_COLORS, getState } from '../store.js';
 import { dueLabel, dueStatus, fmtStamp, todayStr } from '../dates.js';
 import { REPEATS, describe } from '../recur.js';
 import { googleLink, buildICS } from '../ics.js';
 import { esc, ICON, toast, play, confirmBox, download } from '../ui.js';
-import { tierPicker, reminderPicker, bindPicker } from './common.js';
+import { tierPicker, reminderPicker, bindPicker, bindAlerts, goalBlock } from './common.js';
+import { GOAL_DEFAULT, clampGoal } from '../goals.js';
+import { undoGoal } from '../store.js';
 import { requestPermission } from '../notify.js';
 import { sketchThumbs, openInk, openSketch } from './ink.js';
 import { timeWheelHTML } from '../timewheel.js';
@@ -41,7 +43,8 @@ export function render(params) {
     </div>
 
     <label class="lbl" for="repeat">Repeat</label>
-    <select class="field" id="repeat" data-change="repeat">${REPEATS.map(([k, l]) => `<option value="${k}" ${(q.repeat?.freq || '') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <select class="field" id="repeat" data-change="repeat">${REPEATS.map(([k, l]) => `<option value="${k}" ${(q.repeat?.freq || (q.goal ? 'goal' : '')) === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    ${q.goal ? goalBlock(q) : ''}
 
     <label class="lbl">Reminder</label>
     <div data-picker>${reminderPicker(q)}</div>
@@ -87,6 +90,13 @@ export function mount(main) {
     play('click', 0.5);
     toast(spec ? `Reminder set · ${fmtStamp(findQuest(q.id).remind.at)}` : 'Reminder removed');
   });
+  // a dated quest: its reminders are a list before the due time
+  bindAlerts(root.querySelector('[data-picker]'), list => {
+    if (list.length) requestPermission();
+    setAlerts(q.id, list);
+    play('click', 0.5);
+    toast(list.length ? `${list.length} reminder${list.length === 1 ? '' : 's'} saved` : 'Reminders off for this quest');
+  });
   root.querySelector('[data-addsub]').addEventListener('submit', e => {
     e.preventDefault();
     const v = e.target.t.value.trim(); if (!v) return;
@@ -104,6 +114,8 @@ export const actions = {
   'sub-del': el => removeSubtask(current.id, el.dataset.sid),
   'ink-new': el => openInk(current.id, { kind: el.dataset.kind }),
   'sketch-view': el => openSketch(current.id, el.dataset.kid),
+  'goal-step': el => { const q = current; updateQuest(q.id, { goal: { ...q.goal, target: clampGoal(q.goal.target + +el.dataset.d) } }); play('click', 0.4); },
+  'goal-undo': el => { undoGoal(el.dataset.id); play('click', 0.4); toast('Took back the last time'); },
   'due-quick': el => { const d = el.dataset.d; updateQuest(current.id, d === '' ? { due: null, time: null, repeat: null } : { due: addDaysFromToday(+d) }); play('click', 0.5); },
   ics: () => { download(`${current.title.replace(/[^\w\- ]+/g, '').trim() || 'quest'}.ics`, buildICS([current]), 'text/calendar'); toast('Calendar file saved. Open it to add the event.'); },
   delete: async () => {
@@ -117,7 +129,8 @@ export function onChange(el) {
   const k = el.dataset.change, q = current;
   if (k === 'due') updateQuest(q.id, el.value ? { due: el.value } : { due: null, time: null, repeat: null });
   if (k === 'time') updateQuest(q.id, { time: el.value || null });
-  if (k === 'repeat') { updateQuest(q.id, { repeat: el.value ? { freq: el.value } : null }); if (el.value) toast(`Repeats ${describe({ freq: el.value }).toLowerCase()}`); }
+  if (k === 'repeat' && el.value === 'goal') { updateQuest(q.id, { goal: q.goal || { target: GOAL_DEFAULT, log: [] }, repeat: null, due: null, time: null, alerts: undefined }); toast('Weekly goal set. Tick it each time you do it.'); }
+  else if (k === 'repeat') { updateQuest(q.id, { repeat: el.value ? { freq: el.value } : null, goal: null }); if (el.value) toast(`Repeats ${describe({ freq: el.value }).toLowerCase()}`); }
   if (k === 'sub-tier') updateSubtask(q.id, el.dataset.sid, { tier: +el.value });
 }
 // typing saves quietly (no re-render, so the cursor stays put)

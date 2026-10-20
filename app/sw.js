@@ -4,7 +4,7 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v29';
+const VERSION = 'taskflow-v30';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
@@ -104,19 +104,15 @@ self.addEventListener('notificationclick', e => {
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'TaskFlow', body: e.data ? e.data.text() : '' }; }
+  // Show the notification first, straight away: iOS expects every push to produce one, and nothing may stand
+  // in front of it. The diagnostic log is written afterwards and can't stop or delay the notification.
+  const show = d.id ? self.registration.showNotification(d.title || 'TaskFlow', notifyOpts(d))
+    : self.registration.showNotification(d.title || 'TaskFlow', {
+      body: d.body || '', tag: d.tag || 'taskflow', renotify: true,
+      icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: d.url || '#/home' },
+    });
   // the log keeps the kind of reminder, not its title (titles name the person's quests)
-  e.waitUntil((async () => {
-    await swlog('push received', { tag: d.tag || null, hasTitle: !!d.title });
-    try {
-      if (d.id) await self.registration.showNotification(d.title || 'TaskFlow', notifyOpts(d));
-      else await self.registration.showNotification(d.title || 'TaskFlow', {
-        body: d.body || '', tag: d.tag || 'taskflow', renotify: true,
-        icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: d.url || '#/home' },
-      });
-      await swlog('notification shown', { tag: d.tag || null });
-    } catch (err) {
-      await swlog('notification failed', { name: err?.name || null, message: String(err?.message || err) });
-      throw err;
-    }
-  })());
+  e.waitUntil(show.then(
+    () => swlog('notification shown', { tag: d.tag || null }).catch(() => {}),
+    err => swlog('notification failed', { name: err?.name || null, message: String(err?.message || err) }).catch(() => {}).then(() => { throw err; })));
 });

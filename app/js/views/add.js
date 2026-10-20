@@ -7,7 +7,9 @@ import { REPEATS, dayChips } from '../recur.js';
 import { timeWheelHTML, setTimeWheel } from '../timewheel.js';
 import { sheet, esc, toast, play, ICON } from '../ui.js';
 import { speechSupported, speechBroken, browserName, listen, speechError } from '../speech.js';
-import { reminderPicker, bindPicker, readPicker, pickerKey } from './common.js';
+import { reminderPicker, bindPicker, bindAlerts, readPicker, pickerKey, goalStepper } from './common.js';
+import { DEFAULT_ALERTS } from '../alerts.js';
+import { GOAL_DEFAULT, clampGoal } from '../goals.js';
 import { requestPermission } from '../notify.js';
 import { mascot } from '../mascot.js';
 import { createPad } from '../inkpad.js';
@@ -28,7 +30,8 @@ const multiBlock = m => `<label class="check-row"><input type="checkbox" name="m
 
 
 export function openAdd(prefill = {}) {
-  const f = { title: '', tier: 3, due: prefill.due || null, time: null, repeat: null, subtasks: [], remindKey: 'none' };
+  // a new quest with a due date reminds at its due time by default; the user can add more before it
+  const f = { title: '', tier: 3, due: prefill.due || null, time: null, repeat: null, subtasks: [], remindKey: 'none', alerts: DEFAULT_ALERTS.slice(), goal: null };
   const manual = new Set(prefill.due ? ['due'] : []);   // fields the user set by hand win over the parser
   let parsed = { chips: [] }, stop = null;
   const ink = { pad: null, rd: null, kind: 'writing', lang: null, refresh: null };
@@ -79,12 +82,12 @@ export function openAdd(prefill = {}) {
     $f('[data-pick]').innerHTML = `<div class="pick">${TIER_COLORS.map((c, i) => `<button type="button" data-tier="${i}" class="${i === f.tier ? 'on' : ''}" style="--c:${c}">P${i + 1}</button>`).join('')}</div><div class="small" style="margin-top:6px">${esc(tierLabel(f.tier))}</div>`;
     $f('[name=due]').value = f.due || '';
     setTimeWheel($f('[data-tw]'), f.time || '', !f.due);
-    $f('[name=repeat]').value = f.repeat?.freq || '';
-    $f('[data-days]').innerHTML = f.repeat?.freq === 'custom' ? dayChips(f.repeat.days) : '';
+    $f('[name=repeat]').value = f.repeat?.freq || (f.goal ? 'goal' : '');
+    $f('[data-days]').innerHTML = f.repeat?.freq === 'custom' ? dayChips(f.repeat.days) : f.goal ? goalStepper(f.goal.target) : '';
     $f('[data-multi]').innerHTML = f.repeat && f.due ? multiBlock(f.multi) : '';
     $f('[data-subs]').innerHTML = f.subtasks.map((t, i) => `<span class="chip">${esc(t)} <button type="button" data-subdel="${i}" aria-label="Remove" style="border:none;background:none;font-weight:700">×</button></span>`).join('');
   }
-  function paintPicker() { $f('[data-picker]').innerHTML = reminderPicker({ due: f.due, time: f.time, remind: null }, f.remindKey); }
+  function paintPicker() { $f('[data-picker]').innerHTML = reminderPicker({ due: f.due, time: f.time, remind: null }, f.remindKey, f.alerts); }
   function onText(text) {
     parsed = parseQuest(text);
     if (!manual.has('tier')) f.tier = parsed.tier;
@@ -113,6 +116,12 @@ export function openAdd(prefill = {}) {
     }
     if (n === 'repeat') {
       manual.add('repeat');
+      if (e.target.value === 'goal') {
+        // a weekly goal has no day: the date and time go, and the times-a-week stepper comes up
+        f.goal = f.goal || { target: GOAL_DEFAULT }; f.repeat = null; f.due = null; f.time = null; f.multi = null;
+        paint(); paintPicker(); return;
+      }
+      f.goal = null;
       if (e.target.value === 'custom') {
         // "on the days I choose" starts on the due day, so the person only has to add or remove days
         if (!f.due) f.due = todayLocal();
@@ -123,6 +132,8 @@ export function openAdd(prefill = {}) {
     }
   });
   form.addEventListener('click', e => {
+    const gs = e.target.closest('[data-goal-step]');
+    if (gs && f.goal) { f.goal = { target: clampGoal(f.goal.target + +gs.dataset.goalStep) }; paint(); return; }
     const mm = e.target.closest('[data-mmode]');
     if (mm && f.multi) { f.multi = { ...f.multi, times: mm.dataset.mmode === 'times' ? (f.multi.times || []) : null }; paint(); return; }
     const md = e.target.closest('[data-mdel]');
@@ -186,6 +197,7 @@ export function openAdd(prefill = {}) {
   form.sub.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addSub(); } });
   function addSub() { const v = form.sub.value.trim(); if (!v) return; f.subtasks.push(v); form.sub.value = ''; play('click', 0.5); paint(); }
   bindPicker($f('[data-picker]'), (spec, key) => { f.remindKey = key; if (spec) requestPermission(); });
+  bindAlerts($f('[data-picker]'), list => { f.alerts = list; if (list.length) requestPermission(); });
 
   function markMicUnavailable() {
     const btn = $f('[data-mic]'); btn.disabled = true;
@@ -224,13 +236,18 @@ export function openAdd(prefill = {}) {
     if (mt && !mt.times && !(mt.from < mt.to)) { toast('The end time has to be after the start'); return; }
     const mspec = mt ? (mt.times ? { times: [...mt.times] } : { every: mt.every, from: mt.from, to: mt.to }) : null;
     const remindSpec = mspec ? { multi: mspec, at: nextMultiAt(mspec) } : spec;
-    const q = addQuest({ title: f.title || raw, tier: f.tier, due: f.due, time: f.due ? f.time : null, repeat: f.due ? f.repeat : null, subtasks: f.subtasks, remind: remindSpec || null, sketches: sk ? [sk] : [] });
+    // a dated quest keeps its list of alerts; several-times-a-day repeats keep their own reminder (multi.js)
+    const dated = !!f.due && !mspec;
+    const goal = f.goal ? { target: clampGoal(f.goal.target) } : null;
+    const q = addQuest({ title: f.title || raw, tier: f.tier, due: goal ? null : f.due, time: f.due && !goal ? f.time : null, repeat: f.due && !goal ? f.repeat : null, subtasks: f.subtasks, goal, alerts: dated && !goal ? f.alerts : undefined, remind: dated && !goal ? null : remindSpec || null, sketches: sk ? [sk] : [] });
     dropInk();
     play('click');
     sheet.close();
     setTimeout(() => mascot.react('notify', 'new quest!'), 650);
     const nq = findQuest(q.id);
-    toast(`Quest added to ${tierLabel(f.tier)}${nq.remind ? ` · reminder ${fmtStamp(nq.remind.at)}` : ''}`, 'good');
+    const n = nq.alerts ? nq.alerts.length : 0;
+    if (nq.goal) toast(`Goal added: ${nq.goal.target} times a week`, 'good');
+    else toast(`Quest added to ${tierLabel(f.tier)}${n ? ` · ${n} reminder${n === 1 ? '' : 's'}` : nq.remind ? ` · reminder ${fmtStamp(nq.remind.at)}` : ''}`, 'good');
   });
 
   paint(); paintPicker();

@@ -9,6 +9,13 @@ export function completeQuest(id) {
   const q = store.findQuest(id); if (!q) return;
   const before = summary(store.getState().history, [], store.getState().settings.target).todayCount;
   const r = store.toggleDone(id);
+  // a weekly goal: each time counts, and going past the goal is a bonus
+  if (r.goal) {
+    const p = r.progress;
+    play('tick');
+    const msg = p.extra ? `Logged. ${p.count} this week, ${p.extra} extra. Amazing!` : p.met ? `Logged. Goal met: ${p.count} of ${p.target} this week.` : `Logged. ${p.count} of ${p.target} this week.`;
+    return toast(msg, p.met ? 'good' : undefined);
+  }
   // a daily (or any repeating) quest is done once for its date: tapping again does nothing and counts nothing
   if (r.blocked) { play('tap', 0.6); return toast(`Already done for today. Next one: ${fmtDate(r.next)}`); }
   const st = store.getState();

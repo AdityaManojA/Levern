@@ -5,6 +5,8 @@ import { todayStr, addDays, at, dueTimestamp, dueStatus, toStr } from './dates.j
 import { rollForward } from './recur.js';
 import { nextMultiAt } from './multi.js';
 import { cleanSketches } from './ink.js';
+import { DEFAULT_ALERTS, cleanAlerts } from './alerts.js';
+import { clampGoal, goalProgress } from './goals.js';
 
 export const TIER_COLORS = ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'];
 const VERSION = 2;
@@ -141,10 +143,35 @@ export function addQuest(data) {
   const q = { id: uid(), title: data.title, tier: data.tier ?? 3, due: data.due || null, time: data.time || null, notes: data.notes || '',
     subtasks: (data.subtasks || []).map(s => typeof s === 'string' ? { id: uid(), title: s, done: false, tier: data.tier ?? 3 } : s),
     repeat: data.repeat || null, remind: null, done: false, doneAt: null, createdAt: Date.now(), sample: false };
+  // a quest with a due date always reminds at its due time, unless its alerts say otherwise
+  if (q.due) q.alerts = cleanAlerts(data.alerts ?? DEFAULT_ALERTS);
+  // a weekly goal has no day: it counts completions in the week instead
+  if (data.goal) { q.goal = { target: clampGoal(data.goal.target), log: [] }; q.due = null; q.time = null; q.alerts = undefined; }
   if (data.sketches && data.sketches.length) q.sketches = data.sketches.map(k => ({ id: uid(), createdAt: Date.now(), ...k }));
   commit(s => { s.quests.push(q); s.seeded = false; });
-  if (data.remind) setReminder(q.id, data.remind);
+  if (q.alerts) setAlerts(q.id, q.alerts);
+  else if (data.remind) setReminder(q.id, data.remind);
   return q;
+}
+
+// the reminders for a dated quest: a list of minutes before the due time (0 = at the due time)
+export function setAlerts(id, list) {
+  commit(() => {
+    const q = findQuest(id); if (!q || !q.due) return;
+    state.seeded = false;
+    q.alerts = cleanAlerts(list);
+    syncNearest(q);
+  });
+}
+// the quest's single reminder shows its next alert, so the notifications and the list have one to show
+export function syncNearest(q, now = Date.now()) {
+  if (!q.alerts) return;
+  if (!q.due) { q.remind = null; return; }
+  const base = reminderBase(q);
+  const next = q.alerts.map(m => ({ m, at: base - m * 60000 })).filter(x => x.at > now).sort((a, b) => a.at - b.at)[0];
+  if (!next) { if (q.remind && !q.remind.fired) q.remind = null; return; }
+  if (q.remind && q.remind.at === next.at && q.remind.offset === next.m * 60000) return;   // already showing it
+  q.remind = { at: next.at, offset: next.m * 60000, fired: false, dismissed: false };
 }
 export function updateQuest(id, patch, opts) {
   commit(() => {
@@ -158,7 +185,17 @@ export function updateQuest(id, patch, opts) {
       if (q.due) q.remind = { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false };
       else q.remind.offset = null;
     }
+    if (dueChanged && q.alerts) syncNearest(q);
   }, opts);
+}
+// take back the last time logged for a weekly goal
+export function undoGoal(id) {
+  commit(s => {
+    const q = findQuest(id); if (!q?.goal || !q.goal.log.length) return;
+    q.goal.log.pop();
+    const i = s.history.map(h => h.questId).lastIndexOf(id);
+    if (i >= 0) s.history.splice(i, 1);
+  });
 }
 export function deleteQuest(id) { commit(s => { s.quests = s.quests.filter(q => q.id !== id); s.seeded = false; }); }
 
@@ -166,6 +203,14 @@ export function deleteQuest(id) { commit(s => { s.quests = s.quests.filter(q => 
 export function toggleDone(id) {
   return commit(s => {
     const q = findQuest(id); if (!q) return {};
+    // a weekly goal: each tick logs one more time this week (it is never "done", so it stays on the list)
+    if (q.goal) {
+      const now = Date.now();
+      q.goal.log.push(now);
+      s.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: now });
+      state.seeded = false;
+      return { done: false, goal: true, progress: goalProgress(q, now) };
+    }
     if (q.done) {   // un-tick: drop the latest history entry for it
       q.done = false; q.doneAt = null;
       const i = s.history.map(h => h.questId).lastIndexOf(id);
@@ -181,6 +226,7 @@ export function toggleDone(id) {
       q.due = next;
       q.subtasks.forEach(st => { st.done = false; });
       if (q.remind) q.remind = q.remind.multi ? { ...q.remind, at: nextMultiAt(q.remind.multi, at(q.due, '00:00') - 1), fired: false, dismissed: false } : q.remind.offset != null ? { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false } : null;
+      if (q.alerts) { q.remind = null; syncNearest(q, at(q.due, '00:00') - 1); }   // the alerts come back for the next occurrence
       return { done: true, next };
     }
     q.done = true; q.doneAt = Date.now();
@@ -230,6 +276,8 @@ export function markFired(ids) {
       q.remind.fired = true;
       // a repeating reminder comes back at its next time (it stays fired only once per occurrence)
       if (q.remind.multi) { q.remind.at = nextMultiAt(q.remind.multi, Date.now()); q.remind.fired = false; q.remind.dismissed = false; }
+      // a quest with several alerts moves on to its next one
+      else if (q.alerts) { q.remind = null; syncNearest(q, Date.now() + 1000); }
       s.notifs.push({ id: q.id, title: q.title, tier: q.tier, at: Date.now(), status: 'due' });
     }
     if (s.notifs.length > 50) s.notifs.splice(0, s.notifs.length - 50);

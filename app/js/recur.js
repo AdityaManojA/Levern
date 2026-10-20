@@ -10,6 +10,7 @@ export const REPEATS = [
   ['weekly', 'Every week'],
   ['monthly', 'Every month'],
   ['custom', 'On the days I choose…'],
+  ['goal', 'A goal: a set number of times a week'],   // not a repeat: a weekly goal (goals.js), no day
 ];
 const DAY_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];   // the picker starts on Monday

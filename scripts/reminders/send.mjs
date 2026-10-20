@@ -11,8 +11,12 @@ import { inflateRawSync } from 'node:zlib';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import webpush from 'web-push';
+import { usesAlerts, alertsOf, alertLabel } from '../../app/js/alerts.js';
 
 const WINDOW_MIN = 5;                        // the job runs every 5 minutes
+// GitHub often runs scheduled jobs late, so a quest reminder is still sent up to an hour after its moment.
+// Each reminder is recorded once it is sent (the sent keys), so a later run never sends it twice.
+const CATCHUP_MIN = 60;
 // deadline reminders, in minutes before the deadline, by priority (tier 0 = P1). Adjust to taste.
 export const LEADS = { 0: [20, 15, 10, 5], 1: [15, 10, 5], 2: [10, 5], 3: [5], 4: [], 5: [] };
 const KEEP = 600;                            // how many sent-keys to remember per person
@@ -56,7 +60,7 @@ export function dueNow({ quests = [], settings = {}, tz = 'UTC', now = Date.now(
 
   // 1. quest reminders at their exact moment (a reminder that came due in the last window)
   for (const q of open) {
-    if (q.remind && q.remind.at && q.remind.at <= now && q.remind.at > now - WINDOW_MIN * 60000) {
+    if (!usesAlerts(q) && q.remind && q.remind.at && q.remind.at <= now && q.remind.at > now - CATCHUP_MIN * 60000) {
       out.push({ key: `rem-${q.id}-${q.remind.at}`, title: `Reminder: ${q.title}`, body: q.due ? `Due ${q.due}${q.time ? ` at ${q.time}` : ''}` : 'Time for this one', url: `#/quest/${encodeURIComponent(q.id)}`, tier: q.tier ?? 3 });
     }
   }
@@ -64,15 +68,25 @@ export function dueNow({ quests = [], settings = {}, tz = 'UTC', now = Date.now(
   // 2. deadlines: upcoming within the next hour, due now, and overdue (once a day, at 9:00)
   for (const q of open) {
     if (!q.due) continue;
-    if (q.due === lp.date && q.time) {
+    if (usesAlerts(q)) {
+      // the quest's own reminders: each one goes off at its moment (0 = the due time)
+      const tier = q.tier ?? 3;
+      for (const a of alertsOf(q)) {
+        const diff = a.minutes - lp.minutes;
+        if (a.date !== lp.date || diff > 0 || diff <= -CATCHUP_MIN) continue;
+        const link = `#/quest/${encodeURIComponent(q.id)}`;
+        if (a.m === 0) out.push({ key: `now-${q.id}-${q.due}-${q.time}`, title: `Due now: ${q.title}`, body: `It was due at ${q.time || '09:00'}`, url: link, tier });
+        else out.push({ key: `alert-${q.id}-${q.due}-${q.time}-${a.m}`, title: `Reminder: ${q.title}`, body: `Due at ${q.time || '09:00'} · ${alertLabel(a.m).toLowerCase()}`, url: link, tier });
+      }
+    } else if (q.due === lp.date && q.time) {
       const t = toMinutes(q.time), diff = t - lp.minutes;
       const tier = q.tier ?? 3;
       for (const lead of LEADS[tier] || []) {
         if (diff > lead - WINDOW_MIN && diff <= lead) out.push({ key: `lead-${q.id}-${q.due}-${q.time}-${lead}`, title: `Due in ${lead} min: ${q.title}`, body: `P${tier + 1} · due at ${q.time}`, url: `#/quest/${encodeURIComponent(q.id)}`, tier });
       }
-      if (diff <= 0 && diff > -WINDOW_MIN) out.push({ key: `now-${q.id}-${q.due}-${q.time}`, title: `Due now: ${q.title}`, body: `It was due at ${q.time}`, url: `#/quest/${encodeURIComponent(q.id)}`, tier: q.tier ?? 3 });
+      if (diff <= 0 && diff > -CATCHUP_MIN) out.push({ key: `now-${q.id}-${q.due}-${q.time}`, title: `Due now: ${q.title}`, body: `It was due at ${q.time}`, url: `#/quest/${encodeURIComponent(q.id)}`, tier: q.tier ?? 3 });
     }
-    if (q.due === lp.date && !q.time && inWindow(lp.minutes, '09:00')) {
+    if (q.due === lp.date && !q.time && !usesAlerts(q) && inWindow(lp.minutes, '09:00')) {
       out.push({ key: `today-${q.id}-${q.due}`, title: `Due today: ${q.title}`, body: 'Finish it, or move its date', url: `#/quest/${encodeURIComponent(q.id)}`, tier: q.tier ?? 3 });
     }
     if (q.due < lp.date && inWindow(lp.minutes, '09:00')) {
