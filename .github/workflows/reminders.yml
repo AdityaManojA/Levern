@@ -1,6 +1,7 @@
 name: TaskFlow reminders
 
 # Sends due reminders, priority lead-up reminders and daily nudges as web push notifications. Runs every 5 minutes
+# (re-saved so GitHub picks up the schedule again).
 # (GitHub may run it a few minutes late). Needs the secrets listed in scripts/reminders/send.mjs.
 on:
   schedule:
