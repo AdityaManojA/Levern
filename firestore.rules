@@ -7,6 +7,19 @@ service cloud.firestore {
     match /solodeskWorkspaces/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+    // Client portal snapshots are separate from private owner workspaces.
+    match /solodeskPortals/{owner}/shares/{client} {
+      allow read: if request.auth != null && (request.auth.uid == owner ||
+        (exists(/databases/$(database)/documents/solodeskWorkspaces/$(owner)) &&
+          (resource.data.recipientUid == request.auth.uid ||
+            (request.auth.token.get('email_verified', false) == true &&
+             resource.data.recipientEmail == request.auth.token.get('email', '').lower()))));
+      allow create, update: if request.auth != null && request.auth.uid == owner &&
+        request.resource.data.keys().hasOnly(['ownerUid','clientId','recipientUid','recipientEmail','projectIds','invoiceIds','data']) &&
+        request.resource.data.ownerUid == owner && request.resource.data.clientId == client &&
+        request.resource.data.recipientUid is string && request.resource.data.recipientEmail is string;
+      allow delete: if request.auth != null && request.auth.uid == owner;
+    }
     // TaskFlow: each signed-in user can read/write only their own TaskFlow data (sync chunks and the
     // share/open summary Solodesk reads). Same uid, so Solodesk can read it for the same person.
     match /taskflowUsers/{uid}/{document=**} {
