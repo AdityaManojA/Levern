@@ -756,7 +756,8 @@ input.field, select.field, textarea.field, .field { font-family: inherit; font-w
 .day.out { opacity: .4; background: transparent; border-color: transparent; }
 .day.has { border-color: rgba(30,27,24,.18); }
 .day.today .dn { background: var(--ink); color: #fff; }
-.day.sel { background: var(--butter); border-color: var(--ink); box-shadow: 0 3px 0 var(--ink); transform: translateY(-1px); }
+/* web: the picked day is a lavender tile with a thin ink edge (phones use the butter outline below) */
+.day.sel { outline: none; background: var(--lav); border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); transform: none; }
 .day.sel .dots i { transform: scale(1.15); }
 .day.out.sel { opacity: .75; }
 
@@ -859,3 +860,9 @@ input.field, select.field, textarea.field, .field { font-family: inherit; font-w
 .lb-x { font-weight: 700; font-variant-numeric: tabular-nums; }
 .lb-refresh { display: block; margin: 12px auto 0; }
 @media (prefers-reduced-motion: reduce) { .lb-slot, .lb-row { animation: none; } }
+
+/* phone: the picked day is a clean 2px outline, no heavy ring or shadow */
+@media (max-width: 640px) {
+  .day.sel { outline: none; box-shadow: none; transform: none; border: 2px solid var(--ink); background: var(--butter); }
+  .day.sel.out { opacity: .75; }
+}
