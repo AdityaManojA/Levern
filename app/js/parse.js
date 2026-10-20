@@ -48,7 +48,9 @@ export function parseQuest(text, now = new Date()) {
   take(/(?:^|\s)(?:p|!)([1-6])\b/i, m => { tier = +m[1] - 1; chips.push({ kind: 'tier', text: `P${m[1]}` }); });
 
   // repeat
-  take(/\bevery\s*day\b|\bdaily\b/i, m => { repeat = { freq: 'daily' }; chips.push({ kind: 'repeat', text: m[0].trim() }); });
+  // "alternate days" / "every other day": every second day
+  take(/\balternate\s+days?\b|\bevery\s+other\s+days?\b/i, m => { repeat = { freq: 'alternate' }; chips.push({ kind: 'repeat', text: m[0].trim() }); });
+  if (!repeat) take(/\bevery\s*day\b|\bdaily\b/i, m => { repeat = { freq: 'daily' }; chips.push({ kind: 'repeat', text: m[0].trim() }); });
   if (!repeat) take(/\bevery\s+weekdays?\b|\bweekdays\b/i, m => { repeat = { freq: 'weekdays' }; chips.push({ kind: 'repeat', text: m[0].trim() }); });
   if (!repeat) take(new RegExp(`\\bevery\\s+${DAY_RE}\\b`, 'i'), m => {
     repeat = { freq: 'weekly' }; due = nextWeekday(today, dayIndex(m[1]), false); chips.push({ kind: 'repeat', text: m[0].trim() });

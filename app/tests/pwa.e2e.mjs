@@ -1,6 +1,6 @@
 // End-to-end PWA check in a headless Chromium browser (Edge or Chrome) over the DevTools protocol:
 // service worker, offline, installability, notifications, and reminders while the app is closed.
-// Run: npm run test:pwa   (needs Python for the static server; set BROWSER_PATH to use another browser)
+// Run: npm run test:pwa   (set BROWSER_PATH to use another browser)
 import { spawn } from 'node:child_process';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -17,7 +17,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const results = [];
 const check = (name, ok, info = '') => { results.push({ name, ok: !!ok, info }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${info ? '  — ' + info : ''}`); };
 
-let server = spawn('python', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1', '--directory', APP_DIR], { stdio: 'ignore' });
+let server = spawn(process.execPath, [join(APP_DIR, '..', 'server.mjs'), String(PORT)], { stdio: 'ignore', env: { ...process.env, TASKFLOW_DATA: mkdtempSync(join(tmpdir(), 'tf-feed-')) } });
 const profile = mkdtempSync(join(tmpdir(), 'tf-edge-'));
 const edge = spawn(EDGE, ['--headless=new', `--remote-debugging-port=${DBG}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', 'about:blank'], { stdio: 'ignore' });
 await sleep(2500);
@@ -67,6 +67,8 @@ try {
   check('Manifest parses without errors', man.errors.length === 0, man.errors.map(e => e.message).join('; '));
 
   // reminder while the app is open (in the background is the same code path): shown via the service worker
+  // start from no reminders (the sample quests carry one at a fixed time of day)
+  await evalIn(p.sessionId, `window.TaskFlow.store.commit(s => { s.quests.forEach(q => { q.remind = null; }); }); return 1;`);
   await evalIn(p.sessionId, `const s = window.TaskFlow.store; const q = s.addQuest({ title: 'Open-app reminder', tier: 1 }); s.setReminder(q.id, { at: Date.now() + 2000 }); return q.id;`);
   await sleep(4000);
   const shown1 = await evalIn(p.sessionId, `const r = await navigator.serviceWorker.ready; const n = await r.getNotifications(); return { list: n.map(x => ({ title: x.title, body: x.body, actions: (x.actions || []).map(a => a.title) })), badge: document.querySelector('[data-rcount]').textContent, title: document.title };`);

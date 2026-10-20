@@ -2,6 +2,7 @@
 import { getState, TIER_COLORS } from '../store.js';
 import { summary, lastDays, historyDay } from '../stats.js';
 import { fromStr, fmtDate, fmtTime, WEEKDAYS } from '../dates.js';
+import { swap } from '../motion.js';
 import { esc } from '../ui.js';
 
 let range = 30, showAll = false;
@@ -52,7 +53,7 @@ export function render() {
     <div class="card">
       ${shown.length ? shown.map(h => { const d = historyDay(h), head = d !== lastDay ? `<div class="group-h" style="margin-top:${lastDay ? 12 : 2}px">${esc(fmtDate(d))}</div>` : ''; lastDay = d;
         const t = new Date(h.doneAt);
-        return head + `<div class="hist"><span><span class="dotc" style="--c:${TIER_COLORS[h.tier ?? 3]};display:inline-block;vertical-align:-1px;margin-right:6px"></span>${esc(h.title)}</span><span class="small">${fmtTime(`${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}`)}</span></div>`; }).join('')
+        return head + `<div class="hist" data-key="h-${h.doneAt}"><span><span class="dotc" style="--c:${TIER_COLORS[h.tier ?? 3]};display:inline-block;vertical-align:-1px;margin-right:6px"></span>${esc(h.title)}</span><span class="small">${fmtTime(`${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}`)}</span></div>`; }).join('')
         : '<div class="empty"><b>No history yet</b><span class="small">Every quest you finish shows up here.</span></div>'}
       ${hist.length > 25 && !showAll ? `<button class="btn white sm block" data-act="hist-all" style="margin-top:10px">Show all ${hist.length}</button>` : ''}
     </div>`;
@@ -61,4 +62,4 @@ export const actions = {
   range: el => { range = +el.dataset.n; rerender(); },
   'hist-all': () => { showAll = true; rerender(); },
 };
-function rerender() { const y = scrollY; document.getElementById('view').innerHTML = render(); scrollTo(0, y); }
+function rerender() { swap(render({})); }

@@ -2,13 +2,16 @@
 import { getState, tierLabel, TIER_COLORS, isReminderDue, reminderBase } from '../store.js';
 import { dueLabel, dueStatus, relTime, fmtStamp, todayStr, addDays, at } from '../dates.js';
 import { esc, ICON } from '../ui.js';
+import { describe } from '../recur.js';
 
+// the app's own bell (same drawing as the top bar), small, instead of the 🔔 emoji
+const BELL = '<svg class="rbell" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
 export function reminderChip(q) {
   if (!q.remind || q.done) return '';
-  if (isReminderDue(q)) return '<span class="rchip due">🔔 due now</span>';
+  if (isReminderDue(q)) return `<span class="rchip due">${BELL}due now</span>`;
   if (q.remind.fired) return '';
   const soon = q.remind.at - Date.now() < 86400000;
-  return `<span class="rchip">🔔 ${esc(soon ? relTime(q.remind.at) : fmtStamp(q.remind.at))}</span>`;
+  return `<span class="rchip">${BELL}${esc(soon ? relTime(q.remind.at) : fmtStamp(q.remind.at))}</span>`;
 }
 
 export function questRow(q, now = new Date()) {
@@ -16,14 +19,40 @@ export function questRow(q, now = new Date()) {
   const meta = [
     `<span>${esc(tierLabel(q.tier))}</span>`,
     q.due ? `<span class="${st === 'overdue' ? 'od' : ''}">${esc(dueLabel(q, now))}</span>` : '',
-    q.repeat ? `<span class="tag">${ICON.repeat}${{ daily: 'daily', weekdays: 'weekdays', weekly: 'weekly', monthly: 'monthly' }[q.repeat.freq] || ''}</span>` : '',
+    q.repeat ? `<span class="tag">${ICON.repeat}${{ daily: 'daily', alternate: 'alternate days', weekdays: 'weekdays', weekly: 'weekly', monthly: 'monthly' }[q.repeat.freq] || ''}</span>` : '',
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',
+    q.sketches?.length ? `<span class="tag" title="Sketches">${ICON.sketch}${q.sketches.length}</span>` : '',
     reminderChip(q),
+    q.sample ? '<span class="exchip" title="An example to show how TaskFlow works. It stays out of your calendar. Edit it to make it yours.">Example</span>' : '',
   ].join('');
-  return `<div class="q${q.done ? ' done' : ''}${st === 'overdue' ? ' overdue' : ''}${isReminderDue(q) ? ' rdue' : ''}" style="--c:${TIER_COLORS[q.tier]}">
+  const open = expanded.has(q.id);
+  // tap the quest to open it in place (subtasks, or its details); tap again to close; long-press or Edit to edit
+  return `<div data-key="q-${q.id}" class="q${q.done ? ' done' : ''}${st === 'overdue' ? ' overdue' : ''}${isReminderDue(q) ? ' rdue' : ''}${open ? ' open' : ''}" style="--c:${TIER_COLORS[q.tier]}">
     <button class="chk" data-act="toggle" data-id="${q.id}" aria-label="${q.done ? 'Mark not done' : 'Complete'}: ${esc(q.title)}"></button>
-    <button class="qb" data-act="open" data-id="${q.id}"><span class="qt">${esc(q.title)}</span><span class="qm">${meta}</span></button>
+    <button class="qb" data-act="expand" data-id="${q.id}" aria-expanded="${open}" aria-controls="qx-${q.id}" aria-description="Long-press to edit"><span class="qt">${esc(q.title)}</span><span class="qm">${meta}</span></button>
     <button class="qbell${q.remind && !q.done && !q.remind.dismissed ? ' set' : ''}" data-act="remind-edit" data-id="${q.id}" aria-label="Reminder for ${esc(q.title)}">${ICON.bell}</button>
+    ${open ? questPanel(q, now) : ''}
+  </div>`;
+}
+
+// which quests are open in place, kept across re-renders
+export const expanded = new Set();
+
+// the part that drops down under an open quest: its subtasks to tick, or (without any) its details
+export function questPanel(q, now = new Date()) {
+  const subs = q.subtasks || [];
+  const info = [
+    ['Priority', esc(tierLabel(q.tier))],
+    q.due ? ['Due', esc(dueLabel(q, now))] : null,
+    q.repeat ? ['Repeats', esc(describe(q.repeat))] : null,
+    q.remind && !q.remind.dismissed && !q.done ? ['Reminder', esc(fmtStamp(q.remind.at))] : null,
+    q.sketches?.length ? ['Sketches', `${q.sketches.length}`] : null,
+  ].filter(Boolean);
+  const notes = (q.notes || '').trim();
+  return `<div class="qx" id="qx-${q.id}">
+    ${subs.length ? `<div class="qx-subs" role="group" aria-label="Subtasks">${subs.map(s => `<button type="button" class="qx-sub${s.done ? ' done' : ''}" role="checkbox" aria-checked="${!!s.done}" data-act="sub-toggle" data-id="${q.id}" data-sid="${s.id}"><span class="qx-box" aria-hidden="true"></span><span>${esc(s.title)}</span></button>`).join('')}</div>` : ''}
+    ${!subs.length || notes ? `<dl class="qx-info">${subs.length ? '' : info.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}${notes ? `<div class="qx-notes"><dt>Notes</dt><dd>${esc(notes.length > 280 ? notes.slice(0, 280) + '…' : notes)}</dd></div>` : ''}</dl>` : ''}
+    <div class="qx-acts"><button type="button" class="mini" data-act="open" data-id="${q.id}">${ICON.pen} Edit</button>${subs.length ? `<span class="small">${subs.filter(s => s.done).length} of ${subs.length} done</span>` : ''}</div>
   </div>`;
 }
 

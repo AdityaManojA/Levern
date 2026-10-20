@@ -5,6 +5,8 @@ import { getState, subscribe, markFired, dueReminders, upcomingReminders, findQu
 import * as N from './notify.js';
 import { toast, play } from './ui.js';
 import { dueLabel } from './dates.js';
+import { mascot } from './mascot.js';
+import * as nudges from './nudges.js';
 
 const baseTitle = document.title;
 let lastSchedule = '';
@@ -15,7 +17,7 @@ export function body(q, count) {
   return parts.join(' · ') + (count > 1 ? `\n${count} reminders due in TaskFlow` : '');
 }
 
-async function check() {
+export async function check() {
   const st = getState(), now = Date.now();
   const fresh = st.quests.filter(q => q.remind && !q.remind.fired && !q.done && q.remind.at <= now);
   if (!fresh.length) return;
@@ -32,21 +34,33 @@ async function check() {
       });
     }
   }
-  toast(fresh.length > 1 ? `🔔 ${fresh.length} reminders due` : `🔔 Reminder: ${fresh[0].title}`, 'remind');
-  play('click', 0.8);
+  toast(fresh.length > 1 ? `${fresh.length} reminders due` : `Reminder: ${fresh[0].title}`, 'remind');
+  mascot.hold({ count, title: fresh[fresh.length - 1].title });
+  play('chime');
   document.querySelectorAll('.bell').forEach(b => { b.classList.remove('ring'); void b.offsetWidth; b.classList.add('ring'); });
 }
 
+let lastCount = null;
 export function paintBadges() {
   const n = dueReminders().length, txt = n > 99 ? '99+' : String(n);
-  document.querySelectorAll('[data-rcount]').forEach(b => { b.textContent = txt; b.hidden = !n; });
+  const grew = lastCount !== null && n > lastCount;
+  lastCount = n;
+  document.querySelectorAll('[data-rcount]').forEach(b => {
+    b.textContent = txt; b.hidden = !n;
+    if (grew) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+  });
+  document.querySelectorAll('.bell').forEach(b => b.classList.toggle('has-due', !!n));
+  // he only holds a card while something is due; keep its count in step
+  if (!n) mascot.release();
+  else if (mascot.holding()) { const d = dueReminders(); mascot.hold({ count: n, title: d[d.length - 1].title }); }
   document.title = n ? `(${txt}) ${baseTitle}` : baseTitle;
   N.setBadge(n);
 }
 
 // keep the service worker's copy of the schedule in step with the app
 function mirror() {
-  const items = upcomingReminders().concat(dueReminders()).map(q => ({ id: q.id, title: q.title, at: q.remind.at, body: body(q, 1) }));
+  const items = upcomingReminders().concat(dueReminders()).map(q => ({ id: q.id, title: q.title, at: q.remind.at, body: body(q, 1) }))
+    .concat(nudges.upcoming());
   const sig = JSON.stringify(items);
   if (sig === lastSchedule) return;
   lastSchedule = sig;
@@ -74,7 +88,11 @@ export async function startReminders() {
   });
   subscribe(() => { paintBadges(); mirror(); });
   paintBadges(); mirror();
+  // reminders already due when the app opens: he's holding them
+  const due = dueReminders(); if (due.length) setTimeout(() => mascot.hold({ count: due.length, title: due[due.length - 1].title }), 1500);
   check();
   setInterval(check, 1000);
+  setInterval(mirror, 15 * 60000);   // the day's nudges move on: keep the service worker's copy current
+  nudges.startNudges();
   document.addEventListener('visibilitychange', check);
 }

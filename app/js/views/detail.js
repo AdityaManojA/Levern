@@ -6,6 +6,7 @@ import { googleLink, buildICS } from '../ics.js';
 import { esc, ICON, toast, play, confirmBox, download } from '../ui.js';
 import { tierPicker, reminderPicker, bindPicker } from './common.js';
 import { requestPermission } from '../notify.js';
+import { sketchThumbs, openInk, openSketch } from './ink.js';
 
 let current = null;
 
@@ -45,8 +46,8 @@ export function render(params) {
     <div data-picker>${reminderPicker(q)}</div>
 
     <label class="lbl">Subtasks ${q.subtasks.length ? `<span class="small">${done}/${q.subtasks.length}</span>` : ''}</label>
-    <div class="card" style="padding:6px 12px">
-      ${q.subtasks.map(s => `<div class="sub${s.done ? ' done' : ''}" style="--c:${TIER_COLORS[s.tier ?? q.tier]}">
+    <div class="card" data-tour="subtasks" style="padding:6px 12px">
+      ${q.subtasks.map(s => `<div data-key="s-${s.id}" class="sub${s.done ? ' done' : ''}" style="--c:${TIER_COLORS[s.tier ?? q.tier]}">
         <button class="chk${s.done ? ' on' : ''}" data-act="sub-toggle" data-sid="${s.id}" aria-label="Toggle subtask"></button>
         <input class="st" value="${esc(s.title)}" data-input="sub-title" data-sid="${s.id}" aria-label="Subtask">
         <select data-change="sub-tier" data-sid="${s.id}" aria-label="Subtask priority">${TIER_COLORS.map((_, i) => `<option value="${i}" ${i === (s.tier ?? q.tier) ? 'selected' : ''}>P${i + 1}</option>`).join('')}</select>
@@ -57,6 +58,9 @@ export function render(params) {
 
     <label class="lbl" for="notes">Notes</label>
     <textarea class="field" id="notes" data-input="notes" placeholder="Links, details, anything">${esc(q.notes)}</textarea>
+
+    <label class="lbl">Sketches and handwriting ${q.sketches?.length ? `<span class="small">${q.sketches.length}</span>` : ''}</label>
+    ${sketchThumbs(q)}
 
     <div class="sec">Do it</div>
     <div class="row-btns">
@@ -97,6 +101,8 @@ export function mount(main) {
 export const actions = {
   'sub-toggle': el => { const s = current.subtasks.find(x => x.id === el.dataset.sid); updateSubtask(current.id, s.id, { done: !s.done }); play('click', 0.6); },
   'sub-del': el => removeSubtask(current.id, el.dataset.sid),
+  'ink-new': el => openInk(current.id, { kind: el.dataset.kind }),
+  'sketch-view': el => openSketch(current.id, el.dataset.kid),
   'due-quick': el => { const d = el.dataset.d; updateQuest(current.id, d === '' ? { due: null, time: null, repeat: null } : { due: addDaysFromToday(+d) }); play('click', 0.5); },
   ics: () => { download(`${current.title.replace(/[^\w\- ]+/g, '').trim() || 'quest'}.ics`, buildICS([current]), 'text/calendar'); toast('Calendar file saved. Open it to add the event.'); },
   delete: async () => {

@@ -1,13 +1,14 @@
 // Quests list: filters (Today / Upcoming / Someday / Done / All), sorting and search.
 import { getState, sortQuests, SORTS } from '../store.js';
 import { dueStatus } from '../dates.js';
+import { swap, morph } from '../motion.js';
 import { esc } from '../ui.js';
 import { questRow } from './common.js';
 
 const FILTERS = [['today', 'Today'], ['upcoming', 'Upcoming'], ['someday', 'Someday'], ['done', 'Done'], ['all', 'All']];
 let filter = 'today', sort = 'smart', query = '';
 
-const match = q => !query || (q.title + ' ' + q.notes + ' ' + q.subtasks.map(s => s.title).join(' ')).toLowerCase().includes(query.toLowerCase());
+const match = q => !query || (q.title + ' ' + q.notes + ' ' + q.subtasks.map(s => s.title).join(' ') + ' ' + (q.sketches || []).map(k => k.text || '').join(' ')).toLowerCase().includes(query.toLowerCase());
 const inFilter = (q, f) => {
   const st = dueStatus(q);
   if (f === 'done') return q.done;
@@ -25,16 +26,16 @@ export function render(params) {
   if (filter === 'done') list.sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
   let body;
   if (!list.length) {
-    body = `<div class="card empty"><b>${query ? 'No matches' : { today: 'Nothing due today', upcoming: 'Nothing scheduled', someday: 'No someday quests', done: 'Nothing done yet', all: 'No quests yet' }[filter]}</b>
+    body = `<div class="card empty">${query ? '' : '<span class="empty-mochi" data-sprite="box-peek" data-scale=".9"></span>'}<b>${query ? 'No matches' : { today: 'Nothing due today', upcoming: 'Nothing scheduled', someday: 'No someday quests', done: 'Nothing done yet', all: 'No quests yet' }[filter]}</b>
       <span class="small">${query ? 'Try another word.' : 'Tap + to add one. Try "Call mum tomorrow at 6pm".'}</span></div>`;
   } else if (filter === 'today' && sort === 'smart') {
     const od = list.filter(q => dueStatus(q) === 'overdue'), td = list.filter(q => dueStatus(q) !== 'overdue');
-    body = (od.length ? `<div class="group-h red">Overdue · ${od.length}</div>${od.map(q => questRow(q)).join('')}` : '') +
-      (td.length ? `<div class="group-h">Due today · ${td.length}</div>${td.map(q => questRow(q)).join('')}` : '');
+    body = (od.length ? `<div class="group-h red" data-key="g-od">Overdue · ${od.length}</div>${od.map(q => questRow(q)).join('')}` : '') +
+      (td.length ? `<div class="group-h" data-key="g-td">Due today · ${td.length}</div>${td.map(q => questRow(q)).join('')}` : '');
   } else body = list.map(q => questRow(q)).join('');
   const count = f => all.filter(q => inFilter(q, f)).length;
   return `
-    <div class="h-sub">Your tasks. Tap one for details.</div>
+    <div class="h-sub">Your tasks. Tap one to open it, hold to edit.</div>
     <h1 class="h-title">Quests</h1>
     <div class="seg" role="tablist">${FILTERS.map(([k, l]) => `<button role="tab" aria-selected="${k === filter}" class="${k === filter ? 'on' : ''}" data-act="filter" data-f="${k}">${l}<span class="n">${count(k)}</span></button>`).join('')}</div>
     <div class="toolbar">
@@ -53,7 +54,7 @@ export function onInput(el) {
   query = el.value;
   // re-render the list only, so the search box keeps focus
   const tmp = document.createElement('div'); tmp.innerHTML = render({});
-  document.getElementById('qlist').replaceWith(tmp.querySelector('#qlist'));
+  morph(document.getElementById('view'), () => document.getElementById('qlist').replaceWith(tmp.querySelector('#qlist')));
   document.querySelectorAll('.seg .n').forEach((n, i) => { n.textContent = tmp.querySelectorAll('.seg .n')[i].textContent; });
 }
-function rerender() { const y = scrollY; document.getElementById('view').innerHTML = render({}); scrollTo(0, y); }
+function rerender() { swap(render({})); }

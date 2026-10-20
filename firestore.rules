@@ -1,0 +1,29 @@
+rules_version = '2';
+// Firestore rules for the shared project (TaskFlow + Solodesk). Solodesk deploys them
+// (Solodesk-MVP/firestore.rules); keep this file and Solodesk's the same.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Solodesk: each signed-in user can read/write only their own workspace document.
+    match /solodeskWorkspaces/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // TaskFlow: each signed-in user can read/write only their own TaskFlow data (sync chunks and the
+    // share/open summary Solodesk reads). Same uid, so Solodesk can read it for the same person.
+    match /taskflowUsers/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /taskflowUsers/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // TaskFlow leaderboard: a name and EXP for people who chose to show on the board (off by default).
+    // Anyone signed in can read the board; only the owner writes their own entry, and only these fields.
+    match /taskflowBoard/{uid} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'exp', 'updated'])
+        && request.resource.data.exp is int && request.resource.data.exp >= 0
+        && request.resource.data.name is string && request.resource.data.name.size() <= 30;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

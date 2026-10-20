@@ -1,9 +1,10 @@
-// Repeating quests. repeat = { freq: 'daily' | 'weekdays' | 'weekly' | 'monthly', interval?: number }
+// Repeating quests. repeat = { freq: 'daily' | 'alternate' | 'weekdays' | 'weekly' | 'monthly', interval?: number }
 import { addDays, addMonths, weekday, todayStr } from './dates.js';
 
 export const REPEATS = [
   ['', 'Does not repeat'],
   ['daily', 'Every day'],
+  ['alternate', 'Every other day'],
   ['weekdays', 'Every weekday (Mon–Fri)'],
   ['weekly', 'Every week'],
   ['monthly', 'Every month'],
@@ -14,6 +15,7 @@ export function nextDue(due, r) {
   const n = Math.max(1, r.interval || 1);
   switch (r.freq) {
     case 'daily': return addDays(due, n);
+    case 'alternate': return addDays(due, 2 * n);
     case 'weekdays': { let d = addDays(due, 1); while (weekday(d) === 0 || weekday(d) === 6) d = addDays(d, 1); return d; }
     case 'weekly': return addDays(due, 7 * n);
     case 'monthly': return addMonths(due, n);

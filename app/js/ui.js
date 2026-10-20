@@ -1,5 +1,6 @@
 // Small UI helpers shared by the views.
 import { getState } from './store.js';
+import { sfx } from './sound.js';
 
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -25,6 +26,10 @@ export const ICON = {
   download: ic('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', 18),
   play: ic('<path d="M8 5v14l11-7z"/>', 20),
   pause: ic('<path d="M8 5v14M16 5v14"/>', 20),
+  pen: ic('<path d="M15.5 4.5l4 4L9 19l-5 1 1-5z"/><path d="M13.5 6.5l4 4"/>', 18),
+  eraser: ic('<path d="M8 20h12M5.5 14.5l8-8a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L12 18H8z"/><path d="M9.5 10.5l5 5"/>', 18),
+  undo: ic('<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>', 18),
+  sketch: ic('<path d="M4 17c3-6 5-9 7-9s0 8 3 8 3-5 6-6"/>', 13),
 };
 
 let toastT;
@@ -44,9 +49,10 @@ export const sheet = {
     s.innerHTML = `<div class="grab"></div>${html}`;
     void s.offsetWidth; s.classList.add('open'); $('#scrim').classList.add('on');
     s.scrollTop = 0;
+    document.dispatchEvent(new CustomEvent('sheet:open'));
     return s;
   },
-  close() { $('#sheet').classList.remove('open'); $('#scrim').classList.remove('on'); },
+  close() { const was = this.isOpen(); $('#sheet').classList.remove('open'); $('#scrim').classList.remove('on'); if (was) document.dispatchEvent(new CustomEvent('sheet:close')); },
   isOpen: () => $('#sheet').classList.contains('open'),
 };
 
@@ -67,13 +73,5 @@ export function download(name, text, type) {
 }
 
 /* ---------- sounds ---------- */
-const SND = { click: 'sounds/click.wav', coin: 'sounds/coin.wav' };
-const audio = {};
-export function play(name, vol = 1) {
-  const s = getState().settings;
-  if (!s.sound) return;
-  audio[name] ||= Object.assign(new Audio(SND[name]), { preload: 'auto' });
-  const a = audio[name].cloneNode();
-  a.volume = Math.max(0, Math.min(1, s.volume * vol));
-  a.play().catch(() => {});
-}
+// all sounds go through sound.js (Web Audio, preloaded); play() keeps the old call sites working
+export function play(name, vol = 1, rate = 1) { sfx(name, { vol, rate }); }
