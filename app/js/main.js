@@ -15,6 +15,8 @@ import * as focus from './views/focus.js';
 import * as stats from './views/stats.js';
 import * as settings from './views/settings.js';
 import * as developer from './views/developer.js';
+import * as leaderboard from './views/leaderboard.js';
+import { startBoard } from './board.js';
 import { startSync, onSyncStatus } from './sync.js';
 import { openAdd } from './views/add.js';
 import * as remindersPanel from './views/reminders.js';
@@ -34,7 +36,7 @@ import * as account from './account.js';
 
 store.init();
 
-const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, developer };
+const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, developer, leaderboard };
 const NAV = [['home', 'Home'], ['quests', 'Quests'], ['add'], ['calendar', 'Calendar'], ['focus', 'Focus']];
 let route = { name: 'home', params: {} };
 
@@ -184,6 +186,7 @@ preloadSounds();
 startControls();
 startMenu();
 startAccount();
+startBoard();
 go();
 // Mochi lives on the nav bar
 const mochi = createMochi({

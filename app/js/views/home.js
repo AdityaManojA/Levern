@@ -21,7 +21,7 @@ export function render() {
     <div class="grid2 grid4">
       <a class="stat" href="#/stats" style="background:var(--sky)"><div class="k">Today</div><div class="v">${sum.todayCount} / ${s.target}</div><div class="s">${left ? `${left} more to hit your target` : 'target hit!'}</div></a>
       <a class="stat" href="#/stats" style="background:var(--coral)"><div class="k">Streak</div><div class="v">${sum.current}</div><div class="s">${sum.keptToday ? 'kept today' : 'days in a row'}</div></a>
-      <a class="stat" href="#/stats" style="background:var(--butter)"><div class="k">EXP</div><div class="v">${sum.exp.toLocaleString()}</div><div class="s">+${sum.todayExp} today</div></a>
+      <a class="stat" href="#/leaderboard" data-tour="exp" aria-label="EXP ${sum.exp}. Open the leaderboard" style="background:var(--butter)"><div class="k">EXP <span class="lb-hint" aria-hidden="true">Leaderboard ›</span></div><div class="v">${sum.exp.toLocaleString()}</div><div class="s">+${sum.todayExp} today</div></a>
       <a class="stat" href="#/focus" style="background:var(--mint)"><div class="k">Focus</div><div class="v">${sum.todayFocus}m</div><div class="s">focused today</div></a>
     </div>
     ${overdue.length || rem ? `<div class="card alert">
