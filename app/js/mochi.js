@@ -258,9 +258,13 @@ export function createMochi(env) {
   const IDLES = pool([['ear-twitch', 3], ['look-around', 3], ['yawn', 2], ['sneeze', 2], ['sniff', 2], ['face-wash', 2], ['groom', 2], ['scratch', 2], ['spot', 2],
     ['stretch', 2], ['back-stretch', 2], ['tail-wrap', 2], ['look-back', 2], ['sitting-pretty', 2], ['happy-wiggle', 2], ['confused', 2], ['eat', 2],
     ['tail-chase', 2], ['cursor-swipe', 2], ['follow-finger', 2], ['excited', 2], ['sad', 1], ['wave', 2], ['heart-eyes', 2], ['startled', 1.5],
-    ['surprised', 1.5], ['suspicious', 1.5], ['celebrate', 1.5], ['victory', 1], ['happy-spin', 1.5]]);
+    ['surprised', 1.5], ['suspicious', 1.5], ['celebrate', 1.5], ['victory', 1], ['happy-spin', 1.5],
+    ['tail-balance', 2], ['curious-sniff', 1.5], ['seated-turn', 1.5], ['play-bow', 1.5], ['roll', 1.5], ['tail-puff', 1.5], ['relax', 1.5],
+    ['window-watch', 1], ['drink', 1.5], ['play-with-yarn', 1.5], ['shake-off', 1], ['dry-off', 1], ['chasing-butterfly', 1.5], ['side-roll', 1.5],
+    ['play-in-leaves', 1], ['play-flip', 1.5], ['peek', 1]]);
   const TAPS = pool([['boop', 4], ['happy-wiggle', 2], ['excited', 2], ['confused', 2], ['wave', 2], ['surprised', 2], ['cursor-swipe', 1.5],
-    ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 2], ['heart-eyes', 2], ['startled', 1.5], ['happy-spin', 1.5], ['suspicious', 1], ['victory', 1]]);
+    ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 2], ['heart-eyes', 2], ['startled', 1.5], ['happy-spin', 1.5], ['suspicious', 1], ['victory', 1],
+    ['belly-flop', 2], ['startled-jump', 2], ['angry-stomp', 1], ['knock-over', 1.5], ['scared', 1.5], ['play-pounce', 1.5], ['play-in-water', 1], ['shake-off', 1]]);
   const TAP_LINES = { boop: ['boop', 'mrp!', ':3'], 'happy-wiggle': ['♪', 'hehe'], excited: ['!!', 'ooh!'], confused: ['?', 'huh?'], wave: ['hi!', 'hello!'],
     surprised: ['!', 'oh!'], 'cursor-swipe': ['gotcha', 'swipe!'], 'sitting-pretty': ['ta-da'], sneeze: ['achoo!'], celebrate: ['yay!'], 'heart-eyes': ['♥', 'purr…'] };
   const recent = [];
