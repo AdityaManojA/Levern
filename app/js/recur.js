@@ -1,4 +1,5 @@
-// Repeating quests. repeat = { freq: 'daily' | 'alternate' | 'weekdays' | 'weekly' | 'monthly', interval?: number }
+// Repeating quests. repeat = { freq: 'daily' | 'alternate' | 'weekdays' | 'weekly' | 'monthly' | 'custom', interval?: number,
+// days?: [0..6] } where days are the weekdays picked for 'custom' (0 = Sunday, 6 = Saturday).
 import { addDays, addMonths, weekday, todayStr } from './dates.js';
 
 export const REPEATS = [
@@ -8,8 +9,17 @@ export const REPEATS = [
   ['weekdays', 'Every weekday (Mon–Fri)'],
   ['weekly', 'Every week'],
   ['monthly', 'Every month'],
+  ['custom', 'On the days I choose…'],
 ];
-export const describe = r => !r ? '' : (REPEATS.find(x => x[0] === r.freq) || [, ''])[1];
+const DAY_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];   // the picker starts on Monday
+// "Mon Wed Fri", in week order
+export const daysLabel = days => DAY_ORDER.filter(d => (days || []).includes(d)).map(d => DAY_NAME[d]).join(' ');
+export const describe = r => !r ? '' : r.freq === 'custom' ? (r.days?.length ? `On ${daysLabel(r.days)}` : 'On chosen days') : (REPEATS.find(x => x[0] === r.freq) || [, ''])[1];
+// the short tag shown on a quest row
+export const repeatShort = r => !r ? '' : r.freq === 'custom' ? daysLabel(r.days) : ({ daily: 'daily', alternate: 'alternate days', weekdays: 'weekdays', weekly: 'weekly', monthly: 'monthly' }[r.freq] || '');
+// the seven day buttons: pressed ones are the days the quest repeats on
+export const dayChips = days => `<div class="daychips" role="group" aria-label="Repeats on">${DAY_ORDER.map(d => `<button type="button" class="${(days || []).includes(d) ? 'on' : ''}" data-day="${d}" aria-pressed="${(days || []).includes(d)}">${DAY_NAME[d]}</button>`).join('')}</div>`;
 
 export function nextDue(due, r) {
   const n = Math.max(1, r.interval || 1);
@@ -19,6 +29,13 @@ export function nextDue(due, r) {
     case 'weekdays': { let d = addDays(due, 1); while (weekday(d) === 0 || weekday(d) === 6) d = addDays(d, 1); return d; }
     case 'weekly': return addDays(due, 7 * n);
     case 'monthly': return addMonths(due, n);
+    case 'custom': {
+      // the next picked weekday after this one (within a week, since at least one day is picked)
+      if (!r.days?.length) return null;
+      let d = due;
+      for (let i = 0; i < 7; i++) { d = addDays(d, 1); if (r.days.includes(weekday(d))) return d; }
+      return null;
+    }
     default: return null;
   }
 }

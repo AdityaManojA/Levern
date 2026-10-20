@@ -378,7 +378,8 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 
 
 /* ---------- Mochi (art moves only by its own frames: no CSS animation or transition on him) ---------- */
-.mochi { position: fixed; left: 0; top: 0; z-index: 31; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; outline: none; }
+.mochi { position: fixed; left: 0; top: 0; z-index: 31; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; outline: none;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .mochi.over { z-index: 42; }
 .mochi.raised { z-index: 82; }
 .mochi .flip, .mochi .act { width: 100%; height: 100%; }
@@ -756,7 +757,8 @@ input.field, select.field, textarea.field, .field { font-family: inherit; font-w
 .day.out { opacity: .4; background: transparent; border-color: transparent; }
 .day.has { border-color: rgba(30,27,24,.18); }
 .day.today .dn { background: var(--ink); color: #fff; }
-.day.sel { background: var(--butter); border-color: var(--ink); box-shadow: 0 3px 0 var(--ink); transform: translateY(-1px); }
+/* web: the picked day is a lavender tile with a thin ink edge (phones use the butter outline below) */
+.day.sel { outline: none; background: var(--lav); border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); transform: none; }
 .day.sel .dots i { transform: scale(1.15); }
 .day.out.sel { opacity: .75; }
 
@@ -859,3 +861,20 @@ input.field, select.field, textarea.field, .field { font-family: inherit; font-w
 .lb-x { font-weight: 700; font-variant-numeric: tabular-nums; }
 .lb-refresh { display: block; margin: 12px auto 0; }
 @media (prefers-reduced-motion: reduce) { .lb-slot, .lb-row { animation: none; } }
+
+/* phone: the picked day is a clean 2px outline, no heavy ring or shadow */
+@media (max-width: 640px) {
+  .day.sel { outline: none; box-shadow: none; transform: none; border: 2px solid var(--ink); background: var(--butter); }
+  .day.sel.out { opacity: .75; }
+}
+
+/* repeat on chosen days: seven day buttons under the Repeat menu */
+.daychips { display: flex; gap: 6px; margin-top: 8px; }
+.daychips button { flex: 1; min-width: 0; padding: 9px 0; border: 2px solid var(--ink); border-radius: 12px; background: #fff; font-weight: 700; font-size: 13px; transition: background .25s var(--ease), transform .2s var(--ease); }
+.daychips button:active { transform: scale(.94); }
+.daychips button.on { background: var(--butter); }
+
+/* Mochi's touch area is bigger than his picture: a tap or pickup anywhere within ~22px of him is his */
+.mochi::before { content: ""; position: absolute; inset: -22px; border-radius: 50%; touch-action: none; }
+/* while he's picked up, the page doesn't scroll under the finger */
+body.mochi-held { overflow: hidden; touch-action: none; overscroll-behavior: none; }

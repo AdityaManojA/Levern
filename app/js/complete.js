@@ -9,6 +9,8 @@ export function completeQuest(id) {
   const q = store.findQuest(id); if (!q) return;
   const before = summary(store.getState().history, [], store.getState().settings.target).todayCount;
   const r = store.toggleDone(id);
+  // a daily (or any repeating) quest is done once for its date: tapping again does nothing and counts nothing
+  if (r.blocked) { play('tap', 0.6); return toast(`Already done for today. Next one: ${fmtDate(r.next)}`); }
   const st = store.getState();
   if (!r.done) { play('tap', 0.8); mascot.react('suspicious', 'hmm… sure?'); return toast('Marked as not done'); }
   const after = before + 1;

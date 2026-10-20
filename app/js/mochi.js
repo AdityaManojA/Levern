@@ -21,7 +21,7 @@ const SPEED = { slow: 28, normal: 50, zoomy: 95 }, SPRINT = 170, SINK = 2;
 // Tempo on top of the art's own fps: reactions and idles play much slower so they read as calm,
 // walking and running a little faster (stride and ground speed scale together, so his feet don't slide).
 // His breathing (rest) and sleep are slowed a little too. Every Mochi animation goes through this, sprites included.
-const ACT_TEMPO = 0.8, BREATH_TEMPO = 0.75, MOVE_TEMPO = 1.15;
+const ACT_TEMPO = 0.3, BREATH_TEMPO = 0.75, MOVE_TEMPO = 1.15;
 const MOVES = new Set(['walk', 'sprint', 'sprint-stop', 'get-up-left', 'get-up-right']);
 const tempo = n => (MOVES.has(n) ? MOVE_TEMPO : n === 'rest' || n === 'sleep' ? BREATH_TEMPO : ACT_TEMPO);
 const fpsOf = n => A[n].fps * tempo(n);
@@ -150,8 +150,13 @@ export function createMochi(env) {
       if (f !== to) { f += step; M.fi = f; render(); return; }
       if (o.loop) {
         stop();
-        let g = o.loop[0]; M.fi = g; render();
-        M.timer = setInterval(() => { if (o.onFrame && o.onFrame(g)) return; g = g >= o.loop[1] ? o.loop[0] : g + 1; M.fi = g; render(); }, 1000 / (o.loopFps || fps));
+        // rev: the loop runs backwards (a moonwalk)
+        let g = o.rev ? o.loop[1] : o.loop[0]; M.fi = g; render();
+        M.timer = setInterval(() => {
+          if (o.onFrame && o.onFrame(g)) return;
+          g = o.rev ? (g <= o.loop[0] ? o.loop[1] : g - 1) : (g >= o.loop[1] ? o.loop[0] : g + 1);
+          M.fi = g; render();
+        }, 1000 / (o.loopFps || fps));
         return;
       }
       if (o.hold) return;
@@ -193,14 +198,21 @@ export function createMochi(env) {
   function walkTo(x, opts = {}) {
     const [lo, hi] = bounds(); x = Math.max(lo, Math.min(hi, x));
     const d = x >= M.cx ? 1 : -1;
-    Object.assign(M, { target: x, busy: true, state: 'prep', asleep: false, pending: null, slide: null, sprint: !!opts.sprint, dir: d });
-    M.getUp = d > 0 ? 'get-up-right' : 'get-up-left';
-    play(M.getUp, { dir: d, then: () => {
+    // a moonwalk travels the way he's NOT facing: the art faces the other way and the steps run backwards
+    const moon = !!opts.moon && !opts.sprint, face = moon ? -d : d;
+    Object.assign(M, { target: x, busy: true, state: 'prep', asleep: false, pending: null, slide: null, sprint: !!opts.sprint, dir: face, moon });
+    M.getUp = face > 0 ? 'get-up-right' : 'get-up-left';
+    play(M.getUp, { dir: face, then: () => {
       M.state = 'walk'; M.busy = false;
       let stepsLeft = M.sprint ? 6 : opts.steps ? 8 : 0;   // random wandering is silent
       const paws = beats => f => { if (stepsLeft > 0 && beats.includes(f)) { stepsLeft--; voice('step', { vol: M.sprint ? 1.2 : 1 }); } return false; };
-      if (M.sprint) { say('zoomies!', 900); play('sprint', { dir: d, loop: A.sprint.loop, onFrame: paws([2, 5]) }); }
-      else play('walk', { dir: d, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps(), onFrame: paws([3, 9]) });
+      if (M.sprint) { say('zoomies!', 900); play('sprint', { dir: face, loop: A.sprint.loop, onFrame: paws([2, 5]) }); }
+      else if (moon) {
+        say('moonwalk!', 1500);
+        setTimeout(() => { if (M.moon && M.state === 'walk') say('the Michael Jackson move', 1800); }, 1600);
+        play('walk', { dir: face, from: A.walk.frames, to: A.walk.loop[0], rev: true, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps(), onFrame: paws([3, 9]) });
+      }
+      else play('walk', { dir: face, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps(), onFrame: paws([3, 9]) });
     } });
   }
   function arrive() {
@@ -236,20 +248,29 @@ export function createMochi(env) {
   // Idles and tap reactions are drawn from weighted pools, never repeating any of the last few,
   // so he doesn't fall into a visible cycle. Seamless ones (start and end on the resting pose) are favoured.
   const pool = list => list.filter(([n]) => has(n)).map(([n, w]) => { const j = A[n].join || []; return [n, j[0] === 'R' && j[1] === 'R' ? w * 1.5 : w]; });
-  const IDLES = pool([['ear-twitch', 8], ['look-around', 8], ['yawn', 5], ['sneeze', 3], ['sniff', 4], ['face-wash', 4], ['groom', 4], ['scratch', 3], ['spot', 3],
-    ['stretch', 3], ['back-stretch', 2], ['tail-wrap', 3], ['look-back', 3], ['sitting-pretty', 3], ['happy-wiggle', 3], ['confused', 2], ['eat', 2],
-    ['tail-chase', 2], ['cursor-swipe', 2], ['follow-finger', 2], ['excited', 1.5], ['sad', 0.6], ['wave', 1.5]]);
-  const TAPS = pool([['boop', 5], ['happy-wiggle', 3], ['excited', 2.5], ['confused', 2], ['wave', 2], ['surprised', 1.5], ['cursor-swipe', 1.5],
-    ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 1], ['heart-eyes', 1.5]]);
+  // every calm or playful animation of the set takes part; weights say how often each comes round in a deck
+  const IDLES = pool([['ear-twitch', 3], ['look-around', 3], ['yawn', 2], ['sneeze', 2], ['sniff', 2], ['face-wash', 2], ['groom', 2], ['scratch', 2], ['spot', 2],
+    ['stretch', 2], ['back-stretch', 2], ['tail-wrap', 2], ['look-back', 2], ['sitting-pretty', 2], ['happy-wiggle', 2], ['confused', 2], ['eat', 2],
+    ['tail-chase', 2], ['cursor-swipe', 2], ['follow-finger', 2], ['excited', 2], ['sad', 1], ['wave', 2], ['heart-eyes', 2], ['startled', 1.5],
+    ['surprised', 1.5], ['suspicious', 1.5], ['celebrate', 1.5], ['victory', 1], ['happy-spin', 1.5]]);
+  const TAPS = pool([['boop', 4], ['happy-wiggle', 2], ['excited', 2], ['confused', 2], ['wave', 2], ['surprised', 2], ['cursor-swipe', 1.5],
+    ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 2], ['heart-eyes', 2], ['startled', 1.5], ['happy-spin', 1.5], ['suspicious', 1], ['victory', 1]]);
   const TAP_LINES = { boop: ['boop', 'mrp!', ':3'], 'happy-wiggle': ['♪', 'hehe'], excited: ['!!', 'ooh!'], confused: ['?', 'huh?'], wave: ['hi!', 'hello!'],
     surprised: ['!', 'oh!'], 'cursor-swipe': ['gotcha', 'swipe!'], 'sitting-pretty': ['ta-da'], sneeze: ['achoo!'], celebrate: ['yay!'], 'heart-eyes': ['♥', 'purr…'] };
   const recent = [];
+  // A shuffled deck per pool: each animation comes round once (more often if weighted) before any repeats,
+  // so the mix is always varied instead of falling back on the same few.
+  const decks = new Map();
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   function pickFrom(list, avoid = 3) {
+    let deck = decks.get(list);
+    if (!deck || !deck.length) { deck = shuffle(list.flatMap(([n, w]) => Array(Math.max(1, Math.round(w))).fill(n))); decks.set(list, deck); }
     const blocked = new Set(recent.slice(-avoid));
-    const ok = list.filter(([n]) => !blocked.has(n)), use = ok.length ? ok : list;
-    let r = Math.random() * use.reduce((t, [, w]) => t + w, 0);
-    for (const [n, w] of use) { r -= w; if (r <= 0) { recent.push(n); if (recent.length > 8) recent.shift(); return n; } }
-    return use[0][0];
+    let i = deck.findIndex(n => !blocked.has(n));
+    if (i < 0) i = 0;   // every card left was just played: take the first anyway
+    const [n] = deck.splice(i, 1);
+    recent.push(n); if (recent.length > 8) recent.shift();
+    return n;
   }
   const pickIdle = () => pickFrom(IDLES, 3);
   const canMove = () => !reduced() && !M.hidden && !env.paused();
@@ -258,7 +279,7 @@ export function createMochi(env) {
     if (!S().roam) { const [, b] = bounds(); if (Math.abs(M.cx - b) > 4) { walkTo(b, { steps: true }); return; } schedule(5, 9); return; }
     const page = env.current();
     const walkP = { home: 0.45, quests: 0.6, calendar: 0.35, focus: 0.1, stats: 0.3, settings: 0.15 }[page] ?? 0.3;
-    if (Math.random() < walkP) { const x = randomX(); walkTo(x, { sprint: page !== 'focus' && Math.abs(x - M.cx) > 130 && Math.random() < 0.15 }); }
+    if (Math.random() < walkP) { const x = randomX(); walkTo(x, { sprint: page !== 'focus' && Math.abs(x - M.cx) > 130 && Math.random() < 0.15, moon: page !== 'focus' && Math.random() < 0.2 }); }
     else schedule(3, 7);
   }
   const sleepAfter = () => (env.current() === 'focus' ? 9000 : 90000);   // plenty of idling before a nap
@@ -352,6 +373,7 @@ export function createMochi(env) {
     play('stretch', { from: 3, to: 3, hold: true });
     M.dragTo = { x: e.clientX, y: e.clientY, vx: 0, vy: 0, t: performance.now() };
     press.drag = true;
+    document.body.classList.add('mochi-held');   // no page scroll while he's in the hand
     voice('pickup'); say(['wheee', 'hey!', 'mrrp?!'][Math.floor(Math.random() * 3)], 1100);
   }
   function drop() {
@@ -385,7 +407,7 @@ export function createMochi(env) {
       press.t = setTimeout(endHeld, 6000);   // never loops forever
     }, 450);
   });
-  el.addEventListener('pointermove', e => {
+  document.addEventListener('pointermove', e => {
     if (!press || e.pointerId !== press.id) return;
     if (!press.drag) {
       if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < DRAG_START || Date.now() < M.annoyedUntil) return;
@@ -398,13 +420,18 @@ export function createMochi(env) {
   const release = (e, cancelled) => {
     if (!press || (e && e.pointerId !== press.id)) return;
     const p = press; press = null; clearTimeout(p.t);
+    document.body.classList.remove('mochi-held');
     if (p.drag) { drop(); return; }
     if (M.held) { endHeld(); return; }
     if (!cancelled) tap(e);
   };
-  el.addEventListener('pointerup', e => release(e, false));
-  el.addEventListener('pointercancel', e => release(e, true));
-  el.addEventListener('lostpointercapture', e => { if (press && press.drag) release(e, true); else if (M.held && !press) endHeld(); });
+  // Safari and Brave don't keep pointer capture reliably on touch, so the press follows the finger
+  // on the whole page. Losing capture no longer drops him: only the finger lifting does.
+  document.addEventListener('pointerup', e => release(e, false));
+  document.addEventListener('pointercancel', e => release(e, true));
+  // phones: no long-press callout, context menu or native image drag fighting the pickup
+  el.addEventListener('contextmenu', e => e.preventDefault());
+  el.addEventListener('dragstart', e => e.preventDefault());
   el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } });
   el.addEventListener('click', e => e.stopPropagation());
 
@@ -453,8 +480,16 @@ export function createMochi(env) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (M.state === 'drag' || M.state === 'fall') { /* positioned below */ }
     else if (M.state === 'walk' && !M.held) {
+      // the bar can move under him (zoom, resize, the sheet): keep the target and his spot on it, every frame
+      const [lo, hi] = bounds();
+      M.target = Math.max(lo, Math.min(hi, M.target));
       const sp = (M.sprint ? SPRINT : SPEED[S().speed || 'slow']) * MOVE_TEMPO, dx = M.target - M.cx;
-      if (Math.abs(dx) < 1.5) { M.cx = M.target; arrive(); } else M.cx += Math.sign(dx) * Math.min(Math.abs(dx), sp * dt);
+      if (Math.abs(dx) < 1.5) { M.cx = M.target; arrive(); }
+      else {
+        M.cx = Math.max(lo, Math.min(hi, M.cx + Math.sign(dx) * Math.min(Math.abs(dx), sp * dt)));
+        // a normal walk faces the way it goes, so his steps and his feet always agree
+        if (!M.moon) M.dir = Math.sign(dx);
+      }
     } else if (now > M.next) decide();
     if (M.slide) {
       const k = Math.min(1, (now - M.slide.t0) / M.slide.ms), ease = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
@@ -474,6 +509,8 @@ export function createMochi(env) {
       if (M.lift >= 0) land();
     }
     if (M.lift !== M.liftTo) { const d = M.liftTo - M.lift; M.lift = Math.abs(d) < 0.5 ? M.liftTo : M.lift + d * Math.min(1, dt * (M.liftRate || 12)); }
+    // whatever he's doing, he stays on the bar (or the sheet's edge): the bar can change size under him
+    if (M.state !== 'drag' && M.state !== 'fall') { const [lo, hi] = bounds(); M.cx = Math.max(lo, Math.min(hi, M.cx)); }
     if (!M.hidden) render();
     requestAnimationFrame(tick);
   }

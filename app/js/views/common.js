@@ -2,7 +2,7 @@
 import { getState, tierLabel, TIER_COLORS, isReminderDue, reminderBase } from '../store.js';
 import { dueLabel, dueStatus, relTime, fmtStamp, todayStr, addDays, at } from '../dates.js';
 import { esc, ICON } from '../ui.js';
-import { describe } from '../recur.js';
+import { describe, repeatShort } from '../recur.js';
 
 // the app's own bell (same drawing as the top bar), small, instead of the 🔔 emoji
 const BELL = '<svg class="rbell" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
@@ -19,7 +19,7 @@ export function questRow(q, now = new Date()) {
   const meta = [
     `<span>${esc(tierLabel(q.tier))}</span>`,
     q.due ? `<span class="${st === 'overdue' ? 'od' : ''}">${esc(dueLabel(q, now))}</span>` : '',
-    q.repeat ? `<span class="tag">${ICON.repeat}${{ daily: 'daily', alternate: 'alternate days', weekdays: 'weekdays', weekly: 'weekly', monthly: 'monthly' }[q.repeat.freq] || ''}</span>` : '',
+    q.repeat ? `<span class="tag">${ICON.repeat}${repeatShort(q.repeat)}</span>` : '',
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',
     q.sketches?.length ? `<span class="tag" title="Sketches">${ICON.sketch}${q.sketches.length}</span>` : '',
     reminderChip(q),

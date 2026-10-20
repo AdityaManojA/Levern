@@ -2,6 +2,7 @@
 // data document and a clock, and change the document in place.
 import { todayStr, at, addDays } from './dates.js';
 import { rollForward } from './recur.js';
+import { nextMultiAt } from './multi.js';
 import { parseQuest } from './parse.js';
 
 const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -87,6 +88,8 @@ export function setReminder(q, spec, now = Date.now()) {
 // tick a quest: logs it in the history; a repeating quest moves to its next date instead of closing
 export function completeQuest(doc, q, now = Date.now()) {
   if (q.done) return { quest: q, next: null };
+  // a repeating quest counts once per occurrence: once its next date is ahead, today's is already done
+  if (q.repeat && q.due && q.due > todayStr(new Date(now))) return { quest: q, next: q.due, blocked: true };
   doc.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: now });
   doc.historyUpdatedAt = now;
   let next = null;
@@ -94,7 +97,7 @@ export function completeQuest(doc, q, now = Date.now()) {
     next = rollForward(q.due, q.repeat, new Date(now));
     q.due = next;
     q.subtasks.forEach(s => { s.done = false; });
-    if (q.remind) q.remind = q.remind.offset != null ? { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false } : null;
+    if (q.remind) q.remind = q.remind.multi ? { ...q.remind, at: nextMultiAt(q.remind.multi, at(q.due, '00:00') - 1), fired: false, dismissed: false } : q.remind.offset != null ? { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false } : null;
   } else {
     q.done = true; q.doneAt = now;
     if (q.remind) q.remind.dismissed = true;
