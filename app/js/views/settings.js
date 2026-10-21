@@ -141,7 +141,12 @@ function calendarRows() {
   const g = cal.googleState(), feed = cal.feedAvailable();
   let gRight, gText;
   if (!cal.googleConfigured()) { gRight = '<button class="mini" data-act="acct-in">Sign in</button>'; gText = 'Sign in with Google first. Then your dated quests go into a "TaskFlow" calendar and your own Google events show up here.'; }
-  else if (!g.connected) { gRight = '<button class="mini" data-act="gconnect">Connect</button>'; gText = 'Adds your dated quests to a "TaskFlow" calendar, and shows your own Google events on the Calendar screen.'; }
+  else if (!g.connected) {
+    gRight = '<button class="mini" data-act="gconnect">Connect</button>';
+    gText = 'Adds your dated quests to a "TaskFlow" calendar, and shows your own Google events on the Calendar screen. '
+      + 'Note: Google sync needs approval from Google first, and some Google accounts (such as ones with Advanced Protection) block it. '
+      + 'Until then, use the calendar link below: in Google Calendar, choose Other calendars, then From URL.';
+  }
   else {
     gRight = `<button class="mini" data-act="gsync" ${cal.isSyncing() ? 'disabled' : ''}>${cal.isSyncing() ? 'Syncing…' : 'Sync now'}</button>`;
     const c = g.lastCounts;

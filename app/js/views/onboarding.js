@@ -210,6 +210,25 @@ export function open(startTour) {
     if (e.key === 'ArrowRight' && STEPS[step] !== 'tour') go(1);
     if (e.key === 'ArrowLeft' && step > 0) go(-1);
   });
+  // swipe from left to right = back one step. A touch that starts near either screen edge belongs to the
+  // phone's own back gesture (iPhone and Android), so it's ignored. Sliders, pickers and text fields are left alone.
+  const EDGE = 40, MIN_DX = 90, MAX_MS = 800;
+  let swipe = null;
+  root.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    const edge = t.clientX < EDGE || t.clientX > innerWidth - EDGE;
+    const control = e.target.closest('input, textarea, select, [data-tw], .tw-panel, [data-ropts], [data-alerts]');
+    swipe = edge || control || e.touches.length > 1 ? null : { x: t.clientX, y: t.clientY, t: Date.now() };
+  }, { passive: true });
+  root.addEventListener('touchcancel', () => { swipe = null; }, { passive: true });
+  root.addEventListener('touchend', e => {
+    if (!swipe) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y, dt = Date.now() - swipe.t;
+    swipe = null;
+    // clearly sideways only: scrolling up or down never moves the steps
+    if (dx > MIN_DX && Math.abs(dy) < Math.abs(dx) * 0.5 && dt < MAX_MS && step > 0) go(-1);
+  }, { passive: true });
 }
 
 async function googleSignIn() {
