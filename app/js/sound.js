@@ -14,6 +14,11 @@ const GROUPS = {
   tick: { files: ['tick-1', 'tick-2', 'tick-3'], vol: 0.7 },       // ticking a quest off
   coin: { files: ['coin'], vol: 0.55 },                            // daily target hit, focus session done, tour finished
   chime: { files: ['chime-1', 'chime-2'], vol: 0.5 },              // a reminder goes off
+  // leaderboard (synthesised, .wav): first place, second, third
+  fanfare: { files: ['fx-fanfare'], vol: 0.6 },
+  cheer2: { files: ['fx-cheer-2'], vol: 0.55 },
+  cheer3: { files: ['fx-cheer-3'], vol: 0.5 },
+  target: { files: ['fx-celebrate'], vol: 0.65 },                  // the daily target is reached
   // Mochi
   mrrp: { files: ['mrrp-1', 'mrrp-2', 'mrrp-3'], vol: 0.5, mochi: true },   // his signature chirp: affection
   sweet: { files: ['meow-sweet-1', 'meow-sweet-2'], vol: 0.4, mochi: true }, // hello / well done
@@ -46,7 +51,7 @@ export async function preloadSounds() {
   const names = [...new Set(Object.values(GROUPS).flatMap(g => g.files))];
   await Promise.all(names.map(async n => {
     try {
-      const data = await (await fetch(`sounds/${n}.mp3`)).arrayBuffer();
+      const data = await (await fetch(`sounds/${n}.${n.startsWith('fx-') ? 'wav' : 'mp3'}`)).arrayBuffer();
       buffers.set(n, await new Promise((res, rej) => d.decodeAudioData(data, res, rej)));
     } catch (e) { /* a missing sound is just silent */ }
   }));

@@ -4,6 +4,7 @@ import { toast, play } from './ui.js';
 import { fmtDate, todayStr as fmtToday } from './dates.js';
 import { summary } from './stats.js';
 import { mascot } from './mascot.js';
+import { sfx } from './sound.js';
 
 export function completeQuest(id) {
   const q = store.findQuest(id); if (!q) return;
@@ -23,8 +24,13 @@ export function completeQuest(id) {
   const after = before + 1;
   const openToday = st.quests.filter(x => !x.done && x.due && x.due <= fmtToday()).length;
   // a quest that had steps: finishing the whole questline is a bigger moment than a single tick
-  if (q.subtasks?.length) { play('coin', 0.6); mascot.react('victory', 'questline done!'); }
-  else if (after === st.settings.target) { play('tick'); setTimeout(() => play('coin'), 160); toast(`🎉 Daily target hit! ${after} of ${st.settings.target} done.`, 'good'); mascot.react('button', 'target hit!'); }
+  // reaching the daily target: a celebration sound, and Mochi jumps to say so (checked first, so it always happens)
+  if (after === st.settings.target) {
+    sfx('target');
+    toast(`🎉 Daily target hit! ${after} of ${st.settings.target} done.`, 'good');
+    mascot.react('startled-jump', "Congrats, you've reached your daily target!");
+  }
+  else if (q.subtasks?.length) { play('coin', 0.6); mascot.react('victory', 'questline done!'); }
   else {
     play('tick'); toast(r.next ? `Done. Next one: ${fmtDate(r.next)}` : `Done: ${q.title}`);
     if (!openToday) mascot.react('wipe', 'all clean!'); else mascot.celebrate(['nice!', 'yay!', 'one down'][Math.floor(Math.random() * 3)]);

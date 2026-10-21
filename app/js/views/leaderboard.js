@@ -5,10 +5,32 @@ import * as board from '../board.js';
 import * as account from '../account.js';
 import { swap } from '../motion.js';
 import { esc, play, toast } from '../ui.js';
+import { sfx } from '../sound.js';
+import { mascot } from '../mascot.js';
 
 let rows = null, loading = false, failed = false, asked = false;
 
 const fmt = n => Number(n || 0).toLocaleString();
+
+// Each visit to the board, Mochi says where you stand, with a sound: congratulations in the top three, and
+// otherwise how many EXP you need to reach the top three. "visit" counts the visits, so it's said once per visit.
+let visit = 0, announced = 0;
+function announce() {
+  if (!rows || !board.isOn() || announced === visit) return;
+  const me = rows.findIndex(r => r.me);
+  if (me < 0) return;
+  announced = visit;
+  const rank = me + 1, mine = rows[me].exp;
+  if (rank === 1) { sfx('fanfare'); sfx('sweet'); mascot.react('victory', "Congrats, you're number one!"); }
+  else if (rank === 2) { sfx('cheer2'); sfx('sweet'); mascot.react('button', "Congrats, you're number two!"); }
+  else if (rank === 3) { sfx('cheer3'); sfx('sweet'); mascot.react('button', "Congrats, you're number three!"); }
+  else {
+    const need = Math.max(1, (rows[2]?.exp ?? 0) - mine + 1);
+    mascot.react('notify', `${fmt(need)} EXP to reach the top three. Go for it!`);
+  }
+}
+// called by the app each time the board is opened
+export function mount() { visit += 1; announce(); }
 
 async function load() {
   if (loading) return;
@@ -17,6 +39,7 @@ async function load() {
   catch (e) { failed = true; rows = null; }
   loading = false;
   swap(render());
+  if (location.hash.startsWith('#/leaderboard')) announce();
 }
 
 function podium(list) {
