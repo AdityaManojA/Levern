@@ -207,7 +207,14 @@ export function openAdd(prefill = {}) {
   if (speechBroken()) markMicUnavailable();   // already found out earlier this session
   function mic() {
     const btn = $f('[data-mic]');
-    if (stop) { stop(); return; }
+    if (stop) {
+      // tapping again closes the mic at once: the button goes back to rest, the words heard so far stay in the title
+      const s = stop; stop = null; s();
+      btn.classList.remove('listening');
+      $f('[data-mic-t]').textContent = form.title.value ? 'Got it. Tap to try again' : 'Tap and speak';
+      $f('[data-mic-s]').textContent = form.title.value ? `"${form.title.value}"` : 'Try "Dentist on Friday at 4pm"';
+      return;
+    }
     btn.classList.add('listening'); $f('[data-mic-t]').textContent = 'Listening…'; $f('[data-mic-s]').textContent = 'Speak now. Tap again to stop.';
     stop = listen({
       onText: (text, final) => { form.title.value = text; onText(text); if (final) $f('[data-mic-s]').textContent = `"${text}"`; },

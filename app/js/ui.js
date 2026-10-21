@@ -13,6 +13,7 @@ export const ICON = {
   calendar: ic('<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>'),
   focus: ic('<circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.5 2M10 3h4"/>'),
   stats: ic('<path d="M5 20V11M12 20V5M19 20v-6"/>'),
+  trophy: ic('<path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 6H5a2 2 0 0 0 0 4h1M16 6h3a2 2 0 0 1 0 4h-1"/><path d="M12 13v3M9 20h6M10 16h4"/>'),
   settings: ic('<path d="M5 7h8M17 7h2M5 17h2M11 17h8"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
   bell: ic('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   plus: ic('<path d="M12 5v14M5 12h14"/>', 26),

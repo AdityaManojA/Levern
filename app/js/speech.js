@@ -57,7 +57,12 @@ export function listen({ onText, onEnd, onError, onStatus }) {
     try { r.start(); } catch (e) { onError && onError('start-failed'); onEnd && onEnd(); }
   }
   start(false);
-  return () => { stopped = true; try { r && r.stop(); } catch (e) {} };
+  // stop: finish what was heard so far, and release the microphone even if the browser doesn't end the session
+  return () => {
+    stopped = true;
+    try { r && r.stop(); } catch (e) {}
+    setTimeout(() => { try { r && r.abort(); } catch (e) {} }, 1200);
+  };
 }
 
 export function speechError(code) {

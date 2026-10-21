@@ -3,6 +3,7 @@ import * as store from './store.js';
 import { registerSW } from './notify.js';
 import { startReminders, paintBadges } from './reminders.js';
 import { watchInstall } from './install.js';
+import { maybeLeaderboardNudge } from './leaderboardnudge.js';
 import { $, toast, play, sheet, ICON } from './ui.js';
 import { completeQuest } from './complete.js';
 import { pageTransition, morph, reduced, EASE } from './motion.js';
@@ -195,7 +196,7 @@ addEventListener('online', () => toast('Back online')); addEventListener('offlin
 
 /* ---------- start ---------- */
 $('#top-actions').innerHTML = `<button class="iconbtn bell" data-act="bell" aria-label="Reminders">${ICON.bell}<b class="rcount" data-rcount hidden></b></button>
-  <a class="iconbtn" href="#/stats" aria-label="Stats">${ICON.stats}</a><a class="iconbtn" href="#/settings" aria-label="Settings">${ICON.settings}</a>`;
+  <a class="iconbtn" href="#/leaderboard" aria-label="Leaderboard">${ICON.trophy}</a><a class="iconbtn" href="#/settings" aria-label="Settings">${ICON.settings}</a>`;
 unlockOnGesture();
 preloadSounds();
 startControls();
@@ -250,6 +251,8 @@ else if (!onboarding.deviceSetupDone() || !account.user()) onboarding.open(() =>
 if (!account.user()) account.preload();   // ready before the sign-in tap, so Google's popup isn't blocked
 account.onAccount(u => { if (!u) setTimeout(toStart, 0); });   // after sign-out has cleared the device
 registerSW().finally(() => { startReminders(); if ('Notification' in window && Notification.permission === 'granted') import('./push.js').then(m => m.enablePush()); });
+// a friendly nudge to check the leaderboard (at most twice a day), once the app has settled
+setTimeout(() => { if (account.user() && !onboarding.isOpen()) maybeLeaderboardNudge(); }, 4000);
 startCalendars();
 // share data with the TaskFlow server (API, webhooks); the app works the same without it
 startSync();
