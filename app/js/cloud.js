@@ -50,7 +50,14 @@ async function unpack(parts, z) {
 /* ---------- sync ---------- */
 const norm = d => JSON.stringify(mergeDocs(d || {}, {}));
 // returns { ok, hadData } (hadData: the account already had quests, i.e. a returning person)
-export async function syncNow() {
+// one sync at a time. A caller that asks while a sync is running (for example sign-in, which must know whether
+// this is a returning account) gets the result of that run, instead of an empty answer.
+let inFlight = null;
+export function syncNow() {
+  if (!inFlight) inFlight = runSync().finally(() => { inFlight = null; });
+  return inFlight;
+}
+async function runSync() {
   const u = account.user();
   if (!u) return { ok: false };
   if (busy) { again = true; return { ok: false }; }
@@ -108,7 +115,8 @@ export async function syncNow() {
     if (hadData && getState().seeded) commit(s => { s.seeded = false; }, { fromSync: true, quiet: true });
     dirty = false;
     info = { lastSync: Date.now(), error: null };
-    result = { ok: true, hadData };
+    // known: the account has been saved to before (even if it has no quests now), so it is a returning account
+    result = { ok: true, hadData, known: !!md.rev };
     dlog('sync', 'synced with account', { quests: merged.quests.length, hadData, rev: nextRev, localChanged: theirs !== now });
     queueShare();
   } catch (e) {

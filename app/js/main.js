@@ -241,9 +241,11 @@ vv?.addEventListener('resize', fitViewport); vv?.addEventListener('scroll', fitV
 $('#sheet').addEventListener('focusin', e => { if (e.target.matches('input, textarea')) setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320); });
 
 // TaskFlow needs a signed-in account: signed out, you're back at the start of the welcome screens
-const toStart = () => { if (!onboarding.isOpen()) { sheet.close(); location.hash = '#/home'; onboarding.open(() => tour.start()); } };
+// signed out on a device that has been set up: go straight to the sign-in step, not the welcome screens again
+const signInStep = () => (onboarding.deviceSetupDone() ? { startAt: 'account' } : {});
+const toStart = () => { if (!onboarding.isOpen()) { sheet.close(); location.hash = '#/home'; onboarding.open(() => tour.start(), signInStep()); } };
 if (account.cameBackFromRedirect()) onboarding.resumeSignIn(() => tour.start());   // phone sign-in came back to a fresh page
-else if (!onboarding.deviceSetupDone() || !account.user()) onboarding.open(() => tour.start());
+else if (!onboarding.deviceSetupDone() || !account.user()) onboarding.open(() => tour.start(), account.user() ? {} : signInStep());
 // set up before and signed in: a reload goes straight to the app. The tour question is asked after an actual sign-in (onboarding.js).
 if (!account.user()) account.preload();   // ready before the sign-in tap, so Google's popup isn't blocked
 account.onAccount(u => { if (!u) setTimeout(toStart, 0); });   // after sign-out has cleared the device

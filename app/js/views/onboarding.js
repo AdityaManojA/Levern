@@ -175,10 +175,12 @@ export function close(then) {
 }
 
 // startTour: called when "Show me around" is chosen
-export function open(startTour) {
+// startAt: a step to begin on (the sign-in step for someone who has used TaskFlow on this device before)
+export function open(startTour, { startAt = null } = {}) {
   if (startTour) onFinish = startTour;
   root = document.getElementById('onboard');
-  step = 0; profile = getState().settings.profile || ''; linked = {}; returning = false;
+  step = startAt ? Math.max(0, STEPS.indexOf(startAt)) : 0;
+  profile = getState().settings.profile || ''; linked = {}; returning = !!startAt;
   root.hidden = false;
   draw();
   document.body.classList.add('ob-lock');
@@ -255,7 +257,8 @@ async function afterSignIn(u) {
   if (first && !getState().settings.name) setSetting('name', first, { quiet: true });
   busy = false;
   const back = deviceSetupDone();
-  if (back || r.hadData || returning) {
+  // a returning account goes straight into the app, on any device: no welcome steps again
+  if (back || r.hadData || r.known || returning) {
     toast(`Welcome back${first ? `, ${first}` : ''}`, 'good');
     const tour = onFinish; close();
     if (back) setTimeout(() => welcomeBack(tour), 600);
