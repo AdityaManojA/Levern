@@ -4,14 +4,14 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v31';
+const VERSION = 'taskflow-v32';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
   'js/notify.js', 'js/reminders.js', 'js/speech.js', 'js/ui.js', 'js/complete.js', 'js/motion.js', 'js/mochi.js', 'js/mascot.js', 'js/sync.js', 'js/syncmerge.js', 'js/questops.js', 'js/views/developer.js', 'js/ptr.js', 'mochi/strips/stretch.png', 'mochi/strips/wave.png', 'mochi/strips/happy-spin.png', 'js/views/tour.js', 'mochi/manifest.js', 'mochi/strips/rest.png', 'mochi/strips/blink.png', 'js/calendars.js', 'js/gcalmap.js', 'config.js', 'js/install.js', 'js/views/common.js',
   'js/views/home.js', 'js/views/quests.js', 'js/views/detail.js', 'js/views/add.js', 'js/views/calendar.js',
   'js/views/focus.js', 'js/views/stats.js', 'js/views/settings.js', 'js/views/reminders.js', 'js/views/onboarding.js',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/badge-96.png', 'icons/icon.svg', 'icons/apple-touch-icon.png',
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/badge-96.png', 'icons/apple-touch-icon-v2.png',
   'sounds/tap-1.mp3', 'sounds/tap-2.mp3', 'sounds/tap-3.mp3', 'sounds/tab-1.mp3', 'sounds/tab-2.mp3', 'sounds/tick-1.mp3', 'sounds/tick-2.mp3', 'sounds/tick-3.mp3', 'sounds/coin.mp3', 'sounds/chime-1.mp3', 'sounds/chime-2.mp3', 'sounds/mrrp-1.mp3', 'sounds/mrrp-2.mp3', 'sounds/mrrp-3.mp3', 'sounds/meow-sweet-1.mp3', 'sounds/meow-sweet-2.mp3', 'sounds/meow-hey-1.mp3', 'sounds/meow-hey-2.mp3', 'sounds/meow-grumpy-1.mp3', 'sounds/meow-grumpy-2.mp3', 'sounds/step-1.mp3', 'sounds/step-2.mp3', 'sounds/step-3.mp3', 'sounds/land.mp3', 'sounds/meow-1.mp3', 'sounds/meow-2.mp3', 'sounds/meow-3.mp3', 'sounds/pickup-1.mp3', 'sounds/pickup-2.mp3', 'sounds/angry-1.mp3', 'sounds/angry-2.mp3',
   'js/sound.js', 'js/ink.js', 'js/inkpad.js', 'js/handwriting.js', 'js/views/ink.js',
   'js/controls.js', 'js/menu.js', 'js/account.js', 'js/cloud.js', 'js/nudges.js', 'privacy.html', 'cookies.html','mochi/strips/happy-wiggle.png', 'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
