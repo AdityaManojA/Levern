@@ -36,7 +36,7 @@ test('seasons are two weeks, the same for everyone, starting 19 Oct 2026', () =>
 test('rank tiers', () => {
   assert.equal(rankOf(0), 'Iron');
   assert.equal(rankOf(150), 'Gold');
-  assert.equal(rankOf(500), 'Immortal');
-  assert.equal(rankOf(500, 1), 'Radiant');
-  assert.equal(rankOf(230, 1), 'Platinum');
+  assert.equal(rankOf(379), 'Diamond');
+  assert.equal(rankOf(380), 'Ascendant');
+  assert.equal(rankOf(500), 'Master');
 });

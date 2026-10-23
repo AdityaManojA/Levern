@@ -69,10 +69,9 @@ export function seasonExp(history, sessions, target, n = seasonOf()) {
   return exp;
 }
 // Rank tiers for a season's EXP, Valorant style. Hitting the daily target every day of a season is 420 EXP before
-// focus time, so Immortal takes a near-perfect fortnight plus focus. Radiant is the season's number one at Immortal.
-export const RANKS = [['Iron', 0], ['Bronze', 40], ['Silver', 90], ['Gold', 150], ['Platinum', 220], ['Diamond', 300], ['Ascendant', 380], ['Immortal', 460]];
-export function rankOf(exp, place = 0) {
-  if (place === 1 && exp >= RANKS[RANKS.length - 1][1]) return 'Radiant';
+// focus time, so Master takes a near-perfect fortnight plus focus.
+export const RANKS = [['Iron', 0], ['Bronze', 40], ['Silver', 90], ['Gold', 150], ['Platinum', 220], ['Diamond', 300], ['Ascendant', 380], ['Master', 460]];
+export function rankOf(exp) {
   let r = RANKS[0][0];
   for (const [name, min] of RANKS) if (exp >= min) r = name;
   return r;

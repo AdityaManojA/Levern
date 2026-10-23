@@ -9,6 +9,8 @@ import * as cal from '../calendars.js';
 import { mascot } from '../mascot.js';
 import { COATS } from '../mochi.js';
 import { isClean } from '../namefilter.js';
+import { mySeasonExp } from '../board.js';
+import { rankChip } from './common.js';
 import { buildICS } from '../ics.js';
 import * as account from '../account.js';
 import * as cloud from '../cloud.js';
@@ -183,7 +185,7 @@ function accountRow() {
   if (!u) return '<div class="srow"><div class="l"><b>Account</b><small>Sign in with Google to keep your quests safe and the same on all your devices.</small></div><button class="mini" data-act="acct-in">Sign in</button></div>';
   const ci = cloud.cloudInfo();
   const sync = ci.error ? esc(ci.error) : ci.lastSync ? `Saved to your account ${esc(fmtStamp(ci.lastSync))}` : 'Saving to your account…';
-  return `<div class="srow acct">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="36" height="36" referrerpolicy="no-referrer">` : ''}<div class="l"><b>${esc(u.name || 'Signed in')}</b><small>${esc(u.email)}<br>${sync}</small></div><button class="mini" data-act="acct-out">Sign out</button></div>`;
+  return `<div class="srow acct">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="36" height="36" referrerpolicy="no-referrer">` : ''}<div class="l"><b>${esc(u.name || 'Signed in')}</b><small>${esc(u.email)}<br>${sync}</small><a href="#/leaderboard" aria-label="Your season rank. Open the leaderboard">${rankChip(mySeasonExp())}</a></div><button class="mini" data-act="acct-out">Sign out</button></div>`;
 }
 
 export const actions = {

@@ -956,10 +956,16 @@ body.namefix-on { overflow: hidden; }
 .lb-season-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .lb-season-me { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 6px; }
 .lb-legacy-note { margin: 0 2px 4px; }
-.rank { flex: none; display: inline-block; border: 1.5px solid var(--ink); border-radius: 8px; padding: 0 7px; font-size: 11px; font-weight: 700; line-height: 18px; background: #fff; color: #1E1B18; white-space: nowrap; }
-.rank-iron { background: #D9D4CE; } .rank-bronze { background: #E7B48A; } .rank-silver { background: #E3E6EA; } .rank-gold { background: var(--butter); }
-.rank-platinum { background: #A6E3DD; } .rank-diamond { background: #C9B8E8; } .rank-ascendant { background: #A8D8B9; } .rank-immortal { background: #F4918A; }
-.rank-radiant { background: linear-gradient(90deg, #FFE08A, #FFF8EE 50%, #FFE08A); box-shadow: 0 0 0 2px var(--butter); }
+.rank { --rc: #6B6E72; flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border: 1.5px solid var(--rc); border-radius: 999px; background: color-mix(in srgb, var(--rc) 16%, transparent); color: inherit; font-size: 11px; font-weight: 700; line-height: 16px; white-space: nowrap; }
+.rank-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rc); }
+.rank-bars { display: inline-flex; gap: 1.5px; }
+.rank-bars i { width: 2px; height: 8px; border-radius: 1px; background: currentColor; opacity: .15; }
+.rank-bars i.on { background: var(--rc); opacity: 1; }
+.rank-iron { --rc: #6B6E72; } .rank-bronze { --rc: #B07443; } .rank-silver { --rc: #9AA2AA; } .rank-gold { --rc: #D9A521; }
+.rank-platinum { --rc: #3BA7A1; } .rank-diamond { --rc: #B77BE6; } .rank-ascendant { --rc: #2BB673; }
+.rank-master { --rc: #E8B93C; background: color-mix(in srgb, #C8283F 18%, transparent); border-width: 2px; }
+:root[data-theme="dark"] .rank-silver { --rc: #C9CED3; }
+.acct .rank { margin-top: 4px; }
 
 /* phone: the picked day is a clean 2px outline, no heavy ring or shadow */
 @media (max-width: 640px) {

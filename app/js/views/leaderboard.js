@@ -1,6 +1,6 @@
 // Leaderboard: the people who chose to show on the board. Two boards: Legacy (all EXP since the start, the
 // board everyone already knows, so it opens first and never resets) and this season (two weeks, ranked tiers
-// from Iron to Radiant, everyone starts again when a new season begins).
+// from Iron to Master, everyone starts again when a new season begins).
 // Joining is a switch at the top; nothing is shared until it's on. Reached from the EXP card on Home (not in the nav bar).
 import { getState } from '../store.js';
 import * as board from '../board.js';
@@ -11,12 +11,12 @@ import { swap } from '../motion.js';
 import { esc, play, toast } from '../ui.js';
 import { sfx } from '../sound.js';
 import { mascot } from '../mascot.js';
+import { rankChip } from './common.js';
 
 let rows = null, loading = false, failed = false, asked = false, mode = 'legacy', editing = false;
 
 const fmt = n => Number(n || 0).toLocaleString();
 const daysLeft = () => Math.max(1, Math.ceil((seasonRange(seasonOf()).end - Date.now()) / 86400000));
-const badge = (exp, place) => { const r = rankOf(exp, place); return `<span class="rank rank-${r.toLowerCase()}">${r}</span>`; };
 
 // Each visit to the board, Mochi says where you stand, with a sound: congratulations in the top three, and
 // otherwise how many EXP you need to reach the top three. "visit" counts the visits, so it's said once per visit.
@@ -50,7 +50,7 @@ async function load() {
 
 function podium(list) {
   const slot = (r, n) => r ? `<div class="lb-slot lb-${n}${r.me ? ' me' : ''}">
-      <span class="lb-medal">${n}</span><b class="lb-name">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</b><span class="lb-exp">${fmt(r.exp)} EXP</span>${mode === 'season' ? badge(r.exp, n) : ''}</div>` : '<div class="lb-slot lb-empty"></div>';
+      <span class="lb-medal">${n}</span><b class="lb-name">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</b><span class="lb-exp">${fmt(r.exp)} EXP</span>${mode === 'season' ? rankChip(r.exp) : ''}</div>` : '<div class="lb-slot lb-empty"></div>';
   return `<div class="lb-podium" aria-label="Top three">${slot(list[1], 2)}${slot(list[0], 1)}${slot(list[2], 3)}</div>`;
 }
 
@@ -58,8 +58,8 @@ function seasonCard() {
   const mine = board.mySeasonExp(), r = rankOf(mine), i = RANKS.findIndex(([n]) => n === r), next = RANKS[i + 1];
   return `<div class="card lb-season">
     <div class="lb-season-h"><b>Season ${seasonOf()}</b><span class="small">${daysLeft()} day${daysLeft() === 1 ? '' : 's'} left</span></div>
-    <div class="lb-season-me">${badge(mine)}<span>${fmt(mine)} EXP this season</span></div>
-    <div class="small">${next ? `${fmt(next[1] - mine)} EXP to ${next[0]}.` : 'Top tier. Finish first on the board for Radiant.'} Everyone starts again at Iron when a new season begins.</div>
+    <div class="lb-season-me">${rankChip(mine)}<span>${fmt(mine)} EXP this season</span></div>
+    <div class="small">${next ? `${fmt(next[1] - mine)} EXP to ${next[0]}.` : 'Top tier. You made Master.'} Everyone starts again at Iron when a new season begins.</div>
   </div>`;
 }
 
@@ -90,7 +90,7 @@ export function render() {
         : list.length
           ? `${podium(list)}
              <div class="card lb-list">${list.map((r, i) => `<div class="lb-row${r.me ? ' me' : ''}" data-key="lb-${r.id}">
-               <span class="lb-rank">${i + 1}</span><span class="lb-n">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</span>${mode === 'season' ? badge(r.exp, i + 1) : ''}<span class="lb-x">${fmt(r.exp)}</span></div>`).join('')}</div>`
+               <span class="lb-rank">${i + 1}</span><span class="lb-n">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</span>${mode === 'season' ? rankChip(r.exp) : ''}<span class="lb-x">${fmt(r.exp)}</span></div>`).join('')}</div>`
           : emptySeason;
   return `
     <div class="h-sub">Who's on top</div>

@@ -5,6 +5,7 @@ import { esc, ICON, toast } from '../ui.js';
 import { describe, repeatShort } from '../recur.js';
 import { PRESETS, MAX_ALERT, cleanAlerts, alertLabel, alertShort } from '../alerts.js';
 import { goalProgress } from '../goals.js';
+import { rankOf, RANKS } from '../stats.js';
 
 // a weekly goal's progress for this week, e.g. "Goal 2/3 this week" (or "Goal met · +1 extra")
 export function goalChip(q) {
@@ -172,3 +173,10 @@ export function bindPicker(root, onPick) {
 }
 export const pickerKey = root => root.querySelector('[data-ropts] .on')?.dataset.r || 'none';
 export { getState };
+
+// A season rank as a soft pill: a dot in the rank colour, the name, and 8 bars that fill up to the rank.
+export function rankChip(exp) {
+  const r = rankOf(exp), n = RANKS.findIndex(([name]) => name === r) + 1;
+  const bars = RANKS.map((_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('');
+  return `<span class="rank rank-${r.toLowerCase()}" title="${r}, rank ${n} of ${RANKS.length}"><i class="rank-dot"></i>${r}<span class="rank-bars" aria-hidden="true">${bars}</span></span>`;
+}
