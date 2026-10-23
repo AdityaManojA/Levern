@@ -19,6 +19,7 @@ import * as developer from './views/developer.js';
 import * as leaderboard from './views/leaderboard.js';
 import { startBoard } from './board.js';
 import { startTheme } from './theme.js';
+import { startNameCheck } from './namecheck.js';
 import { startSync, onSyncStatus } from './sync.js';
 import { openAdd } from './views/add.js';
 import * as remindersPanel from './views/reminders.js';
@@ -218,6 +219,8 @@ const mochi = createMochi({
 setMascot(mochi);
 mochi.start();
 mascot.setVisible(store.getState().settings.mochi !== false);
+// a saved name with a swear word or slur must be replaced (after the welcome screens and the account's copy loading)
+startNameCheck(() => onboarding.isOpen() || !cloud.cloudReady());
 setupPullToRefresh({
   current: () => route.name,
   refresh: async () => {

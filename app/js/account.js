@@ -4,6 +4,7 @@
 // signed-in user), so the app still starts offline. The signed-in profile is remembered on the device,
 // so it shows straight away on the next start.
 import { FIREBASE } from '../config.js';
+import { isClean } from './namefilter.js';
 
 const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const KEY = 'taskflow-account';
@@ -46,7 +47,7 @@ const NOT_A_NAME = new Set(['free', 'test', 'tester', 'user', 'admin', 'guest', 
 export function greetName(full) {
   for (const raw of String(full || '').trim().split(/\s+/)) {
     const w = raw.replace(/[.'’]+$/, '');
-    if (/^\p{L}[\p{L}'’-]*$/u.test(w) && w.length > 1 && !NOT_A_NAME.has(w.toLowerCase().replace(/['’]/g, ''))) return w;
+    if (/^\p{L}[\p{L}'’-]*$/u.test(w) && w.length > 1 && !NOT_A_NAME.has(w.toLowerCase().replace(/['’]/g, '')) && isClean(w)) return w;
   }
   return '';
 }

@@ -41,7 +41,7 @@ service cloud.firestore {
     function tfBoardShape(d) {
       return d.keys().hasOnly(['name', 'exp', 'season', 'seasonExp', 'bank', 'hidden', 'updated'])
         && d.name is string && d.name.size() <= 30
-        && !d.name.lower().matches('.*(fuck|cunt|nigg|fagg|whore|bitch|motherf|asshole|chutiya|madarchod|bhenchod|behenchod).*')
+        && !d.name.lower().matches('.*(fuck|cunt|nigg|fagg|whore|bitch|motherf|asshole|dickhead|cocksuck|retard|tranny|chutiya|madarchod|bhenchod|behenchod|bhosdi|thayoli|thaayoli|thallipoli|pundachi|kandaroli|poorimon|pulayadi|thevidiya).*')
         && d.exp is int && d.exp >= 0
         && d.season is int && (d.season == tfSeasonNow() || d.season == tfSeasonNow() - 1)
         && d.seasonExp is int && d.seasonExp >= 0 && d.seasonExp <= d.exp

@@ -1,26 +1,76 @@
-// Leaderboard names: what someone picks to be called on the board, checked for swearing and slurs.
+// Names people pick (the greeting name and the leaderboard name), checked for swearing, sexual words and slurs,
+// in English (with internet slang), Hindi/Hinglish, Malayalam/Manglish and Tamil/Tanglish.
 // There's no server code (free Firebase plan), so the check runs here: when the name is typed, before it's
-// published, and again when other people's names are shown (names written by older versions get caught too).
-// It catches the common tricks: capitals, spacing and dots ("f.u c k"), number swaps ("sh1t", "@ss"), and
-// stretched letters ("fuuuck"). Short words that hide inside ordinary words ("ass" in "class") only count
-// as a whole word.
+// published, when other people's names are shown, and at start-up (a saved name that fails has to be replaced:
+// see namecheck.js). firestore.rules has a short backstop list of the worst ones.
+//
+// It sees through the usual tricks: capitals and joined words ("PooriMone"), spacing and dots ("f.u c k"),
+// number and symbol swaps ("sh1t", "@ss", "b!tch"), and stretched letters ("fuuuck", "myyyre"). Spelling
+// variants (Manglish th/t, oo/u, y/i…) are listed out rather than guessed, because guessing turns ordinary names
+// into bad words ("Puran" from "pooran", "Kalapani" from "kazhapp").
+// Lots of real names contain a bad word ("Kshitij", "Nazia", "Kunnath", "Dickens", "George", "poori" the bread),
+// so only words that never turn up inside a name are matched anywhere; the rest only as a whole word.
 
-// words that are never part of an ordinary name, matched anywhere in it
-// Careful with this list: lots of real names hide a bad word ("Kshitij", "Nazia", "Kunnath", "Fukuda", "Dickens"),
-// so only words that never turn up inside a name go here; the rest are in WHOLE.
-const ANYWHERE = ['fuck', 'shit', 'bitch', 'bastard', 'cunt', 'pussy', 'whore', 'slut', 'wank', 'twat', 'bollock', 'asshole', 'arsehole',
-  'motherf', 'nigg', 'faggot', 'retard', 'porn', 'penis', 'vagina', 'dildo', 'jizz', 'hitler', 'tranny',
-  // common Hindi and Malayalam swears, spelled the usual Latin ways
-  'chutiya', 'chutia', 'madarchod', 'behenchod', 'bhenchod', 'bhosdi', 'thayoli', 'lavda'];
-// names that contain one of the words above, taken out before checking
-const SAFE = ['kshit', 'ashit', 'scunthorpe', 'swank', 'shitake', 'penistone'];
-// short ones, or ones inside ordinary words and names, only as a whole word
-const WHOLE = ['ass', 'arse', 'tit', 'tits', 'fag', 'hoe', 'sex', 'kys', 'wtf', 'stfu', 'cum', 'dick', 'dicks', 'cock', 'cocks', 'rape', 'rapist',
-  'spic', 'nazi', 'kike', 'chink', 'fuk', 'fck', 'boob', 'boobs', 'randi', 'loda', 'lauda', 'gandu', 'myre', 'myran', 'pooru', 'kunna', 'punda'];
+// matched anywhere inside a word
+const ANYWHERE = [
+  // English
+  'fuck', 'fcuk', 'fvck', 'phuck', 'shit', 'bitch', 'biatch', 'bastard', 'cunt', 'pussy', 'whore', 'slut', 'wank', 'twat',
+  'bollock', 'asshole', 'arsehole', 'butthole', 'dumbass', 'jackass', 'dipshit', 'bullshit', 'horseshit', 'motherf', 'mofo',
+  'dick', 'cock', 'penis', 'vagina', 'dildo', 'jizz', 'cumshot', 'cumslut', 'blowjob', 'handjob', 'rimjob', 'deepthroat', 'boner',
+  'ballsack', 'nutsack', 'scrotum', 'testicle', 'titties', 'boobies', 'nipple', 'porn', 'hentai', 'orgasm', 'horny',
+  'masturbat', 'jerkoff', 'jackoff', 'fingerbang', 'creampie', 'bukkake', 'milf', 'pedophil', 'paedophil', 'molest', 'incest',
+  'bestiality', 'necrophil', 'smegma', 'douchebag', 'bellend', 'wanker', 'tosser', 'cuckold', 'killyourself',
+  // slurs (race, religion, sexuality, gender, disability)
+  'nigg', 'niqq', 'nigga', 'nibba', 'jigaboo', 'porchmonkey', 'wetback', 'beaner', 'raghead', 'towelhead', 'faggot', 'fagot', 'tranny',
+  'shemale', 'ladyboy', 'retard', 'mongoloid', 'hitler', 'siegheil', 'whitepower',
+  // Hindi / Hinglish
+  'chutiya', 'chutia', 'chutiye', 'chootiya', 'madarchod', 'maderchod', 'madarchoot', 'behenchod', 'bahenchod', 'bhenchod', 'bhanchod',
+  'bhosdi', 'bhosda', 'bhosad', 'bakchod', 'gaandu', 'lavde', 'lavda', 'lawda', 'lodu', 'raand', 'haramkhor', 'haramzada', 'haraamzaada',
+  'haramjada', 'bhadwa', 'bhadva', 'chinaal', 'jhaatu', 'maakichut', 'maakaloda',
+  // Malayalam / Manglish
+  'thayoli', 'thaayoli', 'thayyoli', 'tayoli', 'thallipoli', 'thalliyoli', 'thallipoly', 'thalipoli', 'kandaroli', 'poorimon', 'poorimol',
+  'pooriman', 'poorimakan', 'poorimol', 'pundachi', 'pundamon', 'pundimon', 'pundiyude', 'pundiketta', 'myrandi', 'mairandi', 'mayirandi',
+  'mayiru', 'oombi', 'oomban', 'oombal', 'umbiya', 'koothichi', 'thevidiya', 'thevadiya', 'thevdiya', 'thevadichi', 'kazhappi', 'kazhuveri',
+  'kazhuvari', 'pulayadi', 'naayintemon', 'nayintemon', 'naayintemol', 'pattimon', 'pattimol', 'thendimon', 'kuthichi', 'vedichi', 'vedimon',
+  // Tamil / Tanglish
+  'pundai', 'ommala', 'thevidiyapaiya', 'saavugraaki',
+];
+// taken out before matching: ordinary names and words that contain one of the words above
+const SAFE = ['kshit', 'ashit', 'dikshit', 'scunthorpe', 'swank', 'shitake', 'shiitake', 'penistone', 'dickens', 'dickson', 'dickinson', 'riddick',
+  'benedick', 'hancock', 'peacock', 'cockburn', 'cocktail', 'cockpit', 'cockroach', 'cockatoo', 'babcock', 'hitchcock', 'woodcock', 'shuttlecock',
+  'glasscock', 'alcock', 'thorny', 'lodur', 'melodu', 'kalodu',
+  'poorn'];   // Poornima, Poorna: with the double o squashed they'd read "porn"
+// only as a whole word
+const WHOLE = [
+  // English
+  'ass', 'arse', 'azz', 'tit', 'tits', 'titty', 'boob', 'boobs', 'balls', 'ballz', 'cum', 'cums', 'jizm', 'fag', 'fags', 'dyke', 'homo',
+  'hoe', 'hoes', 'thot', 'sex', 'sexy', 'nude', 'nudes', 'xxx', 'anal', 'anus', 'orgy', 'orgies', 'rape', 'raped', 'rapist', 'pedo', 'paedo',
+  'nazi', 'nazis', 'kkk', 'kys', 'kms', 'wtf', 'stfu', 'gtfo', 'mfer', 'fuk', 'fck', 'fuq', 'dik', 'cok', 'knob', 'clit', 'skank', 'prick',
+  'pricks', 'douche', 'spic', 'spick', 'chink', 'chinky', 'coon', 'gook', 'kike', 'paki', 'pakis', 'gypo', 'spaz', 'tard', 'negro', 'negros',
+  'piss', 'pissed', 'crap', 'turd', 'bugger', 'chode', 'cuck', 'simp', 'incel', 'sperm', 'semen', 'condom', 'bitchy', 'beyotch', 'bish',
+  // Hindi / Hinglish
+  // ("kutti" isn't here: in Malayalam it's "little one", a common pet name)
+  'bkl', 'bsdk', 'mkc', 'lund', 'loda', 'lode', 'lauda', 'laude', 'chut', 'choot', 'chuchi', 'gand', 'gaand', 'gandu', 'randi', 'kuttiya', 'kamina', 'kamine', 'harami', 'tatti', 'jhatu', 'hijra', 'hijda', 'chamar', 'bhangi', 'chuhra', 'katwa', 'katua', 'jihadi',
+  // Malayalam / Manglish
+  'myre', 'myru', 'myr', 'mayir', 'mayire', 'mairu', 'maire', 'meyre', 'myran', 'mairan', 'mayiran', 'pooru', 'poorr', 'pooran', 'kunna',
+  'kunne', 'kunnan', 'kunnamon', 'kunnamone', 'kundi', 'thendi', 'theval', 'vedi', 'oombu', 'umbu', 'koothi', 'punda', 'pundi', 'theetam',
+  'koothara', 'pannadai', 'porukki',
+  // Tamil / Tanglish
+  'otha', 'koodhi', 'baadu', 'sootha', 'sunniya',
+];
+// two-letter swears, only when typed together as their own word ("bc"), not from initials ("B. C. Nair")
+// ("mc" isn't here: McDonald, MC Jose)
+const SHORT = ['bc', 'mf', 'fk'];
+// insults made of ordinary words ("poori" is bread, "mone" is son), read across the words of the name
+const PHRASES = ['poorimone', 'poorimon', 'poorimol', 'naayintemone', 'nayintemone', 'pattimone', 'thendimone', 'pulayadimone', 'sonofabitch',
+  'killyourself', 'heilhitler', 'whitepower', 'siegheil'];
 
-const SWAPS = { '0': 'o', '1': 'i', '!': 'i', '|': 'i', '3': 'e', '4': 'a', '@': 'a', '5': 's', '$': 's', '7': 't', '+': 't', '8': 'b', '9': 'g' };
-const swap = s => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[0-9!|@$+]/g, c => SWAPS[c] || c);
+const SWAPS = { '0': 'o', '1': 'i', '!': 'i', '|': 'i', '3': 'e', '4': 'a', '@': 'a', '5': 's', '$': 's', '7': 't', '+': 't', '8': 'b', '9': 'g', '€': 'e', '¡': 'i' };
+// lower case, accents off, symbol and number swaps; "PooriMone" becomes "poori mone"
+const swap = s => String(s || '').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+  .replace(/[0-9!|@$+€¡]/g, c => SWAPS[c] || c);
 const squash = s => s.replace(/(.)\1+/g, '$1');   // "fuuuck" -> "fuck"
+const WHOLE_SET = new Set(WHOLE);
 
 // The words of a name, with spelled-out runs joined back up: "f.u.c.k off" -> ["fuck", "off"].
 // Words aren't run together otherwise, so "Jess Hitchens" isn't read as "...shit...".
@@ -37,12 +87,16 @@ function words(s) {
 }
 
 export function isClean(name) {
-  for (const w of words(swap(String(name || '')))) {
+  const s = swap(name), ws = words(s);
+  for (const w of ws) {
     let x = w;
     for (const safe of SAFE) x = x.split(safe).join(' ');
     for (const v of [x, squash(x)]) if (ANYWHERE.some(b => v.includes(b))) return false;
-    if (WHOLE.includes(w) || WHOLE.includes(squash(w))) return false;
+    if (WHOLE_SET.has(w) || WHOLE_SET.has(squash(w))) return false;
   }
+  for (const p of s.split(/[^a-z]+/)) if (SHORT.includes(p)) return false;
+  const all = ws.join('');
+  if (PHRASES.some(p => all.includes(p) || squash(all).includes(squash(p)))) return false;
   return true;
 }
 

@@ -8,6 +8,7 @@ import { todayStr, fmtStamp } from '../dates.js';
 import * as cal from '../calendars.js';
 import { mascot } from '../mascot.js';
 import { COATS } from '../mochi.js';
+import { isClean } from '../namefilter.js';
 import { buildICS } from '../ics.js';
 import * as account from '../account.js';
 import * as cloud from '../cloud.js';
@@ -270,7 +271,13 @@ export function onChange(el) {
   }
 }
 export function onInput(el) {
-  if (el.dataset.input === 'name') setSetting('name', el.value.trim(), { quiet: true });
+  // a name with a swear word or slur isn't saved: the field shows red until it's changed
+  if (el.dataset.input === 'name') {
+    const v = el.value.trim(), ok = !v || isClean(v);
+    el.toggleAttribute('aria-invalid', !ok);
+    el.title = ok ? '' : "That name isn't allowed";
+    if (ok) setSetting('name', v, { quiet: true });
+  }
   if (el.dataset.input === 'tier') { const n = getState().settings.tierNames.slice(); n[+el.dataset.i] = el.value.trim() || `P${+el.dataset.i + 1}`; setSetting('tierNames', n, { quiet: true }); }
 }
 function rerender() { swap(render({})); }
