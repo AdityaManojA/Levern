@@ -142,7 +142,7 @@ export async function signOutAndReset({ force = false } = {}) {
   unlisten?.(); unlisten = null;
   await account.signOut();
   try { localStorage.removeItem('taskflow-events'); } catch (e) {}
-  resetAll();
+  resetAll({ fromSync: true });   // this device only: the empty copy must never look newer than the account
   rev = -1; dirty = false; lastShare = ''; sharedEvents = [];
   info = { lastSync: null, error: null }; emit();
   return { ok: true };
@@ -158,7 +158,8 @@ async function listen() {
     await account.firebaseUser();
     unlisten = F.onSnapshot(F.doc(db, 'taskflowUsers', u.uid), s => {
       const r = s.exists() ? s.get('rev') || 0 : 0;
-      if (r !== rev && !busy) schedule(100);
+      // a change that arrives during a sync is picked up right after it, instead of being missed
+      if (r !== rev) { if (busy) again = true; else schedule(100); }
     }, () => {});
   } catch (e) {}
 }
@@ -193,8 +194,10 @@ export function startCloud() {
   });
   // offline or slow: never keep the screens waiting for more than a few seconds
   if (!ready) setTimeout(becomeReady, 6000);
-  addEventListener('online', () => { if (dirty) schedule(50); });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && dirty) schedule(50); });
-  setInterval(() => { if (dirty && account.user()) syncNow(); }, 20000);
+  // coming back online or back to the app always checks the account too (the other phone may have changed
+  // things while this one was asleep and its listener missed it), not only when this device has changes to send
+  addEventListener('online', () => { if (account.user()) schedule(50); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && account.user()) schedule(50); });
+  setInterval(() => { if (account.user() && (dirty || Date.now() - (info.lastSync || 0) > 120000)) syncNow(); }, 20000);
   if (account.user()) syncNow().then(listen);
 }

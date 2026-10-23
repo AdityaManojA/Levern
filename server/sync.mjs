@@ -19,7 +19,7 @@ export function isLocalRequest(req, port) {
   return !origin || origin === `http://${host}`;
 }
 
-const DOC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt'];
+const DOC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt', 'settingsStamps'];
 const pick = d => Object.fromEntries(DOC_KEYS.map(k => [k, d[k]]));
 
 export function createSync(db, hooks, port) {

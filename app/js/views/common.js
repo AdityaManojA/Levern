@@ -40,11 +40,12 @@ export function questRow(q, now = new Date()) {
   const meta = [
     `<span>${esc(tierLabel(q.tier))}</span>`,
     q.due ? `<span class="${st === 'overdue' ? 'od' : ''}">${esc(dueLabel(q, now))}</span>` : '',
+    // right after the date, so it sits in the same place on every card
+    reminderChip(q),
     q.repeat ? `<span class="tag">${ICON.repeat}${repeatShort(q.repeat)}</span>` : '',
     q.goal ? goalChip(q) : '',
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',
     q.sketches?.length ? `<span class="tag" title="Sketches">${ICON.sketch}${q.sketches.length}</span>` : '',
-    reminderChip(q),
     q.sample ? '<span class="exchip" title="An example to show how TaskFlow works. It stays out of your calendar. Edit it to make it yours.">Example</span>' : '',
   ].join('');
   const open = expanded.has(q.id);

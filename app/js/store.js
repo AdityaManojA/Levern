@@ -8,14 +8,18 @@ import { cleanSketches } from './ink.js';
 import { DEFAULT_ALERTS, cleanAlerts } from './alerts.js';
 import { clampGoal, goalProgress } from './goals.js';
 
-export const TIER_COLORS = ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'];
+// the theme's priority colours (app.css --p1..--p6), so they follow light and dark mode
+export const TIER_COLORS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)', 'var(--p5)', 'var(--p6)'];
 const VERSION = 2;
 const DEFAULT_SETTINGS = {
   target: 5, tierNames: ['Critical', 'High', 'Medium', 'Normal', 'Low', 'Someday'],
   // sound effects start off when the device asks for reduced motion
   sound: !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches), volume: 0.6, notify: true, focusMin: 25, breakMin: 5, snoozeMin: 10,
   name: '', profile: '', voice: true,
-  mochi: true, roam: true, speed: 'slow', mochiSound: true, annoy: 5,
+  // boardName: what the leaderboard shows (empty = name). theme: 'light', 'dark' or 'auto' (follow the device)
+  boardName: '', theme: 'light',
+  // mochiColor: his coat, one of mochi.js COATS
+  mochi: true, roam: true, speed: 'slow', mochiSound: true, annoy: 5, mochiColor: 'black',
 };
 
 let adapter = localAdapter('taskflow.v1');
@@ -77,6 +81,8 @@ export function init(customAdapter) {
 function migrate(s) {
   s.settings = { ...DEFAULT_SETTINGS, ...(s.settings || {}) };
   s.quests ||= []; s.history ||= []; s.sessions ||= []; s.timer ??= null; s.notifs ||= []; s.tombstones ||= [];
+  // each setting's own change time (see commit); a save from before that gets the old whole-settings time on every key
+  s.settingsStamps ||= Object.fromEntries(Object.keys(s.settings).map(k => [k, s.settingsUpdatedAt || 0]));
   for (const q of s.quests) q.updatedAt ??= q.createdAt || 0;
   for (const q of s.quests) { q.subtasks ||= []; q.notes ??= ''; if (q.sketches) q.sketches = cleanSketches(q.sketches); }
   markSamples(s.quests);
@@ -116,7 +122,13 @@ export function commit(fn, opts = {}) {
     for (const id of before.keys()) if (!ids.has(id)) state.tombstones.push({ id, deletedAt: now });
     if (JSON.stringify(state.history) !== hBefore) state.historyUpdatedAt = now;
     if (JSON.stringify(state.sessions) !== sBefore) state.sessionsUpdatedAt = now;
-    if (JSON.stringify(state.settings) !== stBefore) state.settingsUpdatedAt = now;
+    if (JSON.stringify(state.settings) !== stBefore) {
+      // stamp each setting that changed, so syncing merges settings one by one: changing the focus length on one
+      // phone no longer brings back that phone's old copy of every other setting (daily reminders included)
+      state.settingsUpdatedAt = now;
+      const old = JSON.parse(stBefore) || {}, st = state.settingsStamps ||= {};
+      for (const k of new Set([...Object.keys(old), ...Object.keys(state.settings)])) if (JSON.stringify(old[k]) !== JSON.stringify(state.settings[k])) st[k] = now;
+    }
   }
   adapter.save(state);
   saveSubs.forEach(f => f(state, opts));
@@ -124,7 +136,7 @@ export function commit(fn, opts = {}) {
   return r;
 }
 // the parts of the data that sync with the server
-export const SYNC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt', 'eventMeta'];
+export const SYNC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt', 'settingsStamps', 'eventMeta'];
 
 // TaskFlow's own notes on the person's Google Calendar events (only a priority for now), by event id.
 // Google stays the owner of the event itself: TaskFlow never changes or deletes it there.
@@ -143,8 +155,9 @@ export function addQuest(data) {
   const q = { id: uid(), title: data.title, tier: data.tier ?? 3, due: data.due || null, time: data.time || null, notes: data.notes || '',
     subtasks: (data.subtasks || []).map(s => typeof s === 'string' ? { id: uid(), title: s, done: false, tier: data.tier ?? 3 } : s),
     repeat: data.repeat || null, remind: null, done: false, doneAt: null, createdAt: Date.now(), sample: false };
-  // a quest with a due date always reminds at its due time, unless its alerts say otherwise
-  if (q.due) q.alerts = cleanAlerts(data.alerts ?? DEFAULT_ALERTS);
+  // a quest with a due date always reminds at its due time, unless its alerts say otherwise.
+  // A reminder set for several times a day is kept as it is (the default alert used to replace it with one).
+  if (q.due && !data.remind?.multi) q.alerts = cleanAlerts(data.alerts ?? DEFAULT_ALERTS);
   // a weekly goal has no day: it counts completions in the week instead
   if (data.goal) { q.goal = { target: clampGoal(data.goal.target), log: [] }; q.due = null; q.time = null; q.alerts = undefined; }
   if (data.sketches && data.sketches.length) q.sketches = data.sketches.map(k => ({ id: uid(), createdAt: Date.now(), ...k }));
@@ -327,7 +340,9 @@ export function tidyHistory() {
   });
   return removed;
 }
-export function resetAll() { commit(s => { const f = fresh(); Object.keys(s).forEach(k => delete s[k]); Object.assign(s, f); }); }
+// opts.fromSync: a reset of this device only (signing out). It's saved without change stamps or deletion
+// markers, so the empty copy never counts as newer than the account's data at the next sign-in.
+export function resetAll(opts = {}) { commit(s => { const f = fresh(); Object.keys(s).forEach(k => delete s[k]); Object.assign(s, f); }, opts); }
 
 /* ---------- sorting ---------- */
 const rank = { overdue: 0, today: 1, soon: 2, week: 3, later: 4, none: 5 };

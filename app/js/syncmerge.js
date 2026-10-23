@@ -1,7 +1,9 @@
 // Merging two copies of the TaskFlow data (the app's and the server's). Pure, used on both sides.
 //  - Quests: last write wins per quest, by updatedAt. Deletions are tombstones { id, deletedAt } that win
 //    over any older copy of the quest, so a delete on one side isn't undone by the other.
-//  - History, focus sessions and settings: last write wins for the whole list, by their *UpdatedAt stamp.
+//  - History and focus sessions: last write wins for the whole list, by their *UpdatedAt stamp.
+//  - Settings: last write wins per setting, by settingsStamps (a copy without them, from an older version,
+//    counts every setting as changed at its settingsUpdatedAt).
 
 const qTime = q => q.updatedAt || q.createdAt || 0;
 
@@ -27,15 +29,29 @@ export function mergeQuests(aQuests = [], aTombs = [], bQuests = [], bTombs = []
 
 const newer = (a, b, key) => ((a && a[key]) || 0) >= ((b && b[key]) || 0) ? a : b;
 
+// settings, one at a time: each side's value with the newer change time wins (a ties win, like newer())
+export function mergeSettings(a = {}, b = {}) {
+  const as = a.settings || {}, bs = b.settings || {};
+  const stamp = (side, k) => (side.settingsStamps ? side.settingsStamps[k] || 0 : side.settingsUpdatedAt || 0);
+  const settings = {}, settingsStamps = {};
+  for (const k of new Set([...Object.keys(as), ...Object.keys(bs)])) {
+    const inA = k in as, inB = k in bs, ta = stamp(a, k), tb = stamp(b, k);
+    const fromA = inA && (!inB || ta >= tb);
+    settings[k] = fromA ? as[k] : bs[k];
+    settingsStamps[k] = fromA ? ta : tb;
+  }
+  return { settings, settingsStamps, settingsUpdatedAt: Math.max(a.settingsUpdatedAt || 0, b.settingsUpdatedAt || 0) };
+}
+
 // a, b: { quests, tombstones, history, historyUpdatedAt, sessions, sessionsUpdatedAt, settings, settingsUpdatedAt }
 export function mergeDocs(a = {}, b = {}) {
   const { quests, tombstones } = mergeQuests(a.quests, a.tombstones, b.quests, b.tombstones);
-  const h = newer(a, b, 'historyUpdatedAt'), s = newer(a, b, 'sessionsUpdatedAt'), st = newer(a, b, 'settingsUpdatedAt');
+  const h = newer(a, b, 'historyUpdatedAt'), s = newer(a, b, 'sessionsUpdatedAt');
   return {
     quests, tombstones,
     history: h.history || [], historyUpdatedAt: h.historyUpdatedAt || 0,
     sessions: s.sessions || [], sessionsUpdatedAt: s.sessionsUpdatedAt || 0,
-    settings: st.settings || {}, settingsUpdatedAt: st.settingsUpdatedAt || 0,
+    ...mergeSettings(a, b),
     eventMeta: mergeEventMeta(a.eventMeta, b.eventMeta),
   };
 }

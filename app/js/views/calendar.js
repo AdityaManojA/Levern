@@ -41,7 +41,7 @@ function eventsByDay(from, to) {
 }
 const evTime = (e, d) => e.allDay ? 'All day' : toStr(new Date(e.start)) === d ? fmtTime(hhmm(e.start)) : 'cont.';
 // a Google event looks like a quest: its priority colour once you give it one, Google blue until then
-const EV_COLOR = '#9DB8F6';
+const EV_COLOR = 'var(--ev)';   // Google Calendar events (app.css --ev)
 const evColor = e => { const t = eventTier(e.id); return t == null ? EV_COLOR : TIER_COLORS[t]; };
 const G_TAG = '<span class="gtag" aria-label="Google Calendar">G</span>';
 const evRow = (e, d, cls) => `<button type="button" class="${cls} ev" data-act="ev-open" data-ev="${esc(e.id)}" aria-label="${esc(e.title)}, Google Calendar event, ${esc(evTime(e, d))}${eventTier(e.id) != null ? `, ${esc(tierLabel(eventTier(e.id)))}` : ''}">

@@ -36,7 +36,7 @@ export function render(params) {
     ${zc(false, `<div class="seg"><button class="${mode === 'focus' ? 'on' : ''}" data-act="fmode" data-m="focus">Focus</button><button class="${mode === 'break' ? 'on' : ''}" data-act="fmode" data-m="break">Break</button></div>`)}
     <div class="card focus-card${running && !t.pausedAt ? ' running' : ''}${mode === 'break' ? ' is-break' : ''}">
       <div class="timer">
-        <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}" fill="none" stroke="#EFE7DA" stroke-width="7"/>
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}" fill="none" style="stroke:var(--paper)" stroke-width="7"/>
           <circle data-ring cx="50" cy="50" r="${R}" fill="none" stroke="${mode === 'focus' ? 'var(--p1)' : 'var(--sky)'}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - left / total)}"/></svg>
         <div class="timer-in"><div class="t" data-left role="timer" aria-live="off">${fmt(left)}</div><div class="m">${t ? (t.pausedAt ? 'Paused' : mode === 'focus' ? 'Focusing' : 'Break') : mode === 'focus' ? `${minutes} min focus` : `${minutes} min break`}</div></div>
       </div>

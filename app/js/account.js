@@ -38,6 +38,18 @@ async function load() {
 }
 
 export const user = () => current;
+
+// The name to greet someone by, from a Google display name. Words that aren't a person's name
+// ("Free Fire", "Test User", "Mr Smith") are skipped, so the greeting never reads "Good morning, Free".
+const NOT_A_NAME = new Set(['free', 'test', 'tester', 'user', 'admin', 'guest', 'demo', 'the', 'mr', 'mrs', 'ms', 'miss', 'dr', 'sir', 'official',
+  'real', 'its', 'im', 'iam', 'pro', 'gamer', 'gaming', 'channel', 'account', 'new', 'old', 'my', 'unknown', 'anonymous']);
+export function greetName(full) {
+  for (const raw of String(full || '').trim().split(/\s+/)) {
+    const w = raw.replace(/[.'’]+$/, '');
+    if (/^\p{L}[\p{L}'’-]*$/u.test(w) && w.length > 1 && !NOT_A_NAME.has(w.toLowerCase().replace(/['’]/g, ''))) return w;
+  }
+  return '';
+}
 export const onAccount = fn => { listeners.add(fn); return () => listeners.delete(fn); };
 // the signed-in Firebase user once the session is restored (null when signed out)
 export async function firebaseUser() {

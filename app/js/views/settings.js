@@ -7,6 +7,7 @@ import { esc, toast, play, confirmBox, download } from '../ui.js';
 import { todayStr, fmtStamp } from '../dates.js';
 import * as cal from '../calendars.js';
 import { mascot } from '../mascot.js';
+import { COATS } from '../mochi.js';
 import { buildICS } from '../ics.js';
 import * as account from '../account.js';
 import * as cloud from '../cloud.js';
@@ -48,6 +49,11 @@ export function render() {
       <div class="srow"><div class="l"><b>Name</b><small>Used in the greeting on Home</small></div><input class="field" style="width:150px" value="${esc(s.name)}" maxlength="30" data-input="name" aria-label="Your name" placeholder="Optional"></div>
       <div class="srow"><div class="l"><b>Welcome screens</b><small>See the introduction again</small></div><button class="mini" data-act="onboard">Show again</button></div>
       <div class="srow"><div class="l"><b>Quick tour</b><small>Mochi shows you around (30 seconds)</small></div><button class="mini" data-act="tour">Start</button></div>
+    </div>
+
+    <div class="sec">Look</div>
+    <div class="card">
+      <div class="srow"><div class="l"><b>Theme</b><small>Dark is easier on the eyes at night</small></div><div class="seg" style="margin:0;width:auto">${[['light', 'Light'], ['dark', 'Dark'], ['auto', 'Device']].map(([v, l]) => `<button class="${(s.theme || 'light') === v ? 'on' : ''}" data-act="theme" data-v="${v}" aria-pressed="${(s.theme || 'light') === v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
     </div>
 
     <div class="sec">Goals</div>
@@ -96,6 +102,7 @@ export function render() {
     <div class="sec">Mochi</div>
     <div class="card" data-tour="mochi-settings">
       <div class="srow"><div class="l"><b>Show Mochi</b><small>The cat on the nav bar</small></div>${tog('mochi', s.mochi !== false, 'Show Mochi')}</div>
+      <div class="srow"><div class="l"><b>Coat</b><small>Mochi's colour</small></div><div class="seg coats" style="margin:0;width:auto">${Object.entries(COATS).map(([v, c]) => `<button class="${(s.mochiColor || 'black') === v ? 'on' : ''}" data-act="coat" data-v="${v}" aria-pressed="${(s.mochiColor || 'black') === v}" style="padding:5px 10px"><i class="coat-dot" style="background:${c.swatch}"></i>${c.label}</button>`).join('')}</div></div>
       <div class="srow"><div class="l"><b>Roam around</b><small>Walks along the bar. Off: sits by the edge.</small></div>${tog('roam', s.roam !== false, 'Mochi roams')}</div>
       <div class="srow"><div class="l"><b>Walk speed</b></div><div class="seg" style="margin:0;width:auto">${[['slow', 'Slow'], ['normal', 'Normal'], ['zoomy', 'Zoomy']].map(([v, l]) => `<button class="${(s.speed || 'slow') === v ? 'on' : ''}" data-act="speed" data-v="${v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
       <div class="srow"><div class="l"><b>Mochi sounds</b><small>The little "mrp" when you tap him</small></div>${tog('mochiSound', s.mochiSound !== false, 'Mochi sounds')}</div>
@@ -239,6 +246,8 @@ export const actions = {
   install: () => install(),
   hear: el => play(el.dataset.s),
   speed: el => { setSetting('speed', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
+  theme: el => { setSetting('theme', el.dataset.v); play('click', 0.4); },
+  coat: el => { setSetting('mochiColor', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
   export: () => { download(`taskflow-backup-${todayStr()}.json`, exportData(), 'application/json'); toast('Backup saved'); },
   'tidy-exp': async () => {
     const st = getState(), before = summary(st.history, st.sessions, st.settings.target).exp;

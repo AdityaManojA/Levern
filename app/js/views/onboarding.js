@@ -63,7 +63,7 @@ function screen(name) {
       <div class="ob-card">
         <b>Questline = a bigger goal</b>
         <p>A group of quests that belong together. "Exam week" could be 5 quests: revise, flashcards, a past paper…</p>
-        <div class="bar" style="background:#fff"><i style="width:40%;background:var(--butter)"></i></div>
+        <div class="bar" style="background:var(--card)"><i style="width:40%;background:var(--butter)"></i></div>
       </div>
       <div class="ob-chips">${TIER_COLORS.map((c, i) => `<span style="--c:${c}">P${i + 1}</span>`).join('')}</div>
       <p class="ob-p muted small">The colour shows priority: P1 (red) is most urgent, P6 (lilac) is "someday".</p>`;
@@ -95,7 +95,7 @@ function screen(name) {
     case 'remind': return `
       <h1 class="ob-h">When should I remind you?</h1>
       <p class="ob-p muted">Pick a time for a look at today's quests, and turn on any nudges you'd like. Add as many times a day as you want. You can change all of this later in Settings.</p>
-      <div class="ob-card nudges" style="background:#fff">${nudges.editor()}</div>`;
+      <div class="ob-card nudges" style="background:var(--card)">${nudges.editor()}</div>`;
     case 'notify': return `
       <h1 class="ob-h">Turn on notifications</h1>
       <p class="ob-p muted">So reminders reach you on time, even when TaskFlow is in the background. Here's how on the device you're using.</p>
@@ -251,10 +251,12 @@ async function googleSignIn() {
 }
 // bring in the account's quests; someone who already has them skips the rest of the setup
 async function afterSignIn(u) {
-  const first = (u.name || '').split(' ')[0];
+  const first = account.greetName(u.name);
   play('click', 0.4);
   const r = await cloud.syncNow();
-  if (first && !getState().settings.name) setSetting('name', first, { quiet: true });
+  const had = getState().settings.name;
+  // fill the name in, or replace one that isn't really a name (an earlier sign-in saved "Free" from "Free Fire")
+  if (first && (!had || !account.greetName(had))) setSetting('name', first, { quiet: true });
   busy = false;
   const back = deviceSetupDone();
   // a returning account goes straight into the app, on any device: no welcome steps again

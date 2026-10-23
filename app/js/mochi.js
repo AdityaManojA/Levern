@@ -16,7 +16,67 @@ import { reduced } from './motion.js';
 
 const A = V.anims;
 const has = n => Object.prototype.hasOwnProperty.call(A, n);
-const stripUrl = n => V.base + 'strips/' + n + '.png';
+const baseUrl = n => V.base + 'strips/' + n + '.png';
+
+/* ---------- his coat ---------- */
+// Mochi is drawn black. Other coats are made on the device: each strip is redrawn once with his black fur
+// turned into the coat colour. White (whiskers, leg lines, inner ears, eyes) stays white and his pupils stay dark.
+// Until a strip is ready he shows the original, then swaps in the new coat on his next frame.
+export const COATS = {
+  black: { label: 'Black', swatch: '#1E1B18' },
+  ginger: { label: 'Ginger', swatch: '#E58B3A', rgb: [229, 139, 58] },
+  grey: { label: 'Grey', swatch: '#8C919A', rgb: [140, 145, 154] },
+  brown: { label: 'Brown', swatch: '#7A5236', rgb: [122, 82, 54] },
+};
+const coat = () => (COATS[S().mochiColor] ? S().mochiColor : 'black');
+const tinted = new Map();   // 'ginger/rest' -> blob URL ('' while it's being made)
+const queue = [];
+let working = false, onTinted = () => {};
+const stripUrl = n => {
+  const c = coat();
+  if (c === 'black') return baseUrl(n);
+  const k = c + '/' + n, u = tinted.get(k);
+  if (u) return u;
+  if (u === undefined) { tinted.set(k, ''); queue.push([n, c]); pump(); }
+  return baseUrl(n);
+};
+async function pump() {
+  if (working) return;
+  working = true;
+  while (queue.length) {
+    const [n, c] = queue.shift();
+    if (c !== coat()) { tinted.delete(c + '/' + n); continue; }   // the coat changed again meanwhile
+    try { tinted.set(c + '/' + n, await recolour(baseUrl(n), COATS[c].rgb)); onTinted(n); }
+    catch (e) { tinted.delete(c + '/' + n); }
+    await new Promise(r => setTimeout(r, 0));   // one strip at a time, so the page stays smooth
+  }
+  working = false;
+}
+async function recolour(src, [cr, cg, cb]) {
+  const img = new Image(); img.src = src; await img.decode();
+  const w = img.naturalWidth, h = img.naturalHeight, cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const g = cv.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, w, h), p = d.data;
+  const luma = i => 0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2];
+  const light = new Uint8Array(w * h);
+  for (let j = 0, i = 0; j < light.length; j++, i += 4) light[j] = p[i + 3] > 160 && luma(i) > 190 ? 1 : 0;
+  // a pupil is a dark spot with white on (nearly) every side within a few pixels
+  const R = 5, near = (x, y, dx, dy) => { for (let k = 1; k <= R; k++) { const xx = x + dx * k, yy = y + dy * k; if (xx < 0 || yy < 0 || xx >= w || yy >= h) return 0; if (light[yy * w + xx]) return 1; } return 0; };
+  for (let y = 0, j = 0; y < h; y++) for (let x = 0; x < w; x++, j++) {
+    const i = j * 4;
+    if (!p[i + 3] || light[j]) continue;
+    const l = luma(i);
+    if (l > 190) continue;
+    if (l < 100 && near(x, y, 1, 0) + near(x, y, -1, 0) + near(x, y, 0, 1) + near(x, y, 0, -1) >= 3) continue;
+    const t = l / 255;
+    p[i] = cr + (255 - cr) * t; p[i + 1] = cg + (255 - cg) * t; p[i + 2] = cb + (255 - cb) * t;
+  }
+  g.putImageData(d, 0, 0);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  return URL.createObjectURL(blob);
+}
 const SPEED = { slow: 28, normal: 50, zoomy: 95 }, SPRINT = 170, SINK = 2;
 // Tempo on top of the art's own fps: reactions and idles play much slower so they read as calm,
 // walking and running a little faster (stride and ground speed scale together, so his feet don't slide).
@@ -99,6 +159,8 @@ export function createMochi(env) {
   const vw = () => document.documentElement.clientWidth;
   const mirrored = (a, fi) => a.face === 'R' && !a.lock[fi - 1] && !(a.noflip && a.noflip.includes(fi)) && M.dir < 0;
   let shown = '';
+  // a new coat strip is ready: if it's the one he's showing, swap it in now
+  onTinted = n => { if (M.anim === n) { shown = ''; render(); } };
   function render() {
     const a = A[M.anim];
     if (shown !== M.anim) { act.style.backgroundImage = `url("${stripUrl(M.anim)}")`; act.style.backgroundSize = `${a.w * a.frames}px ${a.h}px`; shown = M.anim; }
@@ -110,7 +172,9 @@ export function createMochi(env) {
     const o = origin();
     el.style.transform = `translate(${M.cx - a.ax - o.x}px, ${y - o.y}px)`;
     flip.style.transform = mirrored(a, M.fi) ? 'scaleX(-1)' : '';
-    el.style.clipPath = (M.perch === 'sheet' && a.edge != null) ? `inset(0 0 ${Math.max(0, a.h - a.edge + M.lift)}px 0)` : '';
+    // On the bar, anything drawn below his paws (a hanging tail, a flop) is cut off, so he never covers the tab icons and labels
+    el.style.clipPath = (M.perch === 'sheet' && a.edge != null) ? `inset(0 0 ${Math.max(0, a.h - a.edge + M.lift)}px 0)`
+      : (M.perch === 'nav' && !M.held && !M.lift) ? `inset(0 0 ${Math.max(0, a.h - a.gy)}px 0)` : '';
     if (M.holding && !M.hidden) {
       const cw = card.offsetWidth || 150, ch = card.offsetHeight || 40;
       const pawX = M.cx + (mirrored(a, M.fi) ? -20 : 20), top = y + a.gy - V.sit + 12 - ch;   // resting on his raised paw
@@ -476,9 +540,12 @@ export function createMochi(env) {
     PLAY.lastX = e.clientX;
     clearTimeout(PLAY.stillT);
     if (Math.abs(dx) > 50 && Math.abs(dx) < 170 && dy > -20 && dy < 60) PLAY.stillT = setTimeout(() => { if ((resting() || M.anim === 'look-scrub') && M.state === 'idle' && !M.held) playWith('pounce', dx); }, 900);
-    if (Math.hypot(dx, dy) > 320) return;
+    // His eyes follow the pointer anywhere on the screen. The look-scrub frames look left, up, up-right and right,
+    // so the frame comes from the direction of the pointer seen from his head (near the top of his picture).
     PLAY.lastMove = now;
-    PLAY.lookTarget = dx < -50 ? 1 : dx < 25 ? 2 : dx < 80 ? 3 : 4;
+    const hx = e.clientX - (r.left + r.width / 2), hy = (r.top + r.height * 0.3) - e.clientY;   // hy > 0: pointer above his head
+    const ang = Math.atan2(hy, hx) * 180 / Math.PI;   // 0 right, 90 straight up, 180 left
+    PLAY.lookTarget = hy <= 0 ? (hx < 0 ? 1 : 4) : ang > 115 ? 1 : ang > 72 ? 2 : ang > 30 ? 3 : 4;
     if (M.anim !== 'look-scrub') { if (M.pending) return; stop(); PLAY.look = 1; play('look-scrub', { hold: true, to: 1 }); }
     if (!PLAY.lookT) PLAY.lookT = setInterval(stepLook, 110);
   });
@@ -616,7 +683,11 @@ export function createMochi(env) {
     raise(on) { el.classList.toggle('raised', on); bub.classList.toggle('raised', on); },
     // pull to refresh borrows him as its indicator; the one on the bar steps out meanwhile
     away(on) { el.style.visibility = on ? 'hidden' : ''; card.style.visibility = on ? 'hidden' : ''; if (on) bub.classList.remove('show'); },
-    settingsChanged() { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); if (!M.busy && !M.asleep && M.state === 'idle') goRest(); schedule(0.5, 1.5); },
+    settingsChanged() {
+      // a new coat: start with what he's showing, then the rest of his animations in the background
+      if (coat() !== 'black') { stripUrl(M.anim); for (const n in A) stripUrl(n); }
+      shown = ''; render();
+      const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); if (!M.busy && !M.asleep && M.state === 'idle') goRest(); schedule(0.5, 1.5); },
     debug: () => ({ cx: Math.round(M.cx), anim: M.anim, fi: M.fi, state: M.state, busy: M.busy, perch: M.perch, asleep: M.asleep, hidden: M.hidden }),
     show(name, fi) { if (!has(name)) return false; stop(); stopLook(); M.busy = true; M.anim = name; M.fi = fi || 1; render(); return true; },
     resume() { goRest(); schedule(1, 2); },

@@ -42,7 +42,7 @@ export function render() {
     </div>
 
     <div class="sec">API keys</div>
-    ${newKey ? `<div class="card" style="background:#DDF3E4">
+    ${newKey ? `<div class="card" style="background:var(--tint-mint)">
       <h3>Copy your new key now</h3>
       <p class="small" style="color:var(--ink)">This is the only time it's shown. TaskFlow keeps only a fingerprint of it.</p>
       <div class="keybox"><code data-key>${esc(newKey)}</code><button class="mini" data-act="copy-key">Copy</button></div>
@@ -63,7 +63,7 @@ export function render() {
     </div>
 
     <div class="sec">Webhooks</div>
-    ${newSecret ? `<div class="card" style="background:#DDF3E4"><h3>Signing secret</h3><p class="small" style="color:var(--ink)">Use it to check the <code>TaskFlow-Signature</code> header (API.md shows how). Shown once.</p>
+    ${newSecret ? `<div class="card" style="background:var(--tint-mint)"><h3>Signing secret</h3><p class="small" style="color:var(--ink)">Use it to check the <code>TaskFlow-Signature</code> header (API.md shows how). Shown once.</p>
       <div class="keybox"><code data-key>${esc(newSecret)}</code><button class="mini" data-act="copy-key">Copy</button></div><button class="link" data-act="hide-key" style="margin-top:8px">I've saved it</button></div>` : ''}
     <div class="card">
       ${hooks.length ? hooks.map(h => `<div class="srow"><div class="l"><b style="word-break:break-all">${esc(h.url)}</b><small>${h.events.map(esc).join(', ')}</small></div>

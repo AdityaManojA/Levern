@@ -16,7 +16,8 @@ const STEPS = [
   { route: '#/quests?filter=all', target: '#qlist', title: 'Six priority colours', text: 'Warmer means sooner. Tap a quest to change its priority, date or reminder.',
     extra: () => `<div class="tour-chips">${getState().settings.tierNames.map((n, i) => `<span style="--c:${TIER_COLORS[i]}">P${i + 1} ${esc(n)}</span>`).join('')}</div>` },
   { route: '#/quests?filter=all', target: '#sheet [data-tour="voice"]', sheet: true, title: 'Just say it', text: 'Tap and speak, or type. TaskFlow picks out dates, times and keywords and suggests a priority.' },
-  { route: () => '#/quest/' + encodeURIComponent(subtaskQuest()), target: '[data-tour="subtasks"]', title: 'Break it down', text: 'Split a quest into subtasks. Each subtask can have its own priority.' },
+  // with no quest to open, this step is skipped (an empty #/quest/ would land on "Quest not found")
+  { route: () => (subtaskQuest() ? '#/quest/' + encodeURIComponent(subtaskQuest()) : '#/quests?filter=all'), target: '[data-tour="subtasks"]', title: 'Break it down', text: 'Split a quest into subtasks. Each subtask can have its own priority.' },
   { route: '#/calendar', target: '[data-tour="calendar"]', title: 'Plan your week', text: 'See what’s due each day, repeats included. Send everything to Google or Apple Calendar from Settings.' },
   { route: '#/focus', target: '.focus-card', title: 'Focus mode', text: 'Pick a quest, start the timer and earn 1 EXP for every 5 minutes. Mochi naps while you focus.' },
   { route: '#/home', target: '#nav', title: 'Get around', text: 'Home, Quests, Calendar and Focus. The + in the middle adds a quest from anywhere.' },
@@ -138,6 +139,9 @@ async function showStep() {
   }
   await settle(() => el(s.target), 1500);
   if (stale()) return;
+  // the step's target isn't on the page (no quest to show, Mochi hidden): go on to the next step,
+  // rather than leaving the spotlight on an empty spot
+  if (!el(s.target) && !s.last) { i += 1; return showStep(); }
   root.classList.toggle('round', !!s.last);
   mascot.raise(!!s.last);
   const to = spotRect(), from = spot.getBoundingClientRect(), first = +getComputedStyle(spot).opacity === 0;
@@ -168,8 +172,10 @@ async function showStep() {
 // once a step has settled, the spotlight and card stay on the target if it moves (Mochi walking)
 function follow() {
   if (i >= 0 && settled) {
-    const r = spotRect(), cur = root.querySelector('.tour-spot').getBoundingClientRect();
-    if (r && (Math.abs(r.left - cur.left) > 1 || Math.abs(r.top - cur.top) > 1)) { putSpot(r); putCard(r); }
+    const r = spotRect(), spot = root.querySelector('.tour-spot'), cur = spot.getBoundingClientRect();
+    if (r && (Math.abs(r.left - cur.left) > 1 || Math.abs(r.top - cur.top) > 1 || spot.style.opacity === '0')) { putSpot(r); putCard(r); }
+    // the target went away (the page changed under the tour): no spotlight on an empty spot, card in the middle
+    else if (!r && spot.style.opacity !== '0') { putSpot(null); putCard(null); }
   }
   raf = requestAnimationFrame(follow);
 }

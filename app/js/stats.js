@@ -55,6 +55,29 @@ export function summary(history, sessions, target, now = new Date()) {
   };
 }
 
+// Ranked seasons on the leaderboard: two weeks each, the same for everyone, counted from Monday 19 October 2026
+// (00:00 UTC). Nothing has to run to "reset" the board: when a season ends, everyone simply moves to the next one.
+export const SEASON_MS = 14 * 86400000, SEASON_EPOCH = Date.UTC(2026, 9, 19);
+export const seasonOf = (ms = Date.now()) => Math.max(1, Math.floor((ms - SEASON_EPOCH) / SEASON_MS) + 1);
+export const seasonRange = n => ({ start: SEASON_EPOCH + (n - 1) * SEASON_MS, end: SEASON_EPOCH + n * SEASON_MS });
+// EXP earned inside one season (same rules as the all-time EXP)
+export function seasonExp(history, sessions, target, n = seasonOf()) {
+  const { start, end } = seasonRange(n), inside = ms => ms >= start && ms < end;
+  let exp = 0;
+  for (const [d, c] of countsByDay(history)) if (inside(fromStr(d).getTime())) exp += dayExp(c, target);
+  for (const s of sessions) if (inside(s.endedAt)) exp += focusExp(s.minutes);
+  return exp;
+}
+// Rank tiers for a season's EXP, Valorant style. Hitting the daily target every day of a season is 420 EXP before
+// focus time, so Immortal takes a near-perfect fortnight plus focus. Radiant is the season's number one at Immortal.
+export const RANKS = [['Iron', 0], ['Bronze', 40], ['Silver', 90], ['Gold', 150], ['Platinum', 220], ['Diamond', 300], ['Ascendant', 380], ['Immortal', 460]];
+export function rankOf(exp, place = 0) {
+  if (place === 1 && exp >= RANKS[RANKS.length - 1][1]) return 'Radiant';
+  let r = RANKS[0][0];
+  for (const [name, min] of RANKS) if (exp >= min) r = name;
+  return r;
+}
+
 export const historyDay = h => toStr(new Date(h.doneAt));
 export const isToday = (ms, now = new Date()) => toStr(new Date(ms)) === todayStr(now);
 export { fromStr };

@@ -3,6 +3,7 @@ import { summary, lastDays } from '../stats.js';
 import { dueStatus, WEEKDAYS, fromStr } from '../dates.js';
 import { esc } from '../ui.js';
 import { questRow } from './common.js';
+import { greetName } from '../account.js';
 
 function greeting() { const h = new Date().getHours(); return h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; }
 
@@ -12,11 +13,12 @@ export function render() {
   const overdue = open.filter(q => dueStatus(q) === 'overdue');
   const next = sortQuests(open, 'smart').slice(0, 5);
   const week = lastDays(st.history, st.sessions, s.target, 7);
-  const max = Math.max(s.target, ...week.map(d => d.count));
+  // Headroom above the target, so the dashed line never sits on the chart's top edge.
+  const max = Math.max(s.target * 1.25, ...week.map(d => d.count));
   const left = Math.max(0, s.target - sum.todayCount);
   const rem = dueReminders().length;
   return `
-    <div class="h-sub">${greeting()}${s.name ? ', ' + esc(s.name) : ''}</div>
+    <div class="h-sub">${greeting()}${greetName(s.name) ? ', ' + esc(s.name) : ''}</div>
     <h1 class="h-title">Your progress</h1>
     <div class="grid2 grid4">
       <a class="stat" href="#/stats" aria-label="Today. Open your stats" style="background:var(--sky)"><div class="k">Today <span class="lb-hint" aria-hidden="true">Stats ›</span></div><div class="v">${sum.todayCount} / ${s.target}</div><div class="s">${left ? `${left} more to hit your target` : 'target hit!'}</div></a>

@@ -41,7 +41,7 @@ function originOf(req) {
   const o = host ? `https://${host}` : '';
   return ORIGINS.value().split(',').map(s => s.trim()).includes(o) ? o : PUBLIC_URL.value();
 }
-const SYNC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt'];
+const SYNC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt', 'settingsStamps'];
 
 const userRef = uid => db.collection('users').doc(uid);
 const token = () => randomBytes(24).toString('base64url');

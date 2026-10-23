@@ -18,6 +18,7 @@ import * as settings from './views/settings.js';
 import * as developer from './views/developer.js';
 import * as leaderboard from './views/leaderboard.js';
 import { startBoard } from './board.js';
+import { startTheme } from './theme.js';
 import { startSync, onSyncStatus } from './sync.js';
 import { openAdd } from './views/add.js';
 import * as remindersPanel from './views/reminders.js';
@@ -203,6 +204,7 @@ startControls();
 startMenu();
 startAccount();
 startBoard();
+startTheme();
 go();
 // Mochi lives on the nav bar
 const mochi = createMochi({

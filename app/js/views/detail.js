@@ -10,12 +10,21 @@ import { undoGoal } from '../store.js';
 import { requestPermission } from '../notify.js';
 import { sketchThumbs, openInk, openSketch } from './ink.js';
 import { timeWheelHTML } from '../timewheel.js';
+import { cloudOn, cloudReady, syncNow } from '../cloud.js';
 
 let current = null;
 
 export function render(params) {
   const q = current = findQuest(params.id);
-  if (!q) return `<a class="back" href="#/quests">${ICON.back} Quests</a><div class="card empty"><b>Quest not found</b><span class="small">It may have been deleted.</span></div>`;
+  if (!q) {
+    // opened from a notification or link before this device has the quest: wait for the account's copy
+    // (the page redraws when it arrives) instead of saying it's gone
+    const waiting = params.id && cloudOn() && !cloudReady();
+    if (waiting) return `<a class="back" href="#/quests">${ICON.back} Quests</a><div class="card empty"><b>Loading your quest…</b><span class="small">Getting the latest from your account.</span></div>`;
+    if (params.id && cloudOn()) syncNow();   // one more look at the account; it redraws if the quest turns up
+    return `<a class="back" href="#/quests">${ICON.back} Quests</a><div class="card empty"><b>Quest not found</b><span class="small">${params.id ? 'It may have been deleted, or it was made on another device that hasn’t synced yet.' : 'This link doesn’t point to a quest.'}</span>
+      <a class="btn white sm" href="#/quests" style="margin-top:10px">See all quests</a></div>`;
+  }
   const st = dueStatus(q), done = q.subtasks.filter(s => s.done).length;
   const history = getState().history.filter(h => h.questId === q.id).length;
   return `<div class="detail">
