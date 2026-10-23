@@ -28,19 +28,46 @@ service cloud.firestore {
     match /taskflowUsers/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
-    // TaskFlow leaderboard: a name and EXP for people who chose to show on the board (off by default).
-    // Anyone signed in can read the board; only the owner writes their own entry, and only these fields.
-    // season / seasonExp are the two-week ranked season (both optional, so older app versions still write).
+    // TaskFlow leaderboard: a name, all-time EXP and this season's EXP for people who chose to show on the
+    // board (off by default). Anyone signed in can read it; only the owner writes their own entry.
+    // EXP is worked out in the app (no server code on the free plan), so these rules cap how fast it can grow:
+    // a bucket of at most 60 EXP that refills 15 an hour. Real use earns less (30 a day from quests, 12 an hour
+    // from nonstop focus). A new entry starts at most at 3000 EXP. Leaving the board hides the entry (name
+    // cleared, hidden: true) rather than deleting it, so the cap can't be reset by leaving and rejoining.
+    // Seasons are two weeks from 19 Oct 2026 00:00 UTC (1792368000000 ms), as in TaskFlow's stats.js.
+    function tfSeasonNow() {
+      return int((request.time.toMillis() - 1792368000000) / 1209600000) + 1;
+    }
+    function tfBoardShape(d) {
+      return d.keys().hasOnly(['name', 'exp', 'season', 'seasonExp', 'bank', 'hidden', 'updated'])
+        && d.name is string && d.name.size() <= 30
+        && !d.name.lower().matches('.*(fuck|cunt|nigg|fagg|whore|bitch|motherf|asshole|chutiya|madarchod|bhenchod|behenchod).*')
+        && d.exp is int && d.exp >= 0
+        && d.season is int && (d.season == tfSeasonNow() || d.season == tfSeasonNow() - 1)
+        && d.seasonExp is int && d.seasonExp >= 0 && d.seasonExp <= d.exp
+        && d.bank is number && d.bank >= 0 && d.bank <= 60
+        && d.hidden is bool
+        && d.updated == request.time;
+    }
+    // n: the new entry, o: the entry as it was
+    function tfBoardGrowth(n, o) {
+      let room = o.get('bank', 0) + 15 * (request.time.toMillis() - o.updated.toMillis()) / 3600000;
+      let delta = n.exp - o.exp;
+      let sameSeason = n.season == o.get('season', 0);
+      return n.season >= o.get('season', 0) && (
+        (delta <= 0 && n.bank <= room
+          && ((sameSeason && n.seasonExp <= o.get('seasonExp', 0)) || (!sameSeason && n.seasonExp == 0)))
+        || (delta > 0 && n.bank <= room - delta
+          && ((sameSeason && n.seasonExp <= o.get('seasonExp', 0) + delta) || (!sameSeason && n.seasonExp <= delta))));
+    }
     match /taskflowBoard/{uid} {
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['name', 'exp', 'season', 'seasonExp', 'updated'])
-        && request.resource.data.exp is int && request.resource.data.exp >= 0
-        && request.resource.data.get('season', 1) is int && request.resource.data.get('season', 1) >= 1
-        && request.resource.data.get('seasonExp', 0) is int && request.resource.data.get('seasonExp', 0) >= 0
-        && request.resource.data.get('seasonExp', 0) <= request.resource.data.exp
-        && request.resource.data.name is string && request.resource.data.name.size() <= 30;
-      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && tfBoardShape(request.resource.data)
+        && request.resource.data.exp <= 3000 && request.resource.data.seasonExp <= 420 && request.resource.data.bank == 0;
+      allow update: if request.auth != null && request.auth.uid == uid
+        && tfBoardShape(request.resource.data) && tfBoardGrowth(request.resource.data, resource.data);
+      allow delete: if false;
     }
   }
 }

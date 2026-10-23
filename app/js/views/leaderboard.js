@@ -1,5 +1,6 @@
-// Leaderboard: the people who chose to show on the board. Two boards: this season (two weeks, ranked tiers
-// from Iron to Radiant, everyone starts again when a new season begins) and Legacy (all EXP since the start).
+// Leaderboard: the people who chose to show on the board. Two boards: Legacy (all EXP since the start, the
+// board everyone already knows, so it opens first and never resets) and this season (two weeks, ranked tiers
+// from Iron to Radiant, everyone starts again when a new season begins).
 // Joining is a switch at the top; nothing is shared until it's on. Reached from the EXP card on Home (not in the nav bar).
 import { getState } from '../store.js';
 import * as board from '../board.js';
@@ -11,7 +12,7 @@ import { esc, play, toast } from '../ui.js';
 import { sfx } from '../sound.js';
 import { mascot } from '../mascot.js';
 
-let rows = null, loading = false, failed = false, asked = false, mode = 'season', editing = false;
+let rows = null, loading = false, failed = false, asked = false, mode = 'legacy', editing = false;
 
 const fmt = n => Number(n || 0).toLocaleString();
 const daysLeft = () => Math.max(1, Math.ceil((seasonRange(seasonOf()).end - Date.now()) / 86400000));
@@ -77,9 +78,7 @@ export function render() {
   const on = board.isOn(), signed = !!account.user(), mine = mode === 'season' ? board.mySeasonExp() : board.myExp();
   if (!asked && signed && rows === null && !loading && !failed) { asked = true; setTimeout(load, 0); }
   const list = rows || [];
-  const emptySeason = mode === 'season' && !board.seasonsReady()
-    ? `<div class="card lb-note"><b>Seasons are almost here</b><p class="small">The season board switches on with the next server update. Legacy shows everyone's EXP since the start.</p></div>`
-    : `<div class="card lb-note"><b>Nobody on the board yet</b><p class="small">${mode === 'season' ? 'A new season just started. Earn some EXP and be the first.' : `Turn on "Show me on the board" and you'll be the first.`}</p></div>`;
+  const emptySeason = `<div class="card lb-note"><b>Nobody on the board yet</b><p class="small">${mode === 'season' ? 'A new season just started. Earn some EXP and be the first.' : `Turn on "Show me on the board" and you'll be the first.`}</p></div>`;
   const body = !signed
     ? `<div class="card lb-note"><b>Sign in to join the board</b><p class="small">Sign in with Google in Settings. Then turn on "Show me on the board" to see where you stand.</p>
          <a class="btn white sm" href="#/settings">Open Settings</a></div>`
@@ -103,8 +102,8 @@ export function render() {
       ${nameRow(signed)}
     </div>
     <div class="seg lb-tabs" role="tablist">
-      <button role="tab" aria-selected="${mode === 'season'}" class="${mode === 'season' ? 'on' : ''}" data-act="lb-mode" data-mode="season">Season ${seasonOf()}</button>
       <button role="tab" aria-selected="${mode === 'legacy'}" class="${mode === 'legacy' ? 'on' : ''}" data-act="lb-mode" data-mode="legacy">Legacy</button>
+      <button role="tab" aria-selected="${mode === 'season'}" class="${mode === 'season' ? 'on' : ''}" data-act="lb-mode" data-mode="season">Season ${seasonOf()}</button>
     </div>
     ${mode === 'season' ? seasonCard() : '<div class="small lb-legacy-note">All the EXP everyone has earned since they started. It never resets.</div>'}
     ${body}

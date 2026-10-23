@@ -46,8 +46,9 @@ export function isClean(name) {
   return true;
 }
 
-export const MAX_BOARD_NAME = 24;
-// tidy what was typed: single spaces, no control characters, at most 24 characters
+// the same 30 characters the board always allowed (firestore.rules), so no name already on it gets shortened
+export const MAX_BOARD_NAME = 30;
+// tidy what was typed: single spaces, no control characters, at most 30 characters
 export const tidyName = s => String(s || '').replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, MAX_BOARD_NAME);
 
 // the name to show for someone on the board: theirs if it's fine, otherwise "Someone"

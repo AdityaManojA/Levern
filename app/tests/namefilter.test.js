@@ -18,5 +18,8 @@ test('names on the board fall back to Someone', () => {
   assert.equal(shownName('  Mochi   Queen '), 'Mochi Queen');
   assert.equal(shownName('sh1t lord'), 'Someone');
   assert.equal(shownName(''), 'Someone');
-  assert.equal(tidyName('x'.repeat(40)).length, 24);
+  assert.equal(tidyName('x'.repeat(40)).length, 30);
+  // names already on the board (up to 30 characters) are shown in full
+  assert.equal(shownName('Abcdefghij Klmnopqrst Uvwxyzabc'), 'Abcdefghij Klmnopqrst Uvwxyzab');
+  assert.equal(shownName('Mochi Fan Club Kerala Twenty6'), 'Mochi Fan Club Kerala Twenty6');
 });
