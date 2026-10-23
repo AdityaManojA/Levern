@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cat animations check</title>
+<style>
+  :root { --bg: #FFF8EE; --ink: #1E1B18; --muted: #6E655D; --bad: #C8283F; --good: #2BB673; }
+  body { margin: 0; padding: 16px; font: 13px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  #sum { margin: 0 0 14px; font-weight: 600; }
+  .bad { color: var(--bad); } .good { color: var(--good); }
+  .bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  button { font: inherit; padding: 4px 10px; border: 1.5px solid var(--ink); border-radius: 8px; background: #fff; cursor: pointer; }
+  button.on { background: var(--ink); color: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .c { background: #fff; border: 1.5px solid #e4dccf; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .c.err { border-color: var(--bad); }
+  .stage { height: 140px; width: 100%; display: flex; align-items: flex-end; justify-content: center; border-bottom: 2px solid #d9cfbf; }
+  .dark .stage { background: #171A20; }
+  .s { background-repeat: no-repeat; }
+  .n { font-weight: 700; } .m { color: var(--muted); font-size: 11px; text-align: center; }
+</style>
+</head>
+<body>
+<h1>Cat animations check</h1>
+<p id="sum">Checking…</p>
+<div class="bar"><button data-cat="mochi" class="on">Mochi</button><button data-cat="cookie">Cookie</button><button id="dark">Dark background</button><button id="tempo">App tempo</button></div>
+<div class="grid" id="g"></div>
+<script type="module" src="cats.js"></script>
+</body>
+</html>

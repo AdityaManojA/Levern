@@ -1,5 +1,5 @@
 /* Mochi in the web app. A port of the prototype's Mochi v2 engine (design/prototype/mochi-engine.js),
- * adapted to the app's fixed nav bar. Same rules, same art (app/mochi, copied by scripts/sync-mochi.mjs):
+ * adapted to the app's fixed nav bar. Same rules (art in app/mochi and app/cookie, copied by design/mochi/v3/sync.py):
  *   1. He is placed by his body: each animation's canvas has his body centre at `ax` and paws at `gy`.
  *   2. Image and position change in the same step (render), never apart.
  *   3. Nothing animates his art except his frames: no CSS animation or transition on Mochi itself.
@@ -8,33 +8,51 @@
  *   6. Idles begin on the first breathing frame, so the breath never pops.
  *   7. Animations missing from the manifest are refused.
  * With reduced motion he sits still on the bar and only talks.
+ * Two cats: Mochi, and Cookie, his orange twin brother (app/cookie: his own art under the same animation names).
+ * Settings → Cat picks one; the grey and brown coats are Mochi recoloured on the device.
  */
-import V from '../mochi/manifest.js';
+import MOCHI from '../mochi/manifest.js';
+import COOKIE from '../cookie/manifest.js';
 import { getState } from './store.js';
 import { sfx } from './sound.js';
 import { reduced } from './motion.js';
 
-const A = V.anims;
+const CATS = { mochi: MOCHI, cookie: COOKIE };
+// poses each cat's art has in a different frame: a paw raised to hold a card, dangling when picked up
+const POSES = { mochi: { hold: ['wave', 3], dangle: ['stretch', 3] }, cookie: { hold: ['wave', 4], dangle: ['stretch', 2] } };
+let V = MOCHI, A = V.anims, catName = 'mochi';
 const has = n => Object.prototype.hasOwnProperty.call(A, n);
-const baseUrl = n => V.base + 'strips/' + n + '.png';
+export const hasAnim = n => { useCat(); return has(n); };
+const baseUrl = n => V.base + 'strips/' + n + '.' + (V.ext || 'png');
+// one of these names that this cat has, at random (the variants of a reaction)
+const variant = (...names) => { const ok = names.filter(has); return ok[Math.floor(Math.random() * ok.length)] || names[0]; };
 
 /* ---------- his coat ---------- */
 // Mochi is drawn black. Other coats are made on the device: each strip is redrawn once with his black fur
 // turned into the coat colour. White (whiskers, leg lines, inner ears, eyes) stays white and his pupils stay dark.
 // Until a strip is ready he shows the original, then swaps in the new coat on his next frame.
 export const COATS = {
-  black: { label: 'Black', swatch: '#1E1B18' },
-  ginger: { label: 'Ginger', swatch: '#E58B3A', rgb: [229, 139, 58] },
+  black: { label: 'Mochi', swatch: '#1E1B18' },
+  cookie: { label: 'Cookie', swatch: '#E58B3A', cat: 'cookie' },
   grey: { label: 'Grey', swatch: '#8C919A', rgb: [140, 145, 154] },
   brown: { label: 'Brown', swatch: '#7A5236', rgb: [122, 82, 54] },
 };
-const coat = () => (COATS[S().mochiColor] ? S().mochiColor : 'black');
-const tinted = new Map();   // 'ginger/rest' -> blob URL ('' while it's being made)
+// 'ginger' was Mochi recoloured orange before Cookie had his own art: it is Cookie now
+const coat = () => { const c = S().mochiColor === 'ginger' ? 'cookie' : S().mochiColor; return COATS[c] ? c : 'black'; };
+// switch to the cat the coat asks for; true when it changed
+function useCat() {
+  const name = COATS[coat()].cat || 'mochi';
+  if (name === catName) return false;
+  catName = name; V = CATS[name]; A = V.anims;
+  return true;
+}
+export const catLabel = () => (COATS[coat()].cat === 'cookie' ? 'Cookie' : 'Mochi');
+const tinted = new Map();   // 'grey/rest' -> blob URL ('' while it's being made)
 const queue = [];
 let working = false, onTinted = () => {};
 const stripUrl = n => {
   const c = coat();
-  if (c === 'black') return baseUrl(n);
+  if (!COATS[c].rgb) return baseUrl(n);
   const k = c + '/' + n, u = tinted.get(k);
   if (u) return u;
   if (u === undefined) { tinted.set(k, ''); queue.push([n, c]); pump(); }
@@ -90,6 +108,7 @@ const S = () => getState().settings;
 /* ---------- small looping sprites (onboarding, tour, empty states, toasts) ---------- */
 // el gets the animation as a background strip; returns stop()
 export function sprite(el, name, { scale = 1, loop, fps, pause = 0, frame } = {}) {
+  useCat();
   const a = A[name]; if (!a) return () => {};
   el.style.width = a.w * scale + 'px'; el.style.height = a.h * scale + 'px';
   el.style.backgroundImage = `url("${stripUrl(name)}")`;
@@ -119,7 +138,7 @@ export function portrait(el, scale = 1) {
 let M = null;
 export function createMochi(env) {
   const el = document.createElement('div');
-  el.className = 'mochi'; el.id = 'mochi'; el.setAttribute('role', 'button'); el.setAttribute('aria-label', 'Mochi the cat. Tap to boop.'); el.tabIndex = 0;
+  el.className = 'mochi'; el.id = 'mochi'; el.setAttribute('role', 'button'); el.setAttribute('aria-label', `${catLabel()} the cat. Tap to boop.`); el.tabIndex = 0;
   el.innerHTML = '<div class="flip"><div class="act"></div></div>';
   const flip = el.querySelector('.flip'), act = el.querySelector('.act');
   const bub = document.createElement('div'); bub.className = 'mbubble'; bub.setAttribute('aria-live', 'polite');
@@ -127,7 +146,9 @@ export function createMochi(env) {
   const card = document.createElement('button'); card.type = 'button'; card.className = 'mcard'; card.hidden = true;
   card.innerHTML = '<span class="mcard-in"><span class="mcard-bell" aria-hidden="true"></span><span class="mcard-t"></span><b class="mcard-n"></b></span>';
   document.body.append(el, bub, card);
-  for (const n in A) { const im = new Image(); im.src = stripUrl(n); }
+  useCat();
+  const preload = () => { for (const n in A) { const im = new Image(); im.src = stripUrl(n); } };
+  preload();
 
   M = { cx: innerWidth / 2 + 120, dir: -1, anim: 'rest', fi: 1, timer: null, state: 'idle', perch: 'nav', busy: false, target: 0, onArrive: null, next: 0,
     lastActive: Date.now(), clicks: [], lastTap: 0, annoyedUntil: 0, sulkTaps: 0, sulkNeed: 2, sulkT: 0, bubbleUntil: 0, pending: null, asleep: false, held: false, slide: null,
@@ -236,7 +257,7 @@ export function createMochi(env) {
       if (f !== to) { f += step; M.fi = f; render(); return; }
       if (o.loop) {
         stop();
-        // rev: the loop runs backwards (a moonwalk)
+        // rev: the loop runs backwards (the Michael Jackson dance)
         let g = o.rev ? o.loop[1] : o.loop[0]; M.fi = g; render();
         M.timer = setInterval(() => {
           if (o.onFrame && o.onFrame(g)) return;
@@ -284,7 +305,7 @@ export function createMochi(env) {
   function walkTo(x, opts = {}) {
     const [lo, hi] = bounds(); x = Math.max(lo, Math.min(hi, x));
     const d = x >= M.cx ? 1 : -1;
-    // a moonwalk travels the way he's NOT facing: the art faces the other way and the steps run backwards
+    // the Michael Jackson dance travels the way he's NOT facing: the art faces the other way and the steps run backwards
     const moon = !!opts.moon && !opts.sprint, face = moon ? -d : d;
     Object.assign(M, { target: x, busy: true, state: 'prep', asleep: false, pending: null, slide: null, sprint: !!opts.sprint, dir: face, moon });
     M.getUp = face > 0 ? 'get-up-right' : 'get-up-left';
@@ -294,8 +315,7 @@ export function createMochi(env) {
       const paws = beats => f => { if (stepsLeft > 0 && beats.includes(f)) { stepsLeft--; voice('step', { vol: M.sprint ? 1.2 : 1 }); } return false; };
       if (M.sprint) { say('zoomies!', 900); play('sprint', { dir: face, loop: A.sprint.loop, onFrame: paws([2, 5]) }); }
       else if (moon) {
-        say('moonwalk!', 1500);
-        setTimeout(() => { if (M.moon && M.state === 'walk') say('the Michael Jackson move', 1800); }, 1600);
+        say('the Michael Jackson dance!', 1800);
         play('walk', { dir: face, from: A.walk.frames, to: A.walk.loop[0], rev: true, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps(), onFrame: paws([3, 9]) });
       }
       else play('walk', { dir: face, loop: A.walk.loop, fps: walkFps(), loopFps: walkFps(), onFrame: paws([3, 9]) });
@@ -310,7 +330,7 @@ export function createMochi(env) {
   }
 
   /* holding a reminder */
-  const HOLD = { name: 'wave', frame: 3 };   // paw raised high, nothing drawn in it
+  const HOLD = { get name() { return POSES[catName].hold[0]; }, get frame() { return POSES[catName].hold[1]; } };   // paw raised high, nothing drawn in it
   function holdPose(fromStart) {
     stop(); stopLook();
     Object.assign(M, { busy: true, pending: null, state: 'hold', asleep: false });
@@ -335,18 +355,24 @@ export function createMochi(env) {
   // so he doesn't fall into a visible cycle. Seamless ones (start and end on the resting pose) are favoured.
   const pool = list => list.filter(([n]) => has(n)).map(([n, w]) => { const j = A[n].join || []; return [n, j[0] === 'R' && j[1] === 'R' ? w * 1.5 : w]; });
   // every calm or playful animation of the set takes part; weights say how often each comes round in a deck
-  const IDLES = pool([['ear-twitch', 3], ['look-around', 3], ['yawn', 2], ['sneeze', 2], ['sniff', 2], ['face-wash', 2], ['groom', 2], ['scratch', 2], ['spot', 2],
-    ['stretch', 2], ['back-stretch', 2], ['tail-wrap', 2], ['look-back', 2], ['sitting-pretty', 2], ['happy-wiggle', 2], ['confused', 2], ['eat', 2],
-    ['tail-chase', 2], ['cursor-swipe', 2], ['follow-finger', 2], ['excited', 2], ['sad', 1], ['wave', 2], ['heart-eyes', 2], ['startled', 1.5],
-    ['surprised', 1.5], ['suspicious', 1.5], ['celebrate', 1.5], ['victory', 1], ['happy-spin', 1.5],
-    ['tail-balance', 2], ['curious-sniff', 1.5], ['seated-turn', 1.5], ['play-bow', 1.5], ['roll', 1.5], ['tail-puff', 1.5], ['relax', 1.5],
-    ['shake-off', 1], ['dry-off', 1], ['side-roll', 1.5],
-    ['play-flip', 1.5]]);
-  const TAPS = pool([['boop', 4], ['happy-wiggle', 2], ['excited', 2], ['confused', 2], ['wave', 2], ['surprised', 2], ['cursor-swipe', 1.5],
-    ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 2], ['heart-eyes', 2], ['startled', 1.5], ['happy-spin', 1.5], ['suspicious', 1], ['victory', 1],
-    ['belly-flop', 2], ['startled-jump', 2], ['angry-stomp', 1], ['knock-over', 1.5], ['scared', 1.5], ['play-pounce', 1.5], ['shake-off', 1]]);
+  let IDLES, TAPS;
+  function rebuildPools() {
+    IDLES = pool([['ear-twitch', 3], ['look-around', 3], ['yawn', 2], ['sneeze', 2], ['sniff', 2], ['face-wash', 2], ['groom', 2], ['scratch', 2], ['spot', 2],
+      ['stretch', 2], ['back-stretch', 2], ['tail-wrap', 2], ['look-back', 2], ['sitting-pretty', 2], ['happy-wiggle', 2], ['confused', 2], ['eat', 2],
+      ['tail-chase', 2], ['cursor-swipe', 2], ['follow-finger', 2], ['excited', 2], ['sad', 1], ['wave', 2], ['heart-eyes', 2], ['startled', 1.5],
+      ['surprised', 1.5], ['suspicious', 1.5], ['celebrate', 1.5], ['victory', 1], ['happy-spin', 1.5],
+      ['tail-balance', 2], ['curious-sniff', 1.5], ['seated-turn', 1.5], ['play-bow', 1.5], ['roll', 1.5], ['tail-puff', 1.5], ['relax', 1.5],
+      ['shake-off', 1], ['dry-off', 1], ['side-roll', 1.5], ['play-flip', 1.5],
+      ['loaf', 1.5], ['yawn-big', 1.5], ['tail-sway', 2], ['scroll-look', 1.5], ['corner-idle', 1.5], ['suspicious-long', 1], ['button-big', 1], ['wipe-big', 1]]);
+    TAPS = pool([['boop', 4], ['happy-wiggle', 2], ['excited', 2], ['confused', 2], ['wave', 2], ['surprised', 2], ['cursor-swipe', 1.5],
+      ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 2], ['heart-eyes', 2], ['startled', 1.5], ['happy-spin', 1.5], ['suspicious', 1], ['victory', 1],
+      ['belly-flop', 2], ['startled-jump', 2], ['angry-stomp', 1], ['scared', 1.5], ['play-pounce', 1.5], ['shake-off', 1],
+      ['boop-heart', 2.5], ['squish', 1.5], ['toast-cheer', 1.5]]);
+  }
+  rebuildPools();
   const TAP_LINES = { boop: ['boop', 'mrp!', ':3'], 'happy-wiggle': ['♪', 'hehe'], excited: ['!!', 'ooh!'], confused: ['?', 'huh?'], wave: ['hi!', 'hello!'],
-    surprised: ['!', 'oh!'], 'cursor-swipe': ['gotcha', 'swipe!'], 'sitting-pretty': ['ta-da'], sneeze: ['achoo!'], celebrate: ['yay!'], 'heart-eyes': ['♥', 'purr…'] };
+    surprised: ['!', 'oh!'], 'cursor-swipe': ['gotcha', 'swipe!'], 'sitting-pretty': ['ta-da'], sneeze: ['achoo!'], celebrate: ['yay!'], 'heart-eyes': ['♥', 'purr…'],
+    'boop-heart': ['♥', 'boop!'], squish: ['squish!', 'mrp'], 'toast-cheer': ['yay!'] };
   const recent = [];
   // A shuffled deck per pool: each animation comes round once (more often if weighted) before any repeats,
   // so the mix is always varied instead of falling back on the same few.
@@ -390,12 +416,16 @@ export function createMochi(env) {
   function fallAsleep() {
     if (M.busy || M.held || M.asleep) return;
     M.asleep = true; M.busy = true; M.state = 'sleep';
+    M.melted = has('melt') && has('melt-up') && Math.random() < 0.4;   // now and then he melts into a puddle instead
+    if (M.melted) { play('melt', { loop: A.melt.loop }); return; }
     play('lie-down', { then: () => { if (M.asleep) play('sleep', { loop: A.sleep.loop }); } });
   }
   function wakeUp(text) {
     if (!M.asleep) return;
     M.asleep = false; M.busy = true; if (text) say(text, 900);
-    play('get-up', { then: () => { goRest(); schedule(2, 4); } });
+    const up = M.melted && M.anim === 'melt' ? 'melt-up' : 'get-up';
+    M.melted = false;
+    play(up, { then: () => { goRest(); schedule(2, 4); } });
   }
 
   /* touch */
@@ -412,7 +442,8 @@ export function createMochi(env) {
     say('Hmph! Enough.', 1600, true); voice('angry');
     M.annoyedUntil = Date.now() + 6000; M.sulkTaps = 0; M.sulkNeed = 2 + Math.floor(Math.random() * 2);
     clearTimeout(M.sulkT); M.sulkT = setTimeout(forgive, 3000 + Math.random() * 1000);
-    play('grumpy', { then: () => { if (M.state === 'sulk') play('ignore', { hold: true, to: A.ignore.hold || A.ignore.frames }); } });
+    const away = variant('ignore', 'sulk');
+    play(variant('grumpy', 'huff'), { then: () => { if (M.state === 'sulk') play(away, { hold: true, to: A[away].hold || A[away].frames }); } });
   }
   function forgive() {
     clearTimeout(M.sulkT);
@@ -420,7 +451,7 @@ export function createMochi(env) {
     M.state = 'idle'; M.annoyedUntil = 0; M.clicks = [];
     say(['…fine.', 'hmm.', 'whatever.'][Math.floor(Math.random() * 3)], 1400);
     const back = () => { goRest(); schedule(3, 6); };
-    if (M.anim === 'ignore' && M.fi > 1) play('ignore', { from: M.fi, to: 1, then: back }); else back();
+    if ((M.anim === 'ignore' || M.anim === 'sulk') && M.fi > 1) play(M.anim, { from: M.fi, to: 1, then: back }); else back();
   }
   function tap(e) {
     const now = Date.now(); M.lastActive = now;
@@ -435,9 +466,9 @@ export function createMochi(env) {
     const n = M.clicks.length, limit = S().annoy || 5;
     if (n > limit) return getAnnoyed();
     M.busy = false;
-    if (n === limit - 1) { tapVoice('grumpy', { vol: 0.7, rate: 1.1 }); return strike('stomp', 'hey!', true); }
+    if (n === limit - 1) { tapVoice('grumpy', { vol: 0.7, rate: 1.1 }); return strike(variant('stomp', 'stomp-big'), 'hey!', true); }
     if (n === limit) { tapVoice('grumpy'); return strike('grumpy', 'stop it…', true); }
-    if (now - M.lastTap < 320) { M.lastTap = 0; tapVoice('hey', { rate: 1.12 }); return strike('startled', 'eep!'); }
+    if (now - M.lastTap < 320) { M.lastTap = 0; tapVoice('hey', { rate: 1.12 }); return has('squish') ? strike('squish', 'squish!') : strike('startled', 'eep!'); }
     M.lastTap = now;
     const r = el.getBoundingClientRect(), a = A[M.anim];
     const headLine = r.top + (a.gy - V.sit * 0.55) * (r.height / a.h);
@@ -453,14 +484,15 @@ export function createMochi(env) {
   function endHeld() {
     if (!M.held) return;
     M.held = false; M.lastActive = Date.now();
-    const a = A['heart-eyes']; play('heart-eyes', { from: a.loop[1], to: a.frames, then: () => { goRest(); schedule(2, 4); } });
+    const a = A['heart-eyes'], l = a.loop || [1, a.frames]; play('heart-eyes', { from: l[1], to: a.frames, then: () => { goRest(); schedule(2, 4); } });
   }
   function startDrag(e) {
     clearTimeout(press.t);
     stop(); stopLook();
     Object.assign(M, { held: false, busy: true, pending: null, slide: null, state: 'drag', asleep: false, perch: 'nav', fall: null });
     // dangling: the long stretch frame, held by the scruff
-    play('stretch', { from: 3, to: 3, hold: true });
+    const [dn, df] = POSES[catName].dangle;
+    play(dn, { from: df, to: df, hold: true });
     M.dragTo = { x: e.clientX, y: e.clientY, vx: 0, vy: 0, t: performance.now() };
     press.drag = true;
     document.body.classList.add('mochi-held');   // no page scroll while he's in the hand
@@ -493,7 +525,7 @@ export function createMochi(env) {
     press.t = setTimeout(() => {
       if (!press || press.drag || M.state === 'walk' || M.state === 'prep' || M.asleep || M.holding) return;
       Object.assign(M, { held: true, busy: true, pending: null, slide: null });
-      const a = A['heart-eyes']; play('heart-eyes', { to: a.loop[1], loop: a.loop }); voice('mrrp', { rate: 0.95 }); say('purr…', 1400);
+      const a = A['heart-eyes'], l = a.loop || [1, a.frames]; play('heart-eyes', { to: l[1], loop: l }); voice('mrrp', { rate: 0.95 }); say('purr…', 1400);
       press.t = setTimeout(endHeld, 6000);   // never loops forever
     }, 450);
   });
@@ -670,7 +702,7 @@ export function createMochi(env) {
       if (A[name] && A[name].face === 'R') M.dir = 1;
       strike(name, text, mad);
     },
-    celebrate(text) { this.react('celebrate', text || 'yay!'); },
+    celebrate(text) { this.react(variant('celebrate', 'cheer', 'toast-cheer'), text || 'yay!'); },
     // a reminder fired: he stays where he is and holds it up until it's opened
     hold(info) {
       if (M.hidden || !info || !info.count) return;
@@ -695,14 +727,21 @@ export function createMochi(env) {
       if (M.state === 'hold') { M.busy = true; play(HOLD.name, { from: HOLD.frame, to: A[HOLD.name].frames, then: () => { goRest(); schedule(2, 4); } }); }
     },
     holding: () => !!M.holding,
-    grumpy(text) { this.react('grumpy', text, true); voice('grumpy', { vol: 0.8 }); },
+    grumpy(text) { this.react(variant('grumpy', 'huff', 'toast-grumpy'), text, true); voice('grumpy', { vol: 0.8 }); },
     rect: () => el.getBoundingClientRect(),
     raise(on) { el.classList.toggle('raised', on); bub.classList.toggle('raised', on); },
     // pull to refresh borrows him as its indicator; the one on the bar steps out meanwhile
     away(on) { el.style.visibility = on ? 'hidden' : ''; card.style.visibility = on ? 'hidden' : ''; if (on) bub.classList.remove('show'); },
     settingsChanged() {
-      // a new coat: start with what he's showing, then the rest of his animations in the background
-      if (coat() !== 'black') { stripUrl(M.anim); for (const n in A) stripUrl(n); }
+      // the other cat: he starts from his resting pose, with his own animations
+      if (useCat()) {
+        stop(); stopLook(); rebuildPools(); preload();
+        Object.assign(M, { anim: 'rest', fi: 1, busy: false, asleep: false, melted: false, held: false, pending: null, state: M.holding ? 'hold' : 'idle' });
+        el.setAttribute('aria-label', `${catLabel()} the cat. Tap to boop.`);
+        if (M.holding) holdPose(false);
+      }
+      // a recoloured coat: start with what he's showing, then the rest of his animations in the background
+      if (COATS[coat()].rgb) { stripUrl(M.anim); for (const n in A) stripUrl(n); }
       shown = ''; render();
       const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); if (!M.busy && !M.asleep && M.state === 'idle') goRest(); schedule(0.5, 1.5); },
     debug: () => ({ cx: Math.round(M.cx), anim: M.anim, fi: M.fi, state: M.state, busy: M.busy, perch: M.perch, asleep: M.asleep, hidden: M.hidden }),

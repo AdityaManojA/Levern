@@ -1,6 +1,6 @@
 # TaskFlow web app (v0.1)
 
-A calm to-do list that feels like a game, built as an installable PWA. Plain HTML, CSS and ES modules: there is no build step and nothing to install. Mochi the cat lives on the nav bar (`js/mochi.js`), using the Mochi v2 art copied from `design/` by `node scripts/sync-mochi.mjs <design folder>`. Re-run that after the frames are re-cut.
+A calm to-do list that feels like a game, built as an installable PWA. Plain HTML, CSS and ES modules: there is no build step and nothing to install. Mochi the cat lives on the nav bar (`js/mochi.js`); Settings → Cat swaps in Cookie, his orange twin brother. Their art (`mochi/`, `cookie/`: a manifest and one WebP strip per animation, stored at 3× for sharp phone screens) is built from the Clarity 4× masters in `design/mochi/v3` (`hires.py`, `addcut.py`, `build.py`) and copied in by `python design/mochi/v3/sync.py`. `tests/cats.html` plays and checks every animation of both cats.
 
 ## Run it
 

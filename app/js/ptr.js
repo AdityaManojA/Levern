@@ -2,7 +2,7 @@
 // refresh (scrubbed as you pull)", "happy-spin: pull to refresh, on release"). Pull down from the top of the
 // page: he stretches further the further you pull; let go past the line and he spins while the app refreshes
 // (re-checks reminders, re-syncs calendars, looks for an app update, redraws the screen).
-import { sprite } from './mochi.js';
+import { sprite, hasAnim } from './mochi.js';
 import { getState } from './store.js';
 import { reduced, EASE } from './motion.js';
 import { toast, play } from './ui.js';
@@ -29,9 +29,18 @@ export function setupPullToRefresh({ current, refresh }) {
     if (withMochi()) mascot.away(true);
     ind.classList.toggle('ready', p >= LINE);
     if (withMochi()) {
-      // stretch frames 1 → 3 follow the finger (3 is the full hang)
-      const f = 1 + Math.round(k * 2);
-      if (f !== shownFrame) { stopAnim(); stopAnim = sprite(cat, 'stretch', { frame: f, scale: 0.72 }); shownFrame = f; }
+      if (hasAnim('pull-stretch')) {
+        // he hangs from the top and stretches further the further you pull; past the line he dangles, ready
+        if (p >= LINE) { if (shownFrame !== 'hang') { stopAnim(); stopAnim = sprite(cat, 'pull-hang', { scale: 0.62 }); shownFrame = 'hang'; } }
+        else {
+          const f = 1 + Math.round(k * 5);
+          if (f !== shownFrame) { stopAnim(); stopAnim = sprite(cat, 'pull-stretch', { frame: f, scale: 0.62 }); shownFrame = f; }
+        }
+      } else {
+        // stretch frames 1 → 3 follow the finger (3 is the full hang)
+        const f = 1 + Math.round(k * 2);
+        if (f !== shownFrame) { stopAnim(); stopAnim = sprite(cat, 'stretch', { frame: f, scale: 0.72 }); shownFrame = f; }
+      }
     } else ind.style.setProperty('--k', k);
   }
   function reset(animate) {
@@ -49,7 +58,7 @@ export function setupPullToRefresh({ current, refresh }) {
     view.style.transform = 'translateY(86px)';
     ind.style.transform = 'translate(-50%, 0px)';
     stopAnim();
-    if (withMochi()) stopAnim = sprite(cat, 'happy-spin', { scale: 0.72, loop: [1, 6] });
+    if (withMochi()) stopAnim = hasAnim('pull-spin') ? sprite(cat, 'pull-spin', { scale: 0.62 }) : sprite(cat, 'happy-spin', { scale: 0.72, loop: [1, 6] });
     play('click', 0.5);
     const t0 = performance.now();
     try { await refresh(); } catch (e) {}

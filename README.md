@@ -50,7 +50,7 @@ Open the app through the server, not as a file, because service workers need `lo
 | `firestore.rules` | Security rules for the shared Firebase project |
 | `design/` | Design brief, palette, and Mochi animation source files |
 | `docs/screenshots/` | Screenshots used on this page |
-| `scripts/` | Helpers, including `sync-mochi.mjs` to re-copy Mochi's art |
+| `scripts/` | Helpers (sounds, reminders, shared files). The cats' art is built in `design/mochi/v3` and copied in by its `sync.py` |
 
 For the full feature table, the onboarding and tour details, and the settings reference, see [`app/README.md`](app/README.md).
 
