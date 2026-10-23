@@ -158,10 +158,26 @@ export function createMochi(env) {
   const origin = () => { const r = probe.getBoundingClientRect(); return { x: r.left, y: r.top }; };
   const vw = () => document.documentElement.clientWidth;
   const mirrored = (a, fi) => a.face === 'R' && !a.lock[fi - 1] && !(a.noflip && a.noflip.includes(fi)) && M.dir < 0;
+  // His place along the bar is kept as a share of its width: when the bar moves or changes size under him
+  // (zooming in or out, turning the phone, resizing the window), he stays over the same spot on it instead
+  // of keeping his old screen position and ending up somewhere else along the bar. Checked on every draw.
+  let barWas = null;
+  function followBar() {
+    const r = M.perch === 'nav' ? nav()?.getBoundingClientRect() : null;
+    if (!r || !r.width) { barWas = null; return; }
+    if (barWas && M.state !== 'drag' && (Math.abs(r.left - barWas.left) > 0.5 || Math.abs(r.width - barWas.width) > 0.5)) {
+      const map = x => r.left + (x - barWas.left) / barWas.width * r.width;
+      M.cx = map(M.cx); M.target = map(M.target);
+      if (M.slide) { M.slide.from = map(M.slide.from); M.slide.to = map(M.slide.to); }
+    }
+    barWas = { left: r.left, width: r.width };
+  }
+
   let shown = '';
   // a new coat strip is ready: if it's the one he's showing, swap it in now
   onTinted = n => { if (M.anim === n) { shown = ''; render(); } };
   function render() {
+    followBar();
     const a = A[M.anim];
     if (shown !== M.anim) { act.style.backgroundImage = `url("${stripUrl(M.anim)}")`; act.style.backgroundSize = `${a.w * a.frames}px ${a.h}px`; shown = M.anim; }
     act.style.backgroundPosition = `${-(M.fi - 1) * a.w}px 0`;
@@ -555,6 +571,7 @@ export function createMochi(env) {
   let last = performance.now();
   function tick(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    followBar();   // before he moves this frame, so a walk continues along the bar as it is now
     if (M.state === 'drag' || M.state === 'fall') { /* positioned below */ }
     else if (M.state === 'walk' && !M.held) {
       // the bar can move under him (zoom, resize, the sheet): keep the target and his spot on it, every frame
@@ -598,7 +615,7 @@ export function createMochi(env) {
   }
   // window resized or zoomed: keep him on the bar, and redraw straight away (pinch zoom fires no resize)
   // the bar and the sheet are still moving when the resize event fires, so clamp again once they settle
-  const refit = () => { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); render(); };
+  const refit = () => { followBar(); const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); render(); };
   const refitSettled = () => { refit(); requestAnimationFrame(refit); setTimeout(refit, 120); setTimeout(refit, 450); setTimeout(refit, 900); };
   addEventListener('resize', refitSettled);
   window.visualViewport?.addEventListener('resize', refitSettled);
@@ -693,6 +710,7 @@ export function createMochi(env) {
     resume() { goRest(); schedule(1, 2); },
     start() {
       const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, (a + b) / 2 + 110));
+      followBar();
       goRest(); schedule(1, 2); requestAnimationFrame(tick);
     },
   };
