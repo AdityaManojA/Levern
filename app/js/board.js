@@ -69,7 +69,7 @@ export async function publish() {
 }
 
 // off the board: hide my entry (name cleared), keeping its EXP so the growth limit still applies if I come back
-async function unpublish() {
+export async function unpublish() {
   const fu = await account.firebaseUser();
   if (!fu) return false;
   const { db, F } = await account.database();

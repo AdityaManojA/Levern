@@ -5,7 +5,7 @@ import { esc, ICON, toast } from '../ui.js';
 import { describe, repeatShort } from '../recur.js';
 import { PRESETS, MAX_ALERT, cleanAlerts, alertLabel, alertShort } from '../alerts.js';
 import { goalProgress } from '../goals.js';
-import { rankOf, RANKS } from '../stats.js';
+import { rankOf, rankLabel, masterLevel, RANKS } from '../stats.js';
 
 // a weekly goal's progress for this week, e.g. "Goal 2/3 this week" (or "Goal met · +1 extra")
 export function goalChip(q) {
@@ -176,7 +176,14 @@ export { getState };
 
 // A season rank as a soft pill: a dot in the rank colour, the name, and 8 bars that fill up to the rank.
 export function rankChip(exp) {
-  const r = rankOf(exp), n = RANKS.findIndex(([name]) => name === r) + 1;
+  const r = rankOf(exp), n = RANKS.findIndex(([name]) => name === r) + 1, label = rankLabel(exp);
   const bars = RANKS.map((_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('');
-  return `<span class="rank rank-${r.toLowerCase()}" title="${r}, rank ${n} of ${RANKS.length}"><i class="rank-dot"></i>${r}<span class="rank-bars" aria-hidden="true">${bars}</span></span>`;
+  return `<span class="rank rank-${r.toLowerCase()}" title="${label}${masterLevel(exp) ? '' : `, rank ${n} of ${RANKS.length}`}"><i class="rank-dot"></i>${label}<span class="rank-bars" aria-hidden="true">${bars}</span></span>`;
+}
+// a chip for a rank saved by name ('Gold', 'Master 3'), e.g. a past season's best
+export function rankChipNamed(label) {
+  const base = String(label).startsWith('Master') ? 'Master' : label, n = RANKS.findIndex(([name]) => name === base) + 1;
+  if (!n) return '';
+  const bars = RANKS.map((_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('');
+  return `<span class="rank rank-${base.toLowerCase()}"><i class="rank-dot"></i>${esc(label)}<span class="rank-bars" aria-hidden="true">${bars}</span></span>`;
 }

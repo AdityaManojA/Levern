@@ -5,15 +5,19 @@
 import { getState } from '../store.js';
 import * as board from '../board.js';
 import * as account from '../account.js';
-import { seasonOf, seasonRange, rankOf, RANKS } from '../stats.js';
+import { seasonOf, seasonRange, nextRank, masterLevel } from '../stats.js';
 import { MAX_BOARD_NAME } from '../namefilter.js';
 import { swap } from '../motion.js';
 import { esc, play, toast } from '../ui.js';
 import { sfx } from '../sound.js';
 import { mascot } from '../mascot.js';
 import { rankChip } from './common.js';
+import * as profile from '../profile.js';
+import { confirmBox } from '../ui.js';
 
 let rows = null, loading = false, failed = false, asked = false, mode = 'legacy', editing = false;
+// the podium and rows rise in once, when a board has just loaded; any later redraw shows them as they are
+let enter = false;
 
 const fmt = n => Number(n || 0).toLocaleString();
 const daysLeft = () => Math.max(1, Math.ceil((seasonRange(seasonOf()).end - Date.now()) / 86400000));
@@ -41,7 +45,7 @@ export function mount() { visit += 1; announce(); }
 async function load() {
   if (loading) return;
   loading = true; failed = false; swap(render());
-  try { if (board.isOn()) await board.publish().catch(() => {}); rows = await board.top(mode); }
+  try { if (board.isOn()) await board.publish().catch(() => {}); rows = await board.top(mode); enter = true; }
   catch (e) { failed = true; rows = null; }
   loading = false;
   swap(render());
@@ -50,16 +54,16 @@ async function load() {
 
 function podium(list) {
   const slot = (r, n) => r ? `<div class="lb-slot lb-${n}${r.me ? ' me' : ''}">
-      <span class="lb-medal">${n}</span><b class="lb-name">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</b><span class="lb-exp">${fmt(r.exp)} EXP</span>${mode === 'season' ? rankChip(r.exp) : ''}</div>` : '<div class="lb-slot lb-empty"></div>';
-  return `<div class="lb-podium" aria-label="Top three">${slot(list[1], 2)}${slot(list[0], 1)}${slot(list[2], 3)}</div>`;
+      <span class="lb-medal">${n}</span><a class="lb-name" href="#/profile/${r.me ? 'me' : esc(r.id)}">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</a><span class="lb-exp">${fmt(r.exp)} EXP</span>${mode === 'season' ? rankChip(r.exp) : ''}</div>` : '<div class="lb-slot lb-empty"></div>';
+  return `<div class="lb-podium${enter ? ' enter' : ''}" aria-label="Top three">${slot(list[1], 2)}${slot(list[0], 1)}${slot(list[2], 3)}</div>`;
 }
 
 function seasonCard() {
-  const mine = board.mySeasonExp(), r = rankOf(mine), i = RANKS.findIndex(([n]) => n === r), next = RANKS[i + 1];
+  const mine = board.mySeasonExp(), next = nextRank(mine);
   return `<div class="card lb-season">
     <div class="lb-season-h"><b>Season ${seasonOf()}</b><span class="small">${daysLeft()} day${daysLeft() === 1 ? '' : 's'} left</span></div>
     <div class="lb-season-me">${rankChip(mine)}<span>${fmt(mine)} EXP this season</span></div>
-    <div class="small">${next ? `${fmt(next[1] - mine)} EXP to ${next[0]}.` : 'Top tier. You made Master.'} Everyone starts again at Iron when a new season begins.</div>
+    <div class="small">${fmt(next[1] - mine)} EXP to ${next[0]}.${masterLevel(mine) ? ' Master has no top: every 50 EXP is another level.' : ''} Everyone starts again at Iron when a new season begins.</div>
   </div>`;
 }
 
@@ -89,17 +93,20 @@ export function render() {
         ? `<div class="card lb-note small">Loading the board…</div>`
         : list.length
           ? `${podium(list)}
-             <div class="card lb-list">${list.map((r, i) => `<div class="lb-row${r.me ? ' me' : ''}" data-key="lb-${r.id}">
-               <span class="lb-rank">${i + 1}</span><span class="lb-n">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</span>${mode === 'season' ? rankChip(r.exp) : ''}<span class="lb-x">${fmt(r.exp)}</span></div>`).join('')}</div>`
+             <div class="card lb-list${enter ? ' enter' : ''}">${list.map((r, i) => `<div class="lb-row${r.me ? ' me' : ''}" data-key="lb-${r.id}">
+               <span class="lb-rank">${i + 1}</span><a class="lb-n" href="#/profile/${r.me ? 'me' : esc(r.id)}">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</a>${mode === 'season' ? rankChip(r.exp) : ''}<span class="lb-x">${fmt(r.exp)}</span></div>`).join('')}</div>`
           : emptySeason;
-  return `
+  const html = `
     <div class="h-sub">Who's on top</div>
     <h1 class="h-title">Leaderboard</h1>
     <a class="lb-back" href="#/home">‹ Home</a>
     <div class="card lb-join">
       <div class="srow"><div class="l"><b>Show me on the board</b><small>${signed ? (on ? `Your name and ${fmt(mine)} EXP are shown` : 'Off. Nothing about you is shared') : 'Sign in first'}</small></div>
         <button class="tog" role="switch" aria-checked="${on}" aria-label="Show me on the board" data-act="lb-toggle" ${signed ? '' : 'disabled'}></button></div>
+      <div class="srow"><div class="l"><b>Make my profile public</b><small>${signed ? (profile.isPublic() ? 'Anyone signed in can open your profile' : 'Off. Others only see your board name and rank') : 'Sign in first'}</small></div>
+        <button class="tog" role="switch" aria-checked="${profile.isPublic()}" aria-label="Make my profile public" data-act="lb-public" ${signed ? '' : 'disabled'}></button></div>
       ${nameRow(signed)}
+      ${signed ? '<div class="srow"><div class="l"><b>My profile</b><small>Your ranks, streaks and a year of activity</small></div><a class="mini" href="#/profile/me">Open</a></div>' : ''}
     </div>
     <div class="seg lb-tabs" role="tablist">
       <button role="tab" aria-selected="${mode === 'legacy'}" class="${mode === 'legacy' ? 'on' : ''}" data-act="lb-mode" data-mode="legacy">Legacy</button>
@@ -108,6 +115,8 @@ export function render() {
     ${mode === 'season' ? seasonCard() : '<div class="small lb-legacy-note">All the EXP everyone has earned since they started. It never resets.</div>'}
     ${body}
     ${signed && !loading ? '<button class="link lb-refresh" data-act="lb-refresh">Refresh</button>' : ''}`;
+  if (rows) enter = false;
+  return html;
 }
 
 export const actions = {
@@ -118,6 +127,14 @@ export const actions = {
     try { await board.setOn(next); toast(next ? 'You are on the board' : 'Off the board'); }
     catch (e) { toast('Could not update the board. Check your connection.'); }
     rows = null; asked = false; swap(render());
+  },
+  'lb-public': async el => {
+    const next = !profile.isPublic();
+    if (next && !(await confirmBox('Make your profile public? Anyone signed in can see your board name, ranks, streaks, totals and a year of activity (never your quest titles, notes or email).', 'Make public'))) return;
+    el.setAttribute('aria-checked', next); play('click', 0.5);
+    try { await profile.setPublic(next); toast(next ? 'Your profile is public' : 'Your profile is private'); }
+    catch (e) { toast('Could not update your profile. Check your connection.'); }
+    swap(render());
   },
   'lb-refresh': () => load(),
   'lb-mode': el => {

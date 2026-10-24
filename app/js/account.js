@@ -139,6 +139,23 @@ function friendly(e) {
   return new Error(m || 'Sign-in didn\'t work. Please try again.');
 }
 
+// Delete the Google sign-in itself. Firebase only allows it soon after signing in, so it may ask the person to
+// confirm with Google once more first. (Used by Delete account, only when no Solodesk workspace shares the sign-in.)
+export async function deleteSignIn() {
+  const u = await firebaseUser();
+  if (!u) return;
+  const f = await load();
+  try { await f.A.deleteUser(u); }
+  catch (e) {
+    if (e.code !== 'auth/requires-recent-login') throw friendly(e);
+    const p = new f.A.GoogleAuthProvider();
+    if (current?.email) p.setCustomParameters({ login_hint: current.email });
+    await f.A.reauthenticateWithPopup(u, p);
+    await f.A.deleteUser(u);
+  }
+  save(null);
+}
+
 export async function signOut() {
   try { const f = await load(); await f.A.signOut(f.auth); } catch (e) {}
   save(null);

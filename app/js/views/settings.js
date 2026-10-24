@@ -7,11 +7,15 @@ import { esc, toast, play, confirmBox, download } from '../ui.js';
 import { todayStr, fmtStamp } from '../dates.js';
 import * as cal from '../calendars.js';
 import { mascot } from '../mascot.js';
-import { COATS } from '../mochi.js';
-// 'ginger' (Mochi recoloured) became Cookie, who has his own art
-const coatNow = s => (s.mochiColor === 'ginger' ? 'cookie' : s.mochiColor || 'black');
+import { COATS, CAT_VOICE } from '../mochi.js';
+// the cat on the bar: Mochi ('black') or Cookie; older coats ('ginger' became Cookie, grey and brown were Mochi)
+const coatNow = s => (s.mochiColor === 'ginger' || s.mochiColor === 'cookie' ? 'cookie' : 'black');
+const catName = s => (coatNow(s) === 'cookie' ? 'Cookie' : 'Mochi');
 import { isClean } from '../namefilter.js';
 import { mySeasonExp } from '../board.js';
+import { applyTheme } from '../theme.js';
+import { APP_VERSION, CHANGELOG } from '../changelog.js';
+import { deleteAccount } from '../cloud.js';
 import { rankChip } from './common.js';
 import { buildICS } from '../ics.js';
 import * as account from '../account.js';
@@ -51,9 +55,10 @@ export function render() {
     <div class="sec">You</div>
     <div class="card">
       ${accountRow()}
+      ${account.user() ? `<div class="srow"><div class="l"><b>Delete account</b><small>Removes your account and everything TaskFlow keeps for you</small></div><button class="mini danger-mini" data-act="acct-delete">Delete…</button></div>` : ''}
       <div class="srow"><div class="l"><b>Name</b><small>Used in the greeting on Home</small></div><input class="field" style="width:150px" value="${esc(s.name)}" maxlength="30" data-input="name" aria-label="Your name" placeholder="Optional"></div>
       <div class="srow"><div class="l"><b>Welcome screens</b><small>See the introduction again</small></div><button class="mini" data-act="onboard">Show again</button></div>
-      <div class="srow"><div class="l"><b>Quick tour</b><small>Mochi shows you around (30 seconds)</small></div><button class="mini" data-act="tour">Start</button></div>
+      <div class="srow"><div class="l"><b>Quick tour</b><small>${catName(s)} shows you around (30 seconds)</small></div><button class="mini" data-act="tour">Start</button></div>
     </div>
 
     <div class="sec">Look</div>
@@ -98,20 +103,20 @@ export function render() {
 
     <div class="sec">Sound and voice</div>
     <div class="card">
-      <div class="srow"><div class="l"><b>Sound effects</b><small>Taps, ticks, reminders and Mochi. Starts off if your device asks for reduced motion.</small></div>${tog('sound', s.sound, 'Sound effects')}</div>
-      <div class="srow"><div class="l"><b>Try them</b></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="mini" data-act="hear" data-s="tick">Tick</button><button class="mini" data-act="hear" data-s="chime">Reminder</button><button class="mini" data-act="hear" data-s="mrrp">Mochi</button></div></div>
+      <div class="srow"><div class="l"><b>Sound effects</b><small>Taps, ticks, reminders and the cat. Starts off if your device asks for reduced motion.</small></div>${tog('sound', s.sound, 'Sound effects')}</div>
+      <div class="srow"><div class="l"><b>Try them</b></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="mini" data-act="hear" data-s="tick">Tick</button><button class="mini" data-act="hear" data-s="chime">Reminder</button><button class="mini" data-act="hear" data-s="mrrp">Mochi</button><button class="mini" data-act="hear" data-s="mrrp" data-rate="${CAT_VOICE.cookie}">Cookie</button></div></div>
       <div class="srow"><div class="l"><b>Voice input</b><small>Mic button when adding a quest</small></div>${tog('voice', s.voice, 'Voice input')}</div>
       <div class="srow"><div class="l"><b>Volume</b></div><input type="range" min="0" max="1" step="0.05" value="${s.volume}" data-change="volume" aria-label="Volume"></div>
     </div>
 
-    <div class="sec">Mochi</div>
+    <div class="sec">Cat</div>
     <div class="card" data-tour="mochi-settings">
-      <div class="srow"><div class="l"><b>Show Mochi</b><small>The cat on the nav bar</small></div>${tog('mochi', s.mochi !== false, 'Show Mochi')}</div>
-      <div class="srow"><div class="l"><b>Cat</b><small>Mochi, his twin brother Cookie, or Mochi in another coat</small></div><div class="seg coats" style="margin:0;width:auto">${Object.entries(COATS).map(([v, c]) => `<button class="${coatNow(s) === v ? 'on' : ''}" data-act="coat" data-v="${v}" aria-pressed="${coatNow(s) === v}" style="padding:5px 10px"><i class="coat-dot" style="background:${c.swatch}"></i>${c.label}</button>`).join('')}</div></div>
-      <div class="srow"><div class="l"><b>Roam around</b><small>Walks along the bar. Off: sits by the edge.</small></div>${tog('roam', s.roam !== false, 'Mochi roams')}</div>
+      <div class="srow"><div class="l"><b>Show Mochi / Cookie</b><small>The cat on the nav bar</small></div>${tog('mochi', s.mochi !== false, 'Show the cat')}</div>
+      <div class="srow"><div class="l"><b>Cat</b><small>Mochi, or Cookie, his orange twin brother</small></div><div class="seg coats" style="margin:0;width:auto">${Object.entries(COATS).map(([v, c]) => `<button class="${coatNow(s) === v ? 'on' : ''}" data-act="coat" data-v="${v}" aria-pressed="${coatNow(s) === v}" style="padding:5px 10px"><i class="coat-dot" style="background:${c.swatch}"></i>${c.label}</button>`).join('')}</div></div>
+      <div class="srow"><div class="l"><b>Roam around</b><small>Walks along the bar. Off: sits by the edge.</small></div>${tog('roam', s.roam !== false, 'The cat roams')}</div>
       <div class="srow"><div class="l"><b>Walk speed</b></div><div class="seg" style="margin:0;width:auto">${[['slow', 'Slow'], ['normal', 'Normal'], ['zoomy', 'Zoomy']].map(([v, l]) => `<button class="${(s.speed || 'slow') === v ? 'on' : ''}" data-act="speed" data-v="${v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
-      <div class="srow"><div class="l"><b>Mochi sounds</b><small>The little "mrp" when you tap him</small></div>${tog('mochiSound', s.mochiSound !== false, 'Mochi sounds')}</div>
-      <div class="srow"><div class="l"><b>Patience</b><small>Taps before Mochi gets annoyed</small></div>${step('annoy', s.annoy || 5)}</div>
+      <div class="srow"><div class="l"><b>${catName(s)}'s sounds</b><small>The little "mrp" when you tap him</small></div>${tog('mochiSound', s.mochiSound !== false, 'Cat sounds')}</div>
+      <div class="srow"><div class="l"><b>Patience</b><small>Taps before ${catName(s)} gets annoyed</small></div>${step('annoy', s.annoy || 5)}</div>
     </div>
 
     <div class="sec">App</div>
@@ -146,7 +151,11 @@ export function render() {
     ${debugRows()}
     ${account.user() ? `<button class="btn block signout" data-act="acct-out" style="margin-top:22px">Sign out</button>
     <p class="small" style="text-align:center;margin-top:8px">Signed in as ${esc(account.user().email || account.user().name)}</p>` : ''}
-    <p class="small" style="text-align:center;margin:16px 0">TaskFlow web 0.1 · light mode</p>`;
+    <div class="sec">What's new</div>
+    <div class="card">
+      <div class="srow"><div class="l"><b>Updates</b><small>Version ${esc(APP_VERSION)} · ${esc(CHANGELOG[0].title)}</small></div><a class="mini" href="#/whatsnew">See all</a></div>
+    </div>
+    <p class="small" style="text-align:center;margin:16px 0">TaskFlow web ${esc(APP_VERSION)}</p>`;
 }
 
 function calendarRows() {
@@ -191,6 +200,7 @@ function accountRow() {
 }
 
 export const actions = {
+  'acct-delete': () => deleteFlow(),
   'acct-in': async el => {
     el.disabled = true; el.textContent = 'Signing in…';
     try { const u = await account.signIn(); if (u) toast(`Signed in as ${u.name || u.email}`, 'good'); } catch (e) { toast(e.message); }
@@ -249,9 +259,9 @@ export const actions = {
     play('click', 0.5); toast('Reminder in 10 seconds. You can switch tabs.');
   },
   install: () => install(),
-  hear: el => play(el.dataset.s),
+  hear: el => play(el.dataset.s, 1, +el.dataset.rate || 1),
   speed: el => { setSetting('speed', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
-  theme: el => { setSetting('theme', el.dataset.v); play('click', 0.4); },
+  theme: el => { setSetting('theme', el.dataset.v); applyTheme(); play('click', 0.4); },
   coat: el => { setSetting('mochiColor', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
   export: () => { download(`taskflow-backup-${todayStr()}.json`, exportData(), 'application/json'); toast('Backup saved'); },
   'tidy-exp': async () => {
@@ -286,3 +296,37 @@ export function onInput(el) {
 }
 function rerender() { swap(render({})); }
 export { show, supported };
+
+// Delete account: what goes, a way to keep a copy, an optional reason (anonymous, read only on the backend), and a
+// tick to confirm before the button works. Then cloud.deleteAccount() removes it all.
+const REASONS = ['Not using it anymore', 'Too complicated', 'Missing something I need', 'Bugs or problems', 'Privacy', 'Something else'];
+function deleteFlow() {
+  const d = document.getElementById('dialog');
+  d.innerHTML = `<form method="dialog" class="del-form">
+    <h3>Delete your account?</h3>
+    <p class="small">This deletes everything TaskFlow keeps for you: your quests, history, focus sessions, sketches and settings, the copy Solodesk reads, and your place on the leaderboard. It also clears this device. <b>It can't be undone.</b></p>
+    <button type="button" class="mini" data-del="export">Download my data first</button>
+    <fieldset class="del-why"><legend>Before you go, what made you leave? <span class="small">(optional)</span></legend>
+      <div class="del-chips">${REASONS.map(r => `<label><input type="radio" name="reason" value="${esc(r)}"><span>${esc(r)}</span></label>`).join('')}</div>
+      <textarea class="field" name="note" rows="3" maxlength="1000" placeholder="Anything else you'd like to tell us? (optional)"></textarea>
+      <p class="small">Your answer is anonymous: no name, email or account is attached, and only the TaskFlow team can read it.</p>
+    </fieldset>
+    <label class="del-ok"><input type="checkbox" name="sure"> I understand this can't be undone</label>
+    <div class="row-btns"><button value="no" class="btn ghost">Keep my account</button><button value="yes" class="btn danger" name="go" disabled>Delete everything</button></div>
+  </form>`;
+  const f = d.querySelector('form'), go = f.go;
+  f.sure.addEventListener('change', () => { go.disabled = !f.sure.checked; });
+  d.querySelector('[data-del="export"]').addEventListener('click', () => download(`taskflow-backup-${todayStr()}.json`, exportData(), 'application/json'));
+  d.onclose = async () => {
+    if (d.returnValue !== 'yes' || !f.sure.checked) return;
+    const feedback = { reason: f.reason?.value || '', note: f.note.value };
+    toast('Deleting your account…');
+    try {
+      const r = await deleteAccount(feedback);
+      toast(r.signInKept ? 'Your TaskFlow data is deleted. Your sign-in is kept for Solodesk.' : 'Your account and all your data are deleted.', 'good');
+      location.hash = '#/home';
+    } catch (e) { toast("Couldn't delete everything: " + (e.message || 'please try again.')); }
+  };
+  d.returnValue = '';
+  d.showModal();
+}

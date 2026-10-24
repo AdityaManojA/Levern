@@ -17,6 +17,10 @@ import * as stats from './views/stats.js';
 import * as settings from './views/settings.js';
 import * as developer from './views/developer.js';
 import * as leaderboard from './views/leaderboard.js';
+import * as whatsnew from './views/whatsnew.js';
+import * as profileView from './views/profile.js';
+import { startProfile } from './profile.js';
+import { startRankups } from './rankup.js';
 import { startBoard } from './board.js';
 import { startTheme } from './theme.js';
 import { startNameCheck } from './namecheck.js';
@@ -42,7 +46,7 @@ initTimeWheels();   // the iOS-style time pickers, app-wide
 
 store.init();
 
-const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, developer, leaderboard };
+const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, developer, leaderboard, whatsnew, profile: profileView };
 const NAV = [['home', 'Home'], ['quests', 'Quests'], ['add'], ['calendar', 'Calendar'], ['focus', 'Focus']];
 let route = { name: 'home', params: {} };
 
@@ -205,6 +209,8 @@ startControls();
 startMenu();
 startAccount();
 startBoard();
+startProfile();
+startRankups();
 startTheme();
 go();
 // Mochi lives on the nav bar

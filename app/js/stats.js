@@ -57,9 +57,13 @@ export function summary(history, sessions, target, now = new Date()) {
 
 // Ranked seasons on the leaderboard: two weeks each, the same for everyone, counted from Monday 19 October 2026
 // (00:00 UTC). Nothing has to run to "reset" the board: when a season ends, everyone simply moves to the next one.
-export const SEASON_MS = 14 * 86400000, SEASON_EPOCH = Date.UTC(2026, 9, 19);
+// Seasons are two weeks and end on every second Sunday at midnight India time (Monday 00:00 IST = Sunday 18:30
+// UTC), the same moment for everyone: season 2 starts 26 Oct 2026, season 3 on 9 Nov, and so on. Season 1 was
+// shorter: it counts from 19 Oct, when seasons began, to the end of Sunday 25 Oct. The Firestore rules
+// (tfSeasonNow) count seasons from the same SEASON_EPOCH.
+export const SEASON_MS = 14 * 86400000, SEASON_EPOCH = Date.UTC(2026, 9, 11, 18, 30), FIRST_SEASON_FROM = Date.UTC(2026, 9, 19);
 export const seasonOf = (ms = Date.now()) => Math.max(1, Math.floor((ms - SEASON_EPOCH) / SEASON_MS) + 1);
-export const seasonRange = n => ({ start: SEASON_EPOCH + (n - 1) * SEASON_MS, end: SEASON_EPOCH + n * SEASON_MS });
+export const seasonRange = n => ({ start: n <= 1 ? FIRST_SEASON_FROM : SEASON_EPOCH + (n - 1) * SEASON_MS, end: SEASON_EPOCH + n * SEASON_MS });
 // EXP earned inside one season (same rules as the all-time EXP)
 export function seasonExp(history, sessions, target, n = seasonOf()) {
   const { start, end } = seasonRange(n), inside = ms => ms >= start && ms < end;
@@ -68,13 +72,29 @@ export function seasonExp(history, sessions, target, n = seasonOf()) {
   for (const s of sessions) if (inside(s.endedAt)) exp += focusExp(s.minutes);
   return exp;
 }
-// Rank tiers for a season's EXP, Valorant style. Hitting the daily target every day of a season is 420 EXP before
-// focus time, so Master takes a near-perfect fortnight plus focus.
-export const RANKS = [['Iron', 0], ['Bronze', 40], ['Silver', 90], ['Gold', 150], ['Platinum', 220], ['Diamond', 300], ['Ascendant', 380], ['Master', 460]];
+// Rank tiers for a season's EXP, Valorant style, kept easy to climb in a two-week season: hitting the daily target
+// is 30 EXP a day, so a few days of it reaches Gold, and Master takes about six full days; a couple of quests a day
+// for the whole season reaches about Diamond.
+export const RANKS = [['Iron', 0], ['Bronze', 10], ['Silver', 25], ['Gold', 45], ['Platinum', 70], ['Diamond', 100], ['Ascendant', 135], ['Master', 175]];
 export function rankOf(exp) {
   let r = RANKS[0][0];
   for (const [name, min] of RANKS) if (exp >= min) r = name;
   return r;
+}
+// Master has no top: Master 1 at 175 season EXP, then a level every MASTER_STEP more (Master 2 at 225, 3 at 275 …)
+export const MASTER_STEP = 50;
+const MASTER_AT = RANKS[RANKS.length - 1][1];
+export const masterLevel = exp => (exp >= MASTER_AT ? 1 + Math.floor((exp - MASTER_AT) / MASTER_STEP) : 0);
+// what a rank is called: 'Gold', or 'Master 3'
+export const rankLabel = exp => { const m = masterLevel(exp); return m ? `Master ${m}` : rankOf(exp); };
+// one number per rank and Master level, for comparing (Iron 0 … Ascendant 6, Master 1 = 7, Master 2 = 8 …)
+export const rankStep = exp => { const m = masterLevel(exp); return m ? RANKS.length - 2 + m : RANKS.findIndex(([n]) => n === rankOf(exp)); };
+// the next rank up and the EXP it starts at
+export function nextRank(exp) {
+  const m = masterLevel(exp);
+  if (m) return [`Master ${m + 1}`, MASTER_AT + m * MASTER_STEP];
+  const i = RANKS.findIndex(([n]) => n === rankOf(exp)), n = RANKS[i + 1];
+  return n[0] === 'Master' ? ['Master 1', n[1]] : n;
 }
 
 export const historyDay = h => toStr(new Date(h.doneAt));

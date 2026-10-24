@@ -9,7 +9,7 @@
  *   7. Animations missing from the manifest are refused.
  * With reduced motion he sits still on the bar and only talks.
  * Two cats: Mochi, and Cookie, his orange twin brother (app/cookie: his own art under the same animation names).
- * Settings → Cat picks one; the grey and brown coats are Mochi recoloured on the device.
+ * Settings → Cat picks one.
  */
 import MOCHI from '../mochi/manifest.js';
 import COOKIE from '../cookie/manifest.js';
@@ -19,82 +19,65 @@ import { reduced } from './motion.js';
 
 const CATS = { mochi: MOCHI, cookie: COOKIE };
 // poses each cat's art has in a different frame: a paw raised to hold a card, dangling when picked up
-const POSES = { mochi: { hold: ['wave', 3], dangle: ['stretch', 3] }, cookie: { hold: ['wave', 4], dangle: ['stretch', 2] } };
+const POSES = { mochi: { hold: ['wave', 3], dangle: ['stretch', 3] }, cookie: { hold: ['wave', 4], dangle: ['dangle', 1] } };
 let V = MOCHI, A = V.anims, catName = 'mochi';
 const has = n => Object.prototype.hasOwnProperty.call(A, n);
-export const hasAnim = n => { useCat(); return has(n); };
+// small sprites elsewhere follow the nav-bar cat; with no cat on the bar they follow the setting
+export const hasAnim = n => { if (!M) useCat(); return has(n); };
 const baseUrl = n => V.base + 'strips/' + n + '.' + (V.ext || 'png');
 // one of these names that this cat has, at random (the variants of a reaction)
 const variant = (...names) => { const ok = names.filter(has); return ok[Math.floor(Math.random() * ok.length)] || names[0]; };
 
-/* ---------- his coat ---------- */
-// Mochi is drawn black. Other coats are made on the device: each strip is redrawn once with his black fur
-// turned into the coat colour. White (whiskers, leg lines, inner ears, eyes) stays white and his pupils stay dark.
-// Until a strip is ready he shows the original, then swaps in the new coat on his next frame.
+/* ---------- which cat ---------- */
+// Settings → Cat: Mochi (stored as 'black', his coat) or Cookie. Older coats: 'ginger' (Mochi recoloured orange) is
+// Cookie now; grey and brown were Mochi recoloured and are Mochi again.
 export const COATS = {
   black: { label: 'Mochi', swatch: '#1E1B18' },
   cookie: { label: 'Cookie', swatch: '#E58B3A', cat: 'cookie' },
-  grey: { label: 'Grey', swatch: '#8C919A', rgb: [140, 145, 154] },
-  brown: { label: 'Brown', swatch: '#7A5236', rgb: [122, 82, 54] },
 };
-// 'ginger' was Mochi recoloured orange before Cookie had his own art: it is Cookie now
-const coat = () => { const c = S().mochiColor === 'ginger' ? 'cookie' : S().mochiColor; return COATS[c] ? c : 'black'; };
+// Cookie's voice: the same sounds, a little lower
+export const CAT_VOICE = { mochi: 1, cookie: 0.86 };
+const coat = () => { const c = S().mochiColor; return c === 'cookie' || c === 'ginger' ? 'cookie' : 'black'; };
 // switch to the cat the coat asks for; true when it changed
 function useCat() {
   const name = COATS[coat()].cat || 'mochi';
   if (name === catName) return false;
   catName = name; V = CATS[name]; A = V.anims;
+  document.documentElement.dataset.cat = name;   // CSS: the dark-mode glow is only for black Mochi
   return true;
 }
-export const catLabel = () => (COATS[coat()].cat === 'cookie' ? 'Cookie' : 'Mochi');
-const tinted = new Map();   // 'grey/rest' -> blob URL ('' while it's being made)
-const queue = [];
-let working = false, onTinted = () => {};
-const stripUrl = n => {
-  const c = coat();
-  if (!COATS[c].rgb) return baseUrl(n);
-  const k = c + '/' + n, u = tinted.get(k);
-  if (u) return u;
-  if (u === undefined) { tinted.set(k, ''); queue.push([n, c]); pump(); }
-  return baseUrl(n);
+export const catLabel = () => (coat() === 'cookie' ? 'Cookie' : 'Mochi');
+
+// Strips are fetched a few at a time in idle moments, the ones on screen most often first, so switching cats
+// (or starting the app) never queues dozens of big images in front of the one he needs right now.
+const FIRST = ['rest', 'blink', 'walk', 'get-up-left', 'get-up-right', 'lie-down', 'sleep', 'get-up', 'wave', 'boop', 'stretch', 'startled'];
+const warmed = new Map();   // url -> decode promise
+// ready once loaded (or failed), and never later than 0.8 s, so nothing ever waits on a slow or paused page
+const warm = u => {
+  if (!warmed.has(u)) warmed.set(u, new Promise(res => {
+    const im = new Image(); im.decoding = 'async';
+    im.onload = im.onerror = () => res(); setTimeout(res, 800);
+    im.src = u;
+  }));
+  return warmed.get(u);
 };
-async function pump() {
-  if (working) return;
-  working = true;
-  while (queue.length) {
-    const [n, c] = queue.shift();
-    if (c !== coat()) { tinted.delete(c + '/' + n); continue; }   // the coat changed again meanwhile
-    try { tinted.set(c + '/' + n, await recolour(baseUrl(n), COATS[c].rgb)); onTinted(n); }
-    catch (e) { tinted.delete(c + '/' + n); }
-    await new Promise(r => setTimeout(r, 0));   // one strip at a time, so the page stays smooth
-  }
-  working = false;
+let warmGen = 0;
+function warmAll() {
+  const gen = ++warmGen;
+  const order = [...FIRST.filter(has), ...Object.keys(A).filter(n => !FIRST.includes(n))].map(n => baseUrl(n));
+  const idle = window.requestIdleCallback ? f => requestIdleCallback(f, { timeout: 1500 }) : f => setTimeout(f, 60);
+  const step = () => { if (gen !== warmGen) return; const batch = order.splice(0, 3); if (batch.length) Promise.all(batch.map(warm)).then(() => idle(step)); };
+  idle(step);
 }
-async function recolour(src, [cr, cg, cb]) {
-  const img = new Image(); img.src = src; await img.decode();
-  const w = img.naturalWidth, h = img.naturalHeight, cv = document.createElement('canvas');
-  cv.width = w; cv.height = h;
-  const g = cv.getContext('2d', { willReadFrequently: true });
-  g.drawImage(img, 0, 0);
-  const d = g.getImageData(0, 0, w, h), p = d.data;
-  const luma = i => 0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2];
-  const light = new Uint8Array(w * h);
-  for (let j = 0, i = 0; j < light.length; j++, i += 4) light[j] = p[i + 3] > 160 && luma(i) > 190 ? 1 : 0;
-  // a pupil is a dark spot with white on (nearly) every side within a few pixels
-  const R = 5, near = (x, y, dx, dy) => { for (let k = 1; k <= R; k++) { const xx = x + dx * k, yy = y + dy * k; if (xx < 0 || yy < 0 || xx >= w || yy >= h) return 0; if (light[yy * w + xx]) return 1; } return 0; };
-  for (let y = 0, j = 0; y < h; y++) for (let x = 0; x < w; x++, j++) {
-    const i = j * 4;
-    if (!p[i + 3] || light[j]) continue;
-    const l = luma(i);
-    if (l > 190) continue;
-    if (l < 100 && near(x, y, 1, 0) + near(x, y, -1, 0) + near(x, y, 0, 1) + near(x, y, 0, -1) >= 3) continue;
-    const t = l / 255;
-    p[i] = cr + (255 - cr) * t; p[i + 1] = cg + (255 - cg) * t; p[i + 2] = cb + (255 - cb) * t;
-  }
-  g.putImageData(d, 0, 0);
-  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
-  return URL.createObjectURL(blob);
+// The other cat takes over only once his resting strip is ready, so the bar is never empty while it loads.
+let switching = 0;
+function switchCat(then) {
+  const name = COATS[coat()].cat || 'mochi';
+  if (name === catName) { switching++; return; }
+  const ticket = ++switching, v = CATS[name];
+  warm(v.base + 'strips/rest.' + (v.ext || 'png')).then(() => { if (ticket === switching && useCat()) then(); });
 }
+const stripUrl = n => baseUrl(n);
 const SPEED = { slow: 28, normal: 50, zoomy: 95 }, SPRINT = 170, SINK = 2;
 // Tempo on top of the art's own fps: reactions and idles play much slower so they read as calm,
 // walking and running a little faster (stride and ground speed scale together, so his feet don't slide).
@@ -108,7 +91,7 @@ const S = () => getState().settings;
 /* ---------- small looping sprites (onboarding, tour, empty states, toasts) ---------- */
 // el gets the animation as a background strip; returns stop()
 export function sprite(el, name, { scale = 1, loop, fps, pause = 0, frame } = {}) {
-  useCat();
+  if (!M) useCat();
   const a = A[name]; if (!a) return () => {};
   el.style.width = a.w * scale + 'px'; el.style.height = a.h * scale + 'px';
   el.style.backgroundImage = `url("${stripUrl(name)}")`;
@@ -147,8 +130,7 @@ export function createMochi(env) {
   card.innerHTML = '<span class="mcard-in"><span class="mcard-bell" aria-hidden="true"></span><span class="mcard-t"></span><b class="mcard-n"></b></span>';
   document.body.append(el, bub, card);
   useCat();
-  const preload = () => { for (const n in A) { const im = new Image(); im.src = stripUrl(n); } };
-  preload();
+  warmAll();
 
   M = { cx: innerWidth / 2 + 120, dir: -1, anim: 'rest', fi: 1, timer: null, state: 'idle', perch: 'nav', busy: false, target: 0, onArrive: null, next: 0,
     lastActive: Date.now(), clicks: [], lastTap: 0, annoyedUntil: 0, sulkTaps: 0, sulkNeed: 2, sulkT: 0, bubbleUntil: 0, pending: null, asleep: false, held: false, slide: null,
@@ -195,8 +177,6 @@ export function createMochi(env) {
   }
 
   let shown = '';
-  // a new coat strip is ready: if it's the one he's showing, swap it in now
-  onTinted = n => { if (M.anim === n) { shown = ''; render(); } };
   function render() {
     followBar();
     const a = A[M.anim];
@@ -219,7 +199,9 @@ export function createMochi(env) {
     }
     if (Date.now() < M.bubbleUntil && !M.holding) {
       const w = bub.offsetWidth, h = bub.offsetHeight || 26, by = y + a.gy - V.sit - 44;
-      let bx = Math.max(8, Math.min(vw() - 8 - w, M.cx - w / 2));
+      // inside the app's own column (the nav bar's width), never past the screen edge
+      const bar = nav()?.getBoundingClientRect(), L = Math.max(8, bar?.width ? bar.left : 8), R = Math.min(vw() - 8, bar?.width ? bar.right : vw() - 8);
+      let bx = Math.max(L, Math.min(R - w, M.cx - w / 2));
       // never cover a red count badge (Quests tab, bell)
       for (const b of document.querySelectorAll('[data-rcount]:not([hidden])')) {
         const r = b.getBoundingClientRect();
@@ -363,7 +345,8 @@ export function createMochi(env) {
       ['surprised', 1.5], ['suspicious', 1.5], ['celebrate', 1.5], ['victory', 1], ['happy-spin', 1.5],
       ['tail-balance', 2], ['curious-sniff', 1.5], ['seated-turn', 1.5], ['play-bow', 1.5], ['roll', 1.5], ['tail-puff', 1.5], ['relax', 1.5],
       ['shake-off', 1], ['dry-off', 1], ['side-roll', 1.5], ['play-flip', 1.5],
-      ['loaf', 1.5], ['yawn-big', 1.5], ['tail-sway', 2], ['scroll-look', 1.5], ['corner-idle', 1.5], ['suspicious-long', 1], ['button-big', 1], ['wipe-big', 1]]);
+      ['loaf', 1.5], ['yawn-big', 1.5], ['tail-sway', 2], ['scroll-look', 1.5], ['corner-idle', 1.5], ['suspicious-long', 1], ['button-big', 1], ['wipe-big', 1],
+      ['chasing-butterfly', 1]]);
     TAPS = pool([['boop', 4], ['happy-wiggle', 2], ['excited', 2], ['confused', 2], ['wave', 2], ['surprised', 2], ['cursor-swipe', 1.5],
       ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 2], ['heart-eyes', 2], ['startled', 1.5], ['happy-spin', 1.5], ['suspicious', 1], ['victory', 1],
       ['belly-flop', 2], ['startled-jump', 2], ['angry-stomp', 1], ['scared', 1.5], ['play-pounce', 1.5], ['shake-off', 1],
@@ -431,10 +414,10 @@ export function createMochi(env) {
   /* touch */
   // his voice: a plain meow or the signature "mrrp" on taps, a "hey" meow for surprises and reminders, a grumpy one
   // when he's getting annoyed and an angry one when he's had enough, and a squeak when he's picked up
-  const voice = (kind, o) => sfx(kind, o);
+  const voice = (kind, o = {}) => sfx(kind, { ...o, rate: (o.rate || 1) * CAT_VOICE[catName] });
   // taps: his voice on every second tap at most, and never within 1.5 s of the last one, so it never gets spammy
   let tapCount = 0, lastTapVoice = 0;
-  const tapVoice = (kind, o) => { const now = Date.now(); if (tapCount % 2 !== 0 || now - lastTapVoice < 1500) return; lastTapVoice = now; sfx(kind, o); };
+  const tapVoice = (kind, o) => { const now = Date.now(); if (tapCount % 2 !== 0 || now - lastTapVoice < 1500) return; lastTapVoice = now; voice(kind, o); };
   const AFFECTION = new Set(['boop', 'happy-wiggle', 'heart-eyes', 'wave', 'sitting-pretty', 'celebrate', 'excited', 'cursor-swipe']);
   // A sulk is short: he gets over it after 3–4 s, or sooner if you keep tapping (2–3 more taps).
   function getAnnoyed() {
@@ -733,15 +716,15 @@ export function createMochi(env) {
     // pull to refresh borrows him as its indicator; the one on the bar steps out meanwhile
     away(on) { el.style.visibility = on ? 'hidden' : ''; card.style.visibility = on ? 'hidden' : ''; if (on) bub.classList.remove('show'); },
     settingsChanged() {
-      // the other cat: he starts from his resting pose, with his own animations
-      if (useCat()) {
-        stop(); stopLook(); rebuildPools(); preload();
-        Object.assign(M, { anim: 'rest', fi: 1, busy: false, asleep: false, melted: false, held: false, pending: null, state: M.holding ? 'hold' : 'idle' });
+      // the other cat: once his resting strip is ready he takes over from his resting pose, with his own animations
+      switchCat(() => {
+        stop(); stopLook(); rebuildPools(); warmAll();
+        Object.assign(M, { anim: 'rest', fi: 1, busy: false, asleep: false, melted: false, held: false, pending: null, slide: null, state: M.holding ? 'hold' : 'idle' });
         el.setAttribute('aria-label', `${catLabel()} the cat. Tap to boop.`);
-        if (M.holding) holdPose(false);
-      }
-      // a recoloured coat: start with what he's showing, then the rest of his animations in the background
-      if (COATS[coat()].rgb) { stripUrl(M.anim); for (const n in A) stripUrl(n); }
+        shown = '';
+        if (M.holding) holdPose(false); else { goRest(); schedule(1, 2); }
+        const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); render();
+      });
       shown = ''; render();
       const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); if (!M.busy && !M.asleep && M.state === 'idle') goRest(); schedule(0.5, 1.5); },
     debug: () => ({ cx: Math.round(M.cx), anim: M.anim, fi: M.fi, state: M.state, busy: M.busy, perch: M.perch, asleep: M.asleep, hidden: M.hidden }),

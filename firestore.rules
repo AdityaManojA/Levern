@@ -34,9 +34,10 @@ service cloud.firestore {
     // a bucket of at most 60 EXP that refills 15 an hour. Real use earns less (30 a day from quests, 12 an hour
     // from nonstop focus). A new entry starts at most at 3000 EXP. Leaving the board hides the entry (name
     // cleared, hidden: true) rather than deleting it, so the cap can't be reset by leaving and rejoining.
-    // Seasons are two weeks from 19 Oct 2026 00:00 UTC (1792368000000 ms), as in TaskFlow's stats.js.
+    // Seasons are two weeks, ending every second Sunday at midnight India time (18:30 UTC), counted from
+    // 11 Oct 2026 18:30 UTC (1791743400000 ms) as in TaskFlow's stats.js: season 2 starts 25 Oct 18:30 UTC.
     function tfSeasonNow() {
-      return int((request.time.toMillis() - 1792368000000) / 1209600000) + 1;
+      return int((request.time.toMillis() - 1791743400000) / 1209600000) + 1;
     }
     function tfBoardShape(d) {
       return d.keys().hasOnly(['name', 'exp', 'season', 'seasonExp', 'bank', 'hidden', 'updated'])
@@ -60,6 +61,33 @@ service cloud.firestore {
         || (delta > 0 && n.bank <= room - delta
           && ((sameSeason && n.seasonExp <= o.get('seasonExp', 0) + delta) || (!sameSeason && n.seasonExp <= delta))));
     }
+    // Feedback left when someone deletes their TaskFlow account: anonymous (no name, email or account id), write
+    // once, and never readable from the app (only in the Firebase console).
+    match /taskflowFeedback/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['kind', 'reason', 'note', 'app', 'at'])
+        && request.resource.data.kind == 'account-deleted' && request.resource.data.app == 'taskflow'
+        && request.resource.data.reason is string && request.resource.data.reason.size() <= 60
+        && request.resource.data.note is string && request.resource.data.note.size() <= 1000
+        && request.resource.data.at == request.time;
+      allow read, update, delete: if false;
+    }
+
+    // Public profiles (TaskFlow Leaderboard → Make my profile public): readable by anyone signed in only while
+    // public; written and deleted only by their owner. A summary only: no quest titles, notes, email or photo.
+    match /taskflowProfiles/{uid} {
+      allow read: if request.auth != null && (resource.data.public == true || request.auth.uid == uid);
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'cat', 'since', 'season', 'seasonRank', 'seasonExp', 'bestRank', 'bestSeason',
+             'seasons', 'totalExp', 'streak', 'bestStreak', 'quests', 'focusMin', 'activity', 'activityEnd', 'public', 'updated'])
+        && request.resource.data.public == true
+        && request.resource.data.name is string && request.resource.data.name.size() <= 30
+        && request.resource.data.seasons is list && request.resource.data.seasons.size() <= 52
+        && request.resource.data.activity is list && request.resource.data.activity.size() <= 400
+        && request.resource.data.updated == request.time;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
     match /taskflowBoard/{uid} {
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == uid
@@ -67,7 +95,8 @@ service cloud.firestore {
         && request.resource.data.exp <= 3000 && request.resource.data.seasonExp <= 420 && request.resource.data.bank == 0;
       allow update: if request.auth != null && request.auth.uid == uid
         && tfBoardShape(request.resource.data) && tfBoardGrowth(request.resource.data, resource.data);
-      allow delete: if false;
+      // Delete account (Settings) removes the person's own entry
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
   }
 }

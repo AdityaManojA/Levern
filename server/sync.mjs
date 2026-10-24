@@ -4,7 +4,7 @@
 //   /sync/dev/…         API keys and webhooks for Settings → Developer
 // "This computer" means: the connection comes from the loopback address, the Host header is localhost
 // (so a website can't reach it through DNS rebinding) and any Origin is this server itself.
-import { mergeDocs } from '../app/js/syncmerge.js';
+import { mergeDocs, canon } from '../app/js/syncmerge.js';
 import { createKey, revokeKey, publicKey } from './keys.mjs';
 import { readJson, send } from './api.mjs';
 import { ApiError } from '../app/js/questops.js';
@@ -19,7 +19,9 @@ export function isLocalRequest(req, port) {
   return !origin || origin === `http://${host}`;
 }
 
-const DOC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt', 'settingsStamps'];
+// the same keys the app syncs (store.js SYNC_KEYS): one missing here made every sync look like a change, so the
+// server told every open copy to sync again, endlessly
+const DOC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt', 'settingsStamps', 'eventMeta'];
 const pick = d => Object.fromEntries(DOC_KEYS.map(k => [k, d[k]]));
 
 export function createSync(db, hooks, port) {
@@ -73,9 +75,9 @@ export function createSync(db, hooks, port) {
       if (path === '/sync/state' && req.method === 'POST') {
         const body = await readJson(req, SYNC_MAX);   // the whole app's data, sketches included
         if (!Array.isArray(body.quests)) throw new ApiError(400, 'bad_doc', 'Expected the app data.');
-        const before = JSON.stringify(pick(db.doc));
+        const before = canon(pick(db.doc));
         const merged = mergeDocs(pick(db.doc), pick(body));
-        if (JSON.stringify(merged) !== before) db.mutate(d => Object.assign(d, merged), 'app');
+        if (canon(merged) !== before) db.mutate(d => Object.assign(d, merged), 'app');
         return send(res, 200, { rev: db.doc.rev, ...pick(db.doc) });
       }
       if (path.startsWith('/sync/dev/')) {

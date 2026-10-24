@@ -8,7 +8,7 @@
 //   taskflowUsers/{uid}/chunks/{i}    the data, deflated (sketches can make it big; a document holds 1 MiB)
 //   taskflowUsers/{uid}/share/open    plain list of open quests and upcoming Google events, for Solodesk
 import { getState, onSave, syncDoc, adoptSynced, commit, resetAll } from './store.js';
-import { mergeDocs } from './syncmerge.js';
+import { mergeDocs, canon } from './syncmerge.js';
 import * as account from './account.js';
 import { dlog } from './debuglog.js';
 
@@ -48,7 +48,7 @@ async function unpack(parts, z) {
 }
 
 /* ---------- sync ---------- */
-const norm = d => JSON.stringify(mergeDocs(d || {}, {}));
+const norm = d => canon(mergeDocs(d || {}, {}));
 // returns { ok, hadData } (hadData: the account already had quests, i.e. a returning person)
 // one sync at a time. A caller that asks while a sync is running (for example sign-in, which must know whether
 // this is a returning account) gets the result of that run, instead of an empty answer.
@@ -93,7 +93,7 @@ async function runSync() {
     if (hadData && samples) { mine.quests = []; mine.tombstones = []; }
     const merged = mergeDocs(doc || {}, mine);
     let nextRev = md.rev || 0;
-    if (!doc || norm(doc) !== JSON.stringify(merged)) {
+    if (!doc || norm(doc) !== canon(merged)) {
       const { parts, z } = await pack(merged);
       // only write if nobody else wrote since we read; otherwise go round again
       const ok = await F.runTransaction(db, async tx => {
@@ -108,8 +108,8 @@ async function runSync() {
       nextRev = (md.rev || 0) + 1;
     }
     rev = nextRev;
-    const now = JSON.stringify(syncDoc());
-    const theirs = JSON.stringify(Object.fromEntries(Object.keys(mine).map(k => [k, merged[k]])));
+    const now = canon(syncDoc());
+    const theirs = canon(Object.fromEntries(Object.keys(mine).map(k => [k, merged[k]])));
     if (theirs !== now) adoptSynced(merged);
     // the account's quests are real: onboarding must not swap them for starter quests
     if (hadData && getState().seeded) commit(s => { s.seeded = false; }, { fromSync: true, quiet: true });
@@ -146,6 +146,41 @@ export async function signOutAndReset({ force = false } = {}) {
   rev = -1; dirty = false; lastShare = ''; sharedEvents = [];
   info = { lastSync: null, error: null }; emit();
   return { ok: true };
+}
+// Delete account: everything TaskFlow keeps for this person on the backend, then this device.
+//  1. their feedback, if they gave any: anonymous (a reason and a note, no name, email or account id), and only
+//     readable in the Firebase console (taskflowFeedback);
+//  2. their data (taskflowUsers/{uid}, its chunks and the copy shared with Solodesk), their public profile and their leaderboard entry
+//     (hidden instead, if the rules don't allow deleting it yet);
+//  3. their Google sign-in, unless a Solodesk workspace shares it (deleting it would cut them off from Solodesk:
+//     a new sign-in gets a new account id). Then this device starts fresh.
+// Returns { signInKept } (true when the sign-in was kept for Solodesk).
+export async function deleteAccount(feedback = {}) {
+  const u = await account.firebaseUser();
+  if (!u) throw new Error('Sign in first.');
+  const { db, F } = await account.database();
+  unlisten?.(); unlisten = null; clearTimeout(timer); clearTimeout(shareT); dirty = false;
+  const reason = String(feedback.reason || '').slice(0, 60), note = String(feedback.note || '').trim().slice(0, 1000);
+  if (reason || note) await F.addDoc(F.collection(db, 'taskflowFeedback'), { kind: 'account-deleted', reason, note, app: 'taskflow', at: F.serverTimestamp() }).catch(() => {});
+  const [chunks, shares] = await Promise.all([F.getDocs(F.collection(db, 'taskflowUsers', u.uid, 'chunks')), F.getDocs(F.collection(db, 'taskflowUsers', u.uid, 'share'))]);
+  const batch = F.writeBatch(db);
+  chunks.forEach(d => batch.delete(d.ref));
+  shares.forEach(d => batch.delete(d.ref));
+  batch.delete(F.doc(db, 'taskflowUsers', u.uid));
+  await batch.commit();
+  await F.deleteDoc(F.doc(db, 'taskflowProfiles', u.uid)).catch(() => {});   // the public profile, if there is one
+  const entry = F.doc(db, 'taskflowBoard', u.uid);
+  try { await F.deleteDoc(entry); }
+  catch (e) { try { await (await import('./board.js')).unpublish(); } catch (e2) {} }   // rules not updated yet: hide it
+  let solodesk = false;
+  try { solodesk = (await F.getDoc(F.doc(db, 'solodeskWorkspaces', u.uid))).exists(); } catch (e) {}
+  if (solodesk) await account.signOut();
+  else { try { await account.deleteSignIn(); } catch (e) { await account.signOut(); } }
+  try { localStorage.removeItem('taskflow-events'); } catch (e) {}
+  resetAll({ fromSync: true });
+  rev = -1; dirty = false; lastShare = ''; sharedEvents = [];
+  info = { lastSync: null, error: null }; emit();
+  return { signInKept: solodesk };
 }
 const schedule = (ms = 1200) => { clearTimeout(timer); timer = setTimeout(syncNow, ms); };
 

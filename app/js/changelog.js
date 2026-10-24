@@ -1,0 +1,59 @@
+// What's new: one entry per release, newest first (Settings → What's new). Add an entry here with every update;
+// the first one is the version shown at the bottom of Settings.
+export const CHANGELOG = [
+  {
+    v: '1.0', date: '2026-10-24', title: 'Two cats, a new night look and easier ranks',
+    items: [
+      'Meet Cookie, Mochi’s orange twin brother, with his own art. Pick your cat in Settings → Cat.',
+      'Both cats redrawn from new high-quality art: sharper on phone screens, and Mochi has 23 new animations (melting into a nap, a double-tap squish, a loaf, pull-to-refresh poses and more).',
+      'Dark mode redesigned: a calm night look with glowing accents. Switching themes is instant.',
+      'Seasons now end every second Sunday at midnight (India time), and ranks are much easier to climb. Master has no top: Master 1, 2, 3 and up, a level every 50 EXP.',
+      'A pop-up (and a notification if TaskFlow is in the background) when you reach a new rank.',
+      'Profiles: tap a name on the leaderboard. Make yours public from the Leaderboard to show your ranks, past seasons, streaks, totals and a year of activity; it stays private until you do.',
+      'Delete your account and all your data from Settings, any time.',
+      'This page: every update, listed here.',
+      'Fixed: the leaderboard flickering and hiding the podium, and a background sync that kept running for nothing.',
+    ],
+  },
+  {
+    v: '0.9', date: '2026-10-23', title: 'Dark mode, seasons and fair play',
+    items: [
+      'Dark mode, ranked two-week seasons and your own name on the board.',
+      'New rank badges, from Iron to Master.',
+      'The leaderboard limits how fast EXP can grow, and leaving it hides you instead of deleting you.',
+      'A wider filter for swear words and slurs in names (English, Hinglish, Manglish and Tanglish).',
+      'Mochi stays on his spot on the bar when you zoom in or out.',
+    ],
+  },
+  {
+    v: '0.8', date: '2026-10-21', title: 'Leaderboard sounds and a fresh icon',
+    items: [
+      'Rank sounds and Mochi lines on the leaderboard, and a celebration when you hit your daily target.',
+      'New app icons and a rounded logo on every page.',
+      'Install TaskFlow from Settings, with steps when your browser hasn’t offered it yet.',
+      'Returning people skip the welcome screens on any device.',
+      'More words understood when you add quests by typing or by voice.',
+    ],
+  },
+  {
+    v: '0.7', date: '2026-10-20', title: 'Reminders that reach you',
+    items: [
+      'Reminders arrive even when the app is closed, with several alerts and lead-up alerts by priority.',
+      'Weekly goals, repeats on chosen weekdays and quests that count once a day.',
+      'Daily nudges (water, meals, a walk) and a redesigned calendar.',
+      'An opt-in leaderboard, ranked by EXP.',
+      'Mochi learned more idles and taps, and the moonwalk (now the Michael Jackson dance).',
+    ],
+  },
+  {
+    v: '0.6', date: '2026-10-19', title: 'Sign in, sync and sketches',
+    items: [
+      'Sign in with Google: your quests stay the same on every device.',
+      'Google Calendar: your dated quests in a TaskFlow calendar, and your events alongside them.',
+      'Sketches and handwriting on quests.',
+      'Sounds, and Mochi’s voice.',
+      'Privacy policy and cookies pages.',
+    ],
+  },
+];
+export const APP_VERSION = CHANGELOG[0].v;

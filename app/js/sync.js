@@ -4,6 +4,7 @@
 // adopts. Changes made through the API arrive as server-sent events. Offline, nothing is lost: the app
 // keeps working on its own copy and sends it again when the server is back.
 import { getState, onSave, syncDoc, adoptSynced } from './store.js';
+import { canon } from './syncmerge.js';
 
 let enabled = false, timer = null, busy = false, again = false, dirty = false, lastSent = '', es = null;
 const listeners = new Set();
@@ -23,8 +24,8 @@ async function syncNow() {
     const merged = await res.json();
     delete merged.rev;
     // adopt the server's result only if it differs from what we have now
-    const now = JSON.stringify(syncDoc());
-    const theirs = JSON.stringify(Object.fromEntries(Object.keys(mine).map(k => [k, merged[k]])));
+    const now = canon(syncDoc());
+    const theirs = canon(Object.fromEntries(Object.keys(mine).map(k => [k, merged[k]])));
     if (theirs !== now) adoptSynced(merged);
     lastSent = body; dirty = false;
     setStatus({ online: true, lastSync: Date.now(), error: null });

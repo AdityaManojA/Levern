@@ -10,9 +10,16 @@ export function applyTheme() {
   const t = getState().settings.theme || 'light';
   const dark = t === 'dark' || (t === 'auto' && !!media?.matches);
   const want = dark ? 'dark' : 'light';
-  if (document.documentElement.dataset.theme === want) return;
-  document.documentElement.dataset.theme = want;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#171411' : '#FFF8EE');
+  const root = document.documentElement;
+  if (root.dataset.theme === want) return;
+  // Every control has its own colour fade; on a theme change they would all fade at different speeds and the
+  // screen would look half-switched. So the whole switch happens at once, in one frame, with those fades off.
+  root.classList.add('theme-swap');
+  root.dataset.theme = want;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0E1014' : '#FFF8EE');
+  void root.offsetHeight;   // the new colours apply now
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('theme-swap')));
+  setTimeout(() => root.classList.remove('theme-swap'), 200);   // in case frames are paused (hidden tab)
   try { localStorage.setItem(KEY, want); } catch (e) {}
 }
 

@@ -3,6 +3,6 @@
 try {
   if (localStorage.getItem('taskflow-theme') === 'dark') {
     document.documentElement.dataset.theme = 'dark';
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#171411');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0E1014');
   }
 } catch (e) {}

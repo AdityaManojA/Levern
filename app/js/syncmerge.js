@@ -7,6 +7,12 @@
 
 const qTime = q => q.updatedAt || q.createdAt || 0;
 
+// The same data written with object keys in any order gives the same text. Copies are compared with this, never
+// with plain JSON.stringify: merging can return settings in a different key order, and treating that as a change
+// made every sync write again and wake the other side, which synced back, endlessly.
+export const canon = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)
+  ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x));
+
 export function mergeQuests(aQuests = [], aTombs = [], bQuests = [], bTombs = []) {
   const best = new Map();
   for (const q of [...aQuests, ...bQuests]) {
