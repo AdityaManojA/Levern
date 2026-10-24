@@ -346,11 +346,11 @@ export function createMochi(env) {
       ['tail-balance', 2], ['curious-sniff', 1.5], ['seated-turn', 1.5], ['play-bow', 1.5], ['roll', 1.5], ['tail-puff', 1.5], ['relax', 1.5],
       ['shake-off', 1], ['dry-off', 1], ['side-roll', 1.5], ['play-flip', 1.5],
       ['loaf', 1.5], ['yawn-big', 1.5], ['tail-sway', 2], ['scroll-look', 1.5], ['corner-idle', 1.5], ['suspicious-long', 1], ['button-big', 1], ['wipe-big', 1],
-      ['chasing-butterfly', 1]]);
+      ['play-with-yarn', 1.5], ['chasing-butterfly', 1]]);
     TAPS = pool([['boop', 4], ['happy-wiggle', 2], ['excited', 2], ['confused', 2], ['wave', 2], ['surprised', 2], ['cursor-swipe', 1.5],
       ['sitting-pretty', 1.5], ['sneeze', 1], ['celebrate', 2], ['heart-eyes', 2], ['startled', 1.5], ['happy-spin', 1.5], ['suspicious', 1], ['victory', 1],
       ['belly-flop', 2], ['startled-jump', 2], ['angry-stomp', 1], ['scared', 1.5], ['play-pounce', 1.5], ['shake-off', 1],
-      ['boop-heart', 2.5], ['squish', 1.5], ['toast-cheer', 1.5]]);
+      ['boop-heart', 2.5], ['squish', 1.5], ['toast-cheer', 1.5], ['knock-over', 1.5]]);
   }
   rebuildPools();
   const TAP_LINES = { boop: ['boop', 'mrp!', ':3'], 'happy-wiggle': ['♪', 'hehe'], excited: ['!!', 'ooh!'], confused: ['?', 'huh?'], wave: ['hi!', 'hello!'],
