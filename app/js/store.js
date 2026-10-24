@@ -33,14 +33,36 @@ const subs = new Set();
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 // Example quests (the samples and the onboarding starters) are marked sample: true. They stay in the app
-// to show how it works, but never go to anyone's calendar or to Solodesk. Editing one makes it yours.
+// to show how it works, but never go to anyone's account, calendar or Solodesk. Rewriting one makes it yours.
 const SAMPLE_TITLES = new Set(['Submit lab report', 'Book dentist', 'Read chapter 4', 'Water the plants', 'Organise notes folder', 'Learn to bake sourdough',
   'Revise for the maths test', 'Finish history essay draft', 'Pack bag for tomorrow', 'Reply to client email', 'Prepare Monday slides', 'Weekly team sync',
   'Update project tracker', 'Clear out downloads folder', 'Call mum', 'Go for a walk']);
 // quests saved before the flag existed: an untouched example still has its original title and was never edited
 const looksLikeSample = q => q.sample === undefined && SAMPLE_TITLES.has(q.title) && Math.abs((q.updatedAt || q.createdAt || 0) - (q.createdAt || 0)) < 5000;
-export function markSamples(quests) { for (const q of quests || []) if (looksLikeSample(q)) q.sample = true; return quests; }
-const sampleKey = q => JSON.stringify([q.title, q.tier, q.due, q.time, q.notes, q.repeat, (q.subtasks || []).map(s => s.title)]);
+// Examples an older version turned into ordinary quests and copied into accounts: it did that whenever an example's
+// date changed, so a repeating example became "yours" the first time it was ticked, and ended up on every device.
+// The examples of one batch still carry their example titles and were created within two seconds of each other,
+// which a person typing quests never does: such a group is marked as leaked examples (a lone one is left alone),
+// and leaked examples are removed (dropLeaked) wherever they turn up: on the device, in the account, in a sync.
+function markLeakedExamples(quests) {
+  const ex = (quests || []).filter(q => q.sample !== true && SAMPLE_TITLES.has(q.title)).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  let group = [];
+  const flush = () => { if (group.length >= 2) for (const q of group) { q.sample = true; q.leaked = true; } group = []; };
+  for (const q of ex) { if (group.length && (q.createdAt || 0) - (group[0].createdAt || 0) > 2000) flush(); group.push(q); }
+  flush();
+  // a device shows one batch of examples at most: older batches (piled up by resets and syncs) are leaked too
+  const batches = [];
+  for (const q of (quests || []).filter(x => x.sample === true && !x.leaked).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))) {
+    const last = batches[batches.length - 1];
+    if (last && (q.createdAt || 0) - (last[0].createdAt || 0) <= 2000) last.push(q); else batches.push([q]);
+  }
+  for (const b of batches.slice(0, -1)) for (const q of b) q.leaked = true;
+}
+export function markSamples(quests) { for (const q of quests || []) if (looksLikeSample(q)) q.sample = true; markLeakedExamples(quests); return quests; }
+export const dropLeaked = quests => (quests || []).filter(q => !q.leaked);
+// what makes an example yours: rewriting it (its name, notes or steps). Dates, times, repeats and priority are left
+// out on purpose: the app changes them by itself (ticking a repeating example moves its date), which must not.
+const sampleKey = q => JSON.stringify([q.title, q.notes, (q.subtasks || []).map(s => s.title)]);
 
 function seed() {
   const t = todayStr();
@@ -89,7 +111,7 @@ function migrate(s) {
   s.settingsStamps ||= Object.fromEntries(Object.keys(s.settings).map(k => [k, s.settingsUpdatedAt || 0]));
   for (const q of s.quests) q.updatedAt ??= q.createdAt || 0;
   for (const q of s.quests) { q.subtasks ||= []; q.notes ??= ''; if (q.sketches) q.sketches = cleanSketches(q.sketches); }
-  markSamples(s.quests);
+  s.quests = dropLeaked(markSamples(s.quests));
   // saves from v1 never had seeded cleared when quests were added, so never swap their quests for starters
   if ((s.v || 1) < 2) s.seeded = false;
   s.v = VERSION;
@@ -149,7 +171,7 @@ export function setEventTier(id, tier) {
   commit(s => { s.eventMeta = { ...(s.eventMeta || {}), [id]: { tier, at: Date.now() } }; });
 }
 export const syncDoc = () => Object.fromEntries(SYNC_KEYS.map(k => [k, state[k]]));
-export function adoptSynced(doc) { markSamples(doc.quests); commit(s => { for (const k of SYNC_KEYS) if (doc[k] !== undefined) s[k] = k === 'settings' ? { ...DEFAULT_SETTINGS, ...doc[k] } : doc[k]; }, { fromSync: true }); }
+export function adoptSynced(doc) { if (doc.quests) doc.quests = dropLeaked(markSamples(doc.quests)); commit(s => { for (const k of SYNC_KEYS) if (doc[k] !== undefined) s[k] = k === 'settings' ? { ...DEFAULT_SETTINGS, ...doc[k] } : doc[k]; }, { fromSync: true }); }
 
 export const findQuest = id => state.quests.find(q => q.id === id);
 export const tierLabel = t => `P${t + 1} · ${state.settings.tierNames[t]}`;

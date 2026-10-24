@@ -7,7 +7,7 @@
 //   taskflowUsers/{uid}               rev, chunk count, time zone, when it changed
 //   taskflowUsers/{uid}/chunks/{i}    the data, deflated (sketches can make it big; a document holds 1 MiB)
 //   taskflowUsers/{uid}/share/open    plain list of open quests and upcoming Google events, for Solodesk
-import { getState, onSave, syncDoc, adoptSynced, commit, resetAll } from './store.js';
+import { getState, onSave, syncDoc, adoptSynced, commit, resetAll, markSamples } from './store.js';
 import { mergeDocs, canon } from './syncmerge.js';
 import * as account from './account.js';
 import { dlog } from './debuglog.js';
@@ -85,7 +85,8 @@ async function runSync() {
     };
     const { md, doc } = await read(F.getDoc);
     // sample quests that an earlier version copied into the account are removed on the next sync
-    if (doc?.quests) doc.quests = doc.quests.filter(q => !q.sample);
+    // (and examples a later version turned into ordinary quests by accident: markSamples finds those too)
+    if (doc?.quests) doc.quests = markSamples(doc.quests).filter(q => !q.sample);
     const hadData = !!doc?.quests?.length;
     // example quests are never part of an account, new or old: they're this device's sample, not the person's quests
     mine.quests = (mine.quests || []).filter(q => !q.sample);

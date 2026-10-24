@@ -13,6 +13,7 @@ export const CHANGELOG = [
       'Delete your account and all your data from Settings, any time.',
       'This page: every update, listed here.',
       'Fixed: the leaderboard flickering and hiding the podium, and a background sync that kept running for nothing.',
+      'Fixed: example quests (like “Submit lab report” or “Water the plants”) showing up among your own quests after signing in. They are removed from your account and devices.',
     ],
   },
   {
