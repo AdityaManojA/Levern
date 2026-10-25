@@ -2,6 +2,13 @@
 // the first one is the version shown at the bottom of Settings.
 export const CHANGELOG = [
   {
+    v: '1.1', date: '2026-10-25', title: 'Cookie learns 28 new moves',
+    items: [
+      'Cookie has his own art for 28 more moves: the peek over the screen edge, tail chase, sneeze, boop, heart eyes, a dramatic cry, melting into a nap, the loaf, squish, sulk, cheer and more.',
+      'Pull to refresh with Cookie: he stretches, hangs on and spins, like Mochi.',
+    ],
+  },
+  {
     v: '1.0', date: '2026-10-24', title: 'Two cats, a new night look and easier ranks',
     items: [
       'Meet Cookie, Mochi’s orange twin brother, with his own art. Pick your cat in Settings → Cat.',
