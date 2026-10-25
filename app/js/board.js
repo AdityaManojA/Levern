@@ -122,16 +122,19 @@ export async function entries() {
   const snap = await F.getDocs(F.query(F.collection(db, COL), F.limit(1000)));
   return snap.docs.filter(d => !d.data().hidden).map(d => {
     const x = d.data();
-    return { id: d.id, name: shownName(x.name), exp: x.exp || 0, season: x.season || 0, seasonExp: x.seasonExp || 0, past: x.past || {}, me: !!fu && d.id === fu.uid };
+    return { id: d.id, name: shownName(x.name), exp: x.exp || 0, season: x.season || 0, seasonExp: x.seasonExp || 0, past: x.past || {}, me: !!fu && d.id === fu.uid, og: isOg(x) };
   });
 }
+// OG: someone who was on the board in Season 1, the first season (its score is kept in past when the entry moves
+// on; an entry nobody has opened since still says season 1). Shown as a small badge by their name.
+export const isOg = e => !!e && (e.past?.[1] !== undefined || e.season === 1);
 // One board, best first: [{ id, name, exp, me }]. which: 'legacy' (all-time EXP), 'season' (this season) or a past
 // season's number (its final scores: kept in past, or still the season's score if the entry hasn't moved on).
 export function standings(list, which, now = seasonOf()) {
   const score = which === 'legacy' ? r => r.exp
     : which === 'season' ? r => (r.season === now ? r.seasonExp : null)
     : r => r.past?.[which] ?? (r.season === which ? r.seasonExp : null);
-  return (list || []).map(r => ({ id: r.id, name: r.name, me: r.me, exp: score(r) }))
+  return (list || []).map(r => ({ id: r.id, name: r.name, me: r.me, og: r.og, exp: score(r) }))
     .filter(r => r.exp != null && (which === 'legacy' || r.exp > 0 || r.me)).sort((a, b) => b.exp - a.exp);
 }
 

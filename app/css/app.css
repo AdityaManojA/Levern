@@ -1212,3 +1212,10 @@ a.lb-name:hover, a.lb-n:hover { text-decoration: underline; }
 /* How often: Once · Repeats · Times per week */
 .seg.often { margin-bottom: 8px; }
 .seg.often + .field { margin-bottom: 4px; }
+
+/* OG: a tiny old-gold badge by the names of the people who were there in Season 1 */
+.og { --og: #B8862B; display: inline-block; vertical-align: 2px; margin-left: 6px; padding: 0 4px; border: 1.5px solid var(--og); border-radius: 5px;
+  background: color-mix(in srgb, var(--og) 14%, transparent); color: var(--og); font-size: 9px; font-weight: 800; letter-spacing: .08em; line-height: 13px; }
+h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
+:root[data-theme="dark"] .og { --og: #FFCB57; }
+:root[data-theme="mono"] .og { --og: #141414; }

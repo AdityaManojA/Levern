@@ -2,6 +2,12 @@
 // the first one is the version shown at the bottom of Settings.
 export const CHANGELOG = [
   {
+    v: '1.06', date: '2026-10-25', title: 'For the day ones',
+    items: [
+      'An OG badge for everyone who was on the leaderboard in Season 1: by your name on the board and on your profile. Thank you for being here from the start.',
+    ],
+  },
+  {
     v: '1.05', date: '2026-10-25', title: 'Up next first, and simpler reminders',
     items: [
       'Home opens on Up next, with today’s numbers in one small row underneath.',

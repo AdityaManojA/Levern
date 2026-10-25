@@ -180,6 +180,8 @@ export function rankChip(exp) {
   return `<span class="rank rank-${r.toLowerCase()}" title="${label}${masterLevel(exp) ? '' : `, rank ${n} of ${RANKS.length}`}"><i class="rank-dot"></i>${label}<span class="rank-bars" aria-hidden="true">${bars}</span></span>`;
 }
 // a chip for a rank saved by name ('Gold', 'Master 3'), e.g. a past season's best
+// OG: there since Season 1. A tiny badge by the name (the day ones)
+export const ogChip = on => on ? '<span class="og" title="OG: here since Season 1" aria-label="OG, here since Season 1">OG</span>' : '';
 export function rankChipNamed(label) {
   const base = String(label).startsWith('Master') ? 'Master' : label, n = RANKS.findIndex(([name]) => name === base) + 1;
   if (!n) return '';

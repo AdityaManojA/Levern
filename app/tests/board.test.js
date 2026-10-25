@@ -57,3 +57,14 @@ test('one load gives every board: this season, Legacy and each past season, best
   assert.deepEqual(carryPast({ season: 2, seasonExp: 40, past: { 1: 90 } }, 2), { 1: 90 });
   assert.deepEqual(carryPast(null, 2), {});
 });
+
+test('OG: everyone who was on the board in Season 1', async () => {
+  const { isOg, standings } = await import('../js/board.js');
+  assert.equal(isOg({ season: 2, past: { 1: 46 } }), true);    // moved on, Season 1 score kept
+  assert.equal(isOg({ season: 2, past: { 1: 0 } }), true);     // on the board in Season 1, even with no EXP
+  assert.equal(isOg({ season: 1, past: {} }), true);           // hasn't been back since Season 1
+  assert.equal(isOg({ season: 2, past: {} }), false);          // joined in Season 2
+  assert.equal(isOg({ season: 3, past: { 2: 80 } }), false);
+  const rows = standings([{ id: 'a', name: 'A', exp: 9, season: 2, seasonExp: 5, past: { 1: 3 }, og: true }], 'legacy', 2);
+  assert.equal(rows[0].og, true);
+});

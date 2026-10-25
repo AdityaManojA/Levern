@@ -2,7 +2,8 @@
 // is someone else's, from their published profile when they made it public. A private one shows only their board
 // name and rank.
 import * as profile from '../profile.js';
-import { rankChip, rankChipNamed } from './common.js';
+import { isOg } from '../board.js';
+import { rankChip, rankChipNamed, ogChip } from './common.js';
 import { TIER_COLORS, getState } from '../store.js';
 import { addDays } from '../dates.js';
 import { esc } from '../ui.js';
@@ -48,7 +49,7 @@ function full(p, me) {
   return `
     <div class="card pf-top">
       <div class="pf-cat ${p.cat === 'cookie' ? 'cookie' : ''}" aria-hidden="true"></div>
-      <div class="pf-id"><h2>${esc(p.name || 'No name')}</h2>
+      <div class="pf-id"><h2>${esc(p.name || 'No name')}${ogChip((p.seasons || []).some(x => x.s === 1))}</h2>
         <div class="small">Since ${esc(month(p.since))} · Season ${p.season}</div>
         <div class="pf-ranks">${rankChip(p.seasonExp)}<span class="small">best ever</span>${rankChipNamed(p.bestRank)}</div></div>
     </div>
@@ -71,7 +72,7 @@ export function render(params = {}) {
   if (id !== shownId || state === 'loading' || state === 'idle') return `${back}<div class="card lb-note small">Loading the profile…</div>`;
   if (state === 'me') return `${back}<div class="h-sub">You</div><h1 class="h-title">My profile</h1>${full(data, true)}`;
   if (state === 'public') return `${back}<div class="h-sub">Profile</div><h1 class="h-title">${esc(data.name)}</h1>${full(data, false)}`;
-  if (state === 'private') return `${back}<div class="card pf-private"><div class="pf-lock" aria-hidden="true"></div><h2>${esc(data.name || 'Someone')}</h2>
+  if (state === 'private') return `${back}<div class="card pf-private"><div class="pf-lock" aria-hidden="true"></div><h2>${esc(data.name || 'Someone')}${ogChip(isOg(data))}</h2>
     ${data.season === seasonOf() ? rankChip(data.seasonExp || 0) : ''}<p class="small">This profile is private. You can still see their name, rank and EXP on the board.</p></div>`;
   return `${back}<div class="card lb-note"><b>No profile here</b><p class="small">This person isn't on the board anymore.</p></div>`;
 }
