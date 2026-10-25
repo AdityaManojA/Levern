@@ -33,13 +33,16 @@ export function allowed(o, want, nowMs = Date.now()) {
     return { exp, seasonExp: Math.min(want.seasonExp, START_SEASON_CAP, exp), bank: 0 };
   }
   const hrs = Math.max(0, (nowMs - o.updatedMs) / 3600000 - 0.1);
-  const room = Math.min(BUCKET, (o.bank || 0) + REFILL * hrs);
+  const room = Math.floor(Math.min(BUCKET, (o.bank || 0) + REFILL * hrs) * 100) / 100;
   let exp = want.exp;
   if (exp - o.exp > room) exp = o.exp + Math.floor(room);
-  const gain = Math.max(0, exp - o.exp), same = (o.season || 0) === want.season;
-  const seasonMax = same ? (exp - o.exp <= 0 ? (o.seasonExp || 0) : (o.seasonExp || 0) + gain) : gain;
-  const sExp = Math.max(0, Math.min(want.seasonExp, seasonMax, exp));
-  return { exp, seasonExp: sExp, bank: Math.max(0, Math.floor((room - gain) * 100) / 100) };
+  // season EXP grows from where it was this season (or from 0 in a new one), at most as far as the bucket allows,
+  // and never past all-time EXP. It can catch up on its own: when the season's EXP is worked out again (the
+  // season's start moved, the daily target changed), all-time EXP stays put while season EXP rises.
+  const same = (o.season || 0) === want.season, base = same ? (o.seasonExp || 0) : 0;
+  const sExp = Math.max(0, Math.min(want.seasonExp, base + Math.floor(room), exp));
+  const used = Math.max(0, exp - o.exp, sExp - base);
+  return { exp, seasonExp: sExp, bank: Math.max(0, Math.floor((room - used) * 100) / 100) };
 }
 
 let lastSent = '', pushT = null, catchUpT = null;

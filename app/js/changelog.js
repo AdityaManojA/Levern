@@ -10,6 +10,7 @@ export const CHANGELOG = [
       'Leaderboard: past seasons at the bottom, each with its final standings.',
       'No more example quests: a new list starts empty, and old examples are removed.',
       'A weekly goal’s label matches the other chips on a quest.',
+      'Fixed: your rank on the leaderboard could get stuck below the one on your season card. It now catches up.',
     ],
   },
   {

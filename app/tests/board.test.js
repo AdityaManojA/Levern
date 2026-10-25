@@ -30,7 +30,16 @@ test('a new season starts from what was earned since the last update', () => {
   const got = allowed(o, { exp: 520, season: 4, seasonExp: 20 }, t0 + 2 * H);
   assert.equal(got.seasonExp, 20);
   const down = allowed(o, { exp: 480, season: 4, seasonExp: 5 }, t0 + 2 * H);
-  assert.equal(down.seasonExp, 0);
+  assert.equal(down.seasonExp, 5);   // season EXP draws on the bucket, even when all-time EXP went down
+});
+
+test('season EXP catches up on its own, from the bucket, when all-time EXP stays the same', () => {
+  // the board showed 46 (Gold) while the app had 135 (Ascendant): the season was worked out again, EXP unchanged
+  const o = { exp: 500, season: 1, seasonExp: 46, bank: 60, updatedMs: t0 };
+  const first = allowed(o, { exp: 500, season: 1, seasonExp: 135 }, t0 + 10 * H);
+  assert.deepEqual(first, { exp: 500, seasonExp: 106, bank: 0 });
+  const later = allowed({ ...o, seasonExp: 106, bank: 0, updatedMs: t0 + 10 * H }, { exp: 500, season: 1, seasonExp: 135 }, t0 + 13 * H);
+  assert.equal(later.seasonExp, 135);
 });
 
 test('one load gives every board: this season, Legacy and each past season, best first', async () => {
