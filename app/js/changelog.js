@@ -7,6 +7,7 @@ export const CHANGELOG = [
       'A quest finished after it was due earns half the EXP. Finish on time to get it all (the daily target bonus still counts).',
       'Tick an overdue quest and a pop-up tells you so, with a wink.',
       'Fixed: the leaderboard could take a long time to show EXP you’d just earned. It now catches up within minutes.',
+      'Fixed: the reminder unit picker (minutes, hours, days) was cut off to "h.." on phones.',
     ],
   },
   {

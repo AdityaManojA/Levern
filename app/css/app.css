@@ -286,9 +286,9 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .alerts .chip-btn { border: 2px solid var(--edge); border-radius: 999px; padding: 7px 12px; background: var(--card); font-weight: 600; font-size: 13px; color: var(--ink); white-space: nowrap; }
 .alerts .chip-btn.on { background: var(--ink); color: var(--on-ink); }
 .alert-add { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
-.alert-add .field { width: 74px; flex: none; }
-/* wide enough for "minutes" with the arrow (it was cut to "h.." on phones) */
-.alert-add select.field { flex: 1 1 auto; width: auto; min-width: 8.5em; max-width: 12em; }
+.alert-add input.field { width: 74px; flex: none; }
+/* wide enough for "minutes" with the arrow (it was cut to "h.." on phones). The select becomes a .csel button. */
+.alert-add :is(select.field, .csel) { flex: 1 1 auto; width: auto; min-width: 8.5em; max-width: 12em; }
 
 /* phones: bigger tap targets and easier-to-read small controls (the look stays the same on larger screens) */
 @media (max-width: 640px) {
