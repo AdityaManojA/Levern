@@ -19,7 +19,7 @@ export function mergeQuests(aQuests = [], aTombs = [], bQuests = [], bTombs = []
     const cur = best.get(q.id);
     // same moment: prefer the copy that knows whether it's an example quest (older saves lack the flag),
     // so the two sides agree instead of trading the quest back and forth
-    if (!cur || qTime(q) > qTime(cur) || (qTime(q) === qTime(cur) && cur.sample === undefined && q.sample !== undefined)) best.set(q.id, q);
+    if (!cur || qTime(q) > qTime(cur)) best.set(q.id, q);
   }
   const tombs = new Map();
   for (const t of [...aTombs, ...bTombs]) { const cur = tombs.get(t.id); if (!cur || t.deletedAt > cur.deletedAt) tombs.set(t.id, t); }
@@ -69,18 +69,3 @@ export function mergeEventMeta(a = {}, b = {}) {
   return out;
 }
 
-// what changed between two quest lists, as webhook-style events
-export function diffQuests(before = [], after = [], historyBefore = [], historyAfter = []) {
-  const events = [], prev = new Map(before.map(q => [q.id, q])), next = new Map(after.map(q => [q.id, q]));
-  const doneKeys = new Set(historyBefore.map(h => `${h.questId}@${h.doneAt}`));
-  const newlyDone = new Set(historyAfter.filter(h => !doneKeys.has(`${h.questId}@${h.doneAt}`)).map(h => h.questId));
-  for (const [id, q] of next) {
-    const p = prev.get(id);
-    if (!p) { events.push({ type: 'quest.created', quest: q }); continue; }
-    if (JSON.stringify(p) === JSON.stringify(q)) { if (newlyDone.has(id)) events.push({ type: 'quest.completed', quest: q }); continue; }
-    if (newlyDone.has(id) || (!p.done && q.done)) events.push({ type: 'quest.completed', quest: q });
-    else events.push({ type: 'quest.updated', quest: q });
-  }
-  for (const [id, p] of prev) if (!next.has(id)) events.push({ type: 'quest.deleted', quest: p });
-  return events;
-}

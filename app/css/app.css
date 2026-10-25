@@ -222,7 +222,7 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 /* one line on every card: plain text shortens with "…", chips keep their full size */
 .qm { font-size: 12px; display: flex; flex-wrap: nowrap; gap: 4px 8px; margin-top: 2px; align-items: center; min-width: 0; overflow: hidden; }
 .qm > span { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.qm > .rchip, .qm > .exchip, .qm > .tag { flex: none; }
+.qm > .rchip, .qm > .tag { flex: none; }
 .qm .od { color: var(--red); font-weight: 700; }
 .qm .tag { display: inline-flex; align-items: center; gap: 3px; }
 .qbell { flex: none; width: 34px; height: 34px; border-radius: 10px; border: none; background: none; display: grid; place-items: center; }
@@ -262,7 +262,6 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .nadd .cdate .ci { display: none; }
 .nadd .cdate.is-empty .cv-t { color: var(--ink); }
 .ob-card.nudges { padding: 4px 14px; }
-.exchip { border: 1.5px dashed var(--edge); border-radius: 8px; padding: 0 6px; font-weight: 700; font-size: 11px; line-height: 16px; background: rgba(var(--card-rgb),.55); }
 .empty { text-align: center; padding: 28px 16px; }
 .sync-wait { text-align: center; padding: 48px 16px; color: var(--muted); font-weight: 600; }
 /* how to turn notifications on, for the device the person is using (notifyhelp.js) */
@@ -1187,3 +1186,29 @@ a.lb-name:hover, a.lb-n:hover { text-decoration: underline; }
 .lb-past .lb-more { margin-bottom: 12px; }
 .lb-past > summary { position: relative; padding-right: 24px; }
 .lb-past > summary::after { position: absolute; right: 4px; top: 18px; margin: 0; }
+
+/* Home: today's numbers in one compact row under Up next (each opens its page) */
+.statrow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 14px 0 12px; }
+.mstat { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; border: var(--line); border-radius: 14px; background: var(--acc); color: var(--ink); text-decoration: none; min-width: 0; }
+.mstat b { font-size: 17px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.mstat span { font-size: 11px; font-weight: 600; white-space: nowrap; }
+.sec-top { margin-top: -6px; }
+
+/* Settings > Theme: four small swatches (each a preview of its page and accent) instead of a row of buttons */
+.swatches { display: flex; gap: 4px; flex: none; }
+.sw { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 46px; padding: 2px 0; border: 0; background: none; color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; }
+.sw i { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--edge); box-shadow: inset 0 0 0 3px var(--card); }
+.sw.on { color: var(--ink); }
+.sw.on i { outline: 2.5px solid var(--ink); outline-offset: 2px; }
+.sw-light i { background: linear-gradient(135deg, #FFF8EE 50%, #F4918A 50%); }
+.sw-dark i { background: linear-gradient(135deg, #0E1014 50%, #FF9A3D 50%); }
+.sw-mono i { background: linear-gradient(135deg, #F5F5F4 50%, #141414 50%); }
+.sw-auto i { background: linear-gradient(90deg, #FFF8EE 50%, #0E1014 50%); }
+
+/* the header button of the page you're on (Stats, Leaderboard, Settings) */
+.iconbtn.on { background: var(--ink); color: var(--on-ink); }
+:root[data-theme="dark"] .iconbtn.on { background: rgba(255,154,61,.16); color: var(--a-ginger); border-color: var(--a-ginger); }
+
+/* How often: Once · Repeats · Times per week */
+.seg.often { margin-bottom: 8px; }
+.seg.often + .field { margin-bottom: 4px; }

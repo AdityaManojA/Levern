@@ -11,7 +11,7 @@ const localDateTime = ms => { const d = new Date(ms); return `${d.getFullYear()}
 
 // a quest belongs in the calendar when it has a date and is still open (repeating quests stay open);
 // example quests never do: people only get the quests they made themselves
-export const syncable = q => !!q.due && !q.done && !q.sample;
+export const syncable = q => !!q.due && !q.done;
 
 export function questToEvent(q, tz = 'UTC') {
   const ev = {

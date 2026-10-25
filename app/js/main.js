@@ -15,7 +15,6 @@ import * as calendar from './views/calendar.js';
 import * as focus from './views/focus.js';
 import * as stats from './views/stats.js';
 import * as settings from './views/settings.js';
-import * as developer from './views/developer.js';
 import * as leaderboard from './views/leaderboard.js';
 import * as whatsnew from './views/whatsnew.js';
 import * as profileView from './views/profile.js';
@@ -24,7 +23,7 @@ import { startRankups } from './rankup.js';
 import { startBoard } from './board.js';
 import { startTheme } from './theme.js';
 import { startNameCheck } from './namecheck.js';
-import { startSync, onSyncStatus } from './sync.js';
+import { startSync } from './sync.js';
 import { openAdd } from './views/add.js';
 import * as remindersPanel from './views/reminders.js';
 import * as onboarding from './views/onboarding.js';
@@ -52,7 +51,7 @@ startBack([
 
 store.init();
 
-const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, developer, leaderboard, whatsnew, profile: profileView };
+const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, leaderboard, whatsnew, profile: profileView };
 const NAV = [['home', 'Home'], ['quests', 'Quests'], ['add'], ['calendar', 'Calendar'], ['focus', 'Focus']];
 let route = { name: 'home', params: {} };
 
@@ -65,6 +64,7 @@ function parseHash() {
 }
 
 function renderNav() {
+  document.querySelectorAll('[data-top]').forEach(b => { const on = b.dataset.top === route.name || (route.name === 'profile' && b.dataset.top === 'leaderboard'); b.classList.toggle('on', on); on ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'); });
   const active = route.name === 'quest' ? 'quests' : route.name, nav = $('#nav');
   if (nav.dataset.active === active) return;   // unchanged: keep it (and its animations) as is
   nav.dataset.active = active;
@@ -80,7 +80,7 @@ function draw(keep) {
   spriteStops.forEach(s => s());
   if (v.unmount) v.unmount();
   if (!cloud.cloudReady()) {
-    // signed in: wait for the account's quests rather than show this device's sample ones for a moment
+    // signed in: wait for the account's quests rather than show this device's old copy for a moment
     main.innerHTML = '<p class="sync-wait" role="status">Loading your quests…</p>';
     main.dataset.view = route.name;
     renderNav();
@@ -103,7 +103,7 @@ function render(opts = {}) {
 }
 
 // which way a screen change should drift: deeper (detail) slides forward, tabs slide by their order
-const ORDER = ['home', 'quests', 'calendar', 'focus', 'stats', 'settings', 'developer'];
+const ORDER = ['home', 'quests', 'calendar', 'focus', 'stats', 'settings'];
 function direction(from, to) {
   if (to.name === 'quest') return 'forward';
   if (from.name === 'quest') return 'back';
@@ -208,7 +208,7 @@ addEventListener('online', () => toast('Back online')); addEventListener('offlin
 
 /* ---------- start ---------- */
 $('#top-actions').innerHTML = `<button class="iconbtn bell" data-act="bell" aria-label="Reminders">${ICON.bell}<b class="rcount" data-rcount hidden></b></button>
-  <a class="iconbtn" href="#/leaderboard" aria-label="Leaderboard">${ICON.trophy}</a><a class="iconbtn" href="#/settings" aria-label="Settings">${ICON.settings}</a>`;
+  <a class="iconbtn" href="#/stats" aria-label="Stats" data-top="stats">${ICON.stats}</a><a class="iconbtn" href="#/leaderboard" aria-label="Leaderboard" data-top="leaderboard">${ICON.trophy}</a><a class="iconbtn" href="#/settings" aria-label="Settings" data-top="settings">${ICON.settings}</a>`;
 unlockOnGesture();
 preloadSounds();
 startControls();
@@ -271,9 +271,8 @@ registerSW().finally(() => { startReminders(); if ('Notification' in window && N
 // a friendly nudge to check the leaderboard (at most twice a day), once the app has settled
 setTimeout(() => { if (account.user() && !onboarding.isOpen()) maybeLeaderboardNudge(); }, 4000);
 startCalendars();
-// share data with the TaskFlow server (API, webhooks); the app works the same without it
+// share data with the local TaskFlow server when there is one (npm start); the app works the same without it
 startSync();
-onSyncStatus(() => { if (route.name === 'developer') render({ keepScroll: true }); });
 onCalendarChange(() => { if (route.name === 'settings' || route.name === 'calendar') render({ keepScroll: true }); });
 if (new URLSearchParams(location.search).get('add') === '1') openAdd();
 window.TaskFlow = { store, go: h => { location.hash = h; }, mochi, tour, sfxLog, soundsLoaded };   // handy in the console

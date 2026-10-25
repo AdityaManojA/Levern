@@ -27,6 +27,7 @@ export async function check() {
   const shownSet = new Set(shown);
   if (st.settings.notify) {
     for (const q of fresh) {
+      if (!q.remind) continue;   // cleared while the service worker was asked (ticked, edited or deleted meanwhile)
       if (shownSet.has(`${q.id}@${q.remind.at}`)) continue;   // the service worker already showed it
       N.show(`Reminder: ${q.title}`, {
         body: body(q, count), tag: 'quest-' + q.id, renotify: true, data: { id: q.id, url: '#/quest/' + q.id },

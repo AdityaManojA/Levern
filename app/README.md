@@ -5,7 +5,7 @@ A calm to-do list that feels like a game, built as an installable PWA. Plain HTM
 ## Run it
 
 ```bash
-npm start            # node server.mjs: the app at http://localhost:5190, the API (/api/v1), data sync, and the calendar feed
+npm start            # node server.mjs: the app at http://localhost:5190, data sync, and the calendar feed
 npm test             # logic tests (dates, parsing, repeats, calendar export, stats)
 npm run test:pwa     # headless Edge/Chrome check: service worker, offline, install, notifications
 ```
@@ -32,7 +32,6 @@ Service workers need `localhost` or HTTPS, so open it through the server rather 
 | Focus timer | Focus tab | Pomodoro sessions of 15/25/50 min, tied to a quest. Earns 1 EXP per 5 min and survives reloads. |
 | Calendar | Calendar tab | Week and month views, including every occurrence of a repeating quest. Add a quest on any day. Download an `.ics` file (Apple Calendar, Outlook, Google import), or use the Google Calendar link on each quest. |
 | Calendar connections | Settings → Calendars | Google Calendar sync into its own "TaskFlow" calendar (needs a client ID in `config.js`), a live `.ics` feed to subscribe to from Apple Calendar or Outlook, and `.ics` downloads. Setup and limits: [CALENDAR_SETUP.md](CALENDAR_SETUP.md). |
-| API and webhooks | Settings → Developer | REST API at `/api/v1` with API keys (read or read & write, hashed, rate-limited), signed outgoing webhooks, and data sync between the app and the server. See [API.md](API.md). |
 | Stats and history | chart icon (top right) | Totals, current and best streak, EXP, a 7- or 30-day chart against your target, days kept this month, done by priority, focus minutes, and a full history. |
 
 Scoring follows `design/DESIGN_BRIEF.md`: a day's EXP is `20 × (done ÷ target)`, plus 10 when the target is hit. The streak counts days in a row that hit the target.

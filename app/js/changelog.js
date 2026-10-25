@@ -2,6 +2,20 @@
 // the first one is the version shown at the bottom of Settings.
 export const CHANGELOG = [
   {
+    v: '1.05', date: '2026-10-25', title: 'Up next first, and simpler reminders',
+    items: [
+      'Home opens on Up next, with today’s numbers in one small row underneath.',
+      'Stats is one tap away from every page, next to the leaderboard at the top.',
+      'How often: Once, Repeats or Times per week. Weekly goals have their own option instead of hiding in the repeat list.',
+      'Reminders in one place: a quest’s reminders (including several times a day) under Reminders on the quest, and every daily reminder in Settings → Reminders.',
+      'Pick your theme from small swatches.',
+      'A shorter welcome: four screens instead of nine.',
+      'An open quest no longer shows its priority twice.',
+      'Test reminder shows a sample notification without adding a quest.',
+      'The Developer page and API are gone.',
+    ],
+  },
+  {
     v: '1.04', date: '2026-10-25', title: 'A tidier leaderboard, and no example quests',
     items: [
       'Leaderboard: the season opens first, with Legacy on the second tab.',

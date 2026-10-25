@@ -21,20 +21,20 @@ export function render() {
   const rem = dueReminders().length;
   return `
     <div class="h-sub">${greeting()}${greetName(s.name) ? ', ' + esc(s.name) : ''}</div>
-    <h1 class="h-title">Your progress</h1>
-    <div class="grid2 grid4">
-      <a class="stat" href="#/stats" aria-label="Today. Open your stats" style="background:var(--sky)"><div class="k">Today <span class="lb-hint" aria-hidden="true">Stats ›</span></div><div class="v">${sum.todayCount} / ${s.target}</div><div class="s">${left ? `${left} more to hit your target` : 'target hit!'}</div></a>
-      <a class="stat" href="#/stats" style="background:var(--coral)"><div class="k">Streak</div><div class="v">${sum.current}</div><div class="s">${sum.keptToday ? 'kept today' : 'days in a row'}</div></a>
-      <a class="stat" href="#/leaderboard" data-tour="exp" aria-label="EXP ${sum.exp}. Open the leaderboard" style="background:var(--butter)"><div class="k">EXP <span class="lb-hint" aria-hidden="true">Leaderboard ›</span></div><div class="v">${sum.exp.toLocaleString()}</div><div class="s">+${sum.todayExp} today</div></a>
-      <a class="stat" href="#/focus" style="background:var(--mint)"><div class="k">Focus</div><div class="v">${sum.todayFocus}m</div><div class="s">focused today</div></a>
+    <h1 class="h-title">Up next</h1>
+    <div class="sec sec-top"><span></span><a href="#/quests">All quests</a></div>
+    ${next.length ? next.map(q => questRow(q)).join('') + moreLink(open.length - next.length) : `<div class="card empty"><span class="empty-mochi" data-sprite="box-peek" data-scale=".9"></span><b>All clear</b><span class="small">Add a quest with the + button.</span></div>`}
+    <div class="statrow" aria-label="Today at a glance">
+      <a class="mstat" href="#/stats" style="--acc:var(--sky)" aria-label="Today: ${sum.todayCount} of ${s.target}. Open your stats"><b>${sum.todayCount}/${s.target}</b><span>${left ? 'today' : 'target hit'}</span></a>
+      <a class="mstat" href="#/stats" style="--acc:var(--coral)" aria-label="Streak: ${sum.current} days. Open your stats"><b>${sum.current}</b><span>day streak</span></a>
+      <a class="mstat" href="#/leaderboard" data-tour="exp" style="--acc:var(--butter)" aria-label="${sum.exp} EXP. Open the leaderboard"><b>${sum.exp.toLocaleString()}</b><span>EXP</span></a>
+      <a class="mstat" href="#/focus" style="--acc:var(--mint)" aria-label="${sum.todayFocus} minutes focused today. Open Focus"><b>${sum.todayFocus}m</b><span>focus</span></a>
     </div>
     ${overdue.length || rem ? `<div class="card alert">
       <h3>${overdue.length ? `${overdue.length} overdue quest${overdue.length === 1 ? '' : 's'}` : ''}${overdue.length && rem ? ' · ' : ''}${rem ? `${rem} reminder${rem === 1 ? '' : 's'} due` : ''}</h3>
       <div class="small">${overdue.length ? 'Finish them, or open one to move its date.' : 'Open the bell to finish, snooze or dismiss.'}</div>
       ${rem ? '<button class="mini" data-act="bell" style="margin-top:8px">Show reminders</button>' : ''}
     </div>` : ''}
-    <div class="sec">Up next <a href="#/quests">All quests</a></div>
-    ${next.length ? next.map(q => questRow(q)).join('') + moreLink(open.length - next.length) : `<div class="card empty"><span class="empty-mochi" data-sprite="box-peek" data-scale=".9"></span><b>All clear</b><span class="small">Add a quest with the + button.</span></div>`}
     <div class="card" style="margin-top:12px">
       <h3>Daily target · this month</h3>
       <div class="small">You hit your ${s.target}-a-day target on ${sum.keptThisMonth} of ${sum.daysInMonthSoFar} days so far</div>

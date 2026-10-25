@@ -1,6 +1,6 @@
-import { getState, setSetting, exportData, importData, clearCompleted, resetAll, addQuest, setReminder, tidyHistory, TIER_COLORS } from '../store.js';
+import { getState, setSetting, exportData, importData, clearCompleted, resetAll, tidyHistory, TIER_COLORS } from '../store.js';
 import { summary } from '../stats.js';
-import { permission, requestPermission, supported, show, hasPeriodicSync } from '../notify.js';
+import { permission, requestPermission, supported, show } from '../notify.js';
 import { canInstall, install, isInstalled } from '../install.js';
 import { swap } from '../motion.js';
 import { esc, toast, play, confirmBox, download } from '../ui.js';
@@ -61,7 +61,7 @@ export function render() {
 
     <div class="sec">Look</div>
     <div class="card">
-      <div class="srow"><div class="l"><b>Theme</b><small>Dark is easier on the eyes at night; Mono is all greys</small></div><div class="seg" style="margin:0;width:auto">${[['light', 'Light'], ['dark', 'Dark'], ['mono', 'Mono'], ['auto', 'Device']].map(([v, l]) => `<button class="${(s.theme || 'light') === v ? 'on' : ''}" data-act="theme" data-v="${v}" aria-pressed="${(s.theme || 'light') === v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
+      <div class="srow"><div class="l"><b>Theme</b><small>Dark is easier on the eyes at night</small></div><div class="swatches" role="radiogroup" aria-label="Theme">${[['light', 'Light'], ['dark', 'Dark'], ['mono', 'Mono'], ['auto', 'Device']].map(([v, l]) => `<button class="sw sw-${v}${(s.theme || 'light') === v ? ' on' : ''}" role="radio" data-act="theme" data-v="${v}" aria-checked="${(s.theme || 'light') === v}"><i aria-hidden="true"></i><span>${l}</span></button>`).join('')}</div></div>
     </div>
 
     <div class="sec">Goals</div>
@@ -74,13 +74,11 @@ export function render() {
       <div class="srow"><div class="l"><b>System notifications</b><small>${pText}</small></div>${tog('notify', s.notify, 'System notifications')}</div>
       ${p === 'granted' ? '' : `<div class="srow" style="display:block"><div class="l"><b>Set up notifications</b><small>Steps for the device you're using</small></div><div style="margin-top:8px">${notifyCard()}</div></div>`}
       <div class="srow"><div class="l"><b>Snooze length</b></div>${step('snoozeMin', s.snoozeMin, ' min')}</div>
-      <div class="srow"><div class="l"><b>Try it</b><small>Adds a quest with a reminder in 10 seconds</small></div><button class="mini" data-act="test-remind">Test reminder</button></div>
-      <p class="small" style="margin-top:6px">Reminders go off on time while TaskFlow is open, even in a background tab. With it fully closed, an installed app can still show them when the browser checks in (Chrome/Edge, roughly every 15 min or more${hasPeriodicSync() ? '' : '; not available in this browser'}). Exact timing with the app closed will come with the sync server or the mobile app.</p>
+      <div class="srow"><div class="l"><b>Try it</b><small>Shows a sample notification in 10 seconds (nothing is added)</small></div><button class="mini" data-act="test-remind">Test</button></div>
+      <p class="small" style="margin-top:6px">Signed in with notifications on, reminders reach you even when TaskFlow is closed. A quest's own reminders are set on the quest (Reminders), the ones below are every day.</p>
     </div>
-
-    <div class="sec">Daily reminders</div>
     <div class="card nudges" data-tour="nudges">
-      <p class="small" style="margin-bottom:4px">Pick when TaskFlow reminds you. Add as many times a day as you like; tap × on a time to remove it.</p>
+      <div class="l" style="margin-bottom:6px"><b>Every day</b><small class="small" style="display:block">Today's quests, water, meals and walks. Add as many times as you like; tap × on a time to remove it.</small></div>
       ${nudges.editor()}
     </div>
 
@@ -126,11 +124,6 @@ export function render() {
           : 'In Safari, tap Share, then Add to Home Screen. In Chrome, open the menu and choose Install app.'}</small></div>
         ${canInstall() && !isInstalled() ? '<div style="margin-top:10px"><button class="btn sm dark" data-act="install">Install TaskFlow</button></div>' : ''}</div>
       <div class="srow"><div class="l"><b>Offline</b><small>${'serviceWorker' in navigator && navigator.serviceWorker.controller ? 'Ready. TaskFlow works without internet.' : 'Getting ready (reload once to finish).'}</small></div></div>
-    </div>
-
-    <div class="sec">Developer</div>
-    <div class="card">
-      <div class="srow"><div class="l"><b>API and webhooks</b><small>Let other apps read and change your quests, and get told when things happen</small></div><a class="mini" href="#/developer">Open</a></div>
     </div>
 
     <div class="sec">Your data</div>
@@ -250,11 +243,11 @@ export const actions = {
   },
   step: el => { const k = el.dataset.k, [lo, hi] = LIMITS[k]; setSetting(k, Math.max(lo, Math.min(hi, getState().settings[k] + STEPS[k] * +el.dataset.d))); play('click', 0.4); },
   perm: async () => { const p = await requestPermission(); toast(p === 'granted' ? 'Notifications allowed' : 'Notifications not allowed'); rerender(); },
-  'test-remind': () => {
-    requestPermission();
-    const q = addQuest({ title: 'Test reminder', tier: 3, due: todayStr() });
-    setReminder(q.id, { at: Date.now() + 10000 });
-    play('click', 0.5); toast('Reminder in 10 seconds. You can switch tabs.');
+  // a sample notification, without adding a quest (no test data in anyone's list)
+  'test-remind': async () => {
+    await requestPermission();
+    play('click', 0.5); toast('A sample notification in 10 seconds. You can switch tabs.');
+    setTimeout(() => show('Reminder: this is how a reminder looks', { body: 'TaskFlow reminders show up like this, with Done and Snooze on quest reminders.', tag: 'test' }), 10000);
   },
   install: () => install(),
   hear: el => play(el.dataset.s, 1, +el.dataset.rate || 1),

@@ -7,7 +7,7 @@
 //   taskflowUsers/{uid}               rev, chunk count, time zone, when it changed
 //   taskflowUsers/{uid}/chunks/{i}    the data, deflated (sketches can make it big; a document holds 1 MiB)
 //   taskflowUsers/{uid}/share/open    plain list of open quests and upcoming Google events, for Solodesk
-import { getState, onSave, syncDoc, adoptSynced, commit, resetAll, markSamples } from './store.js';
+import { getState, onSave, syncDoc, adoptSynced, commit, resetAll, dropSamples } from './store.js';
 import { mergeDocs, canon } from './syncmerge.js';
 import * as account from './account.js';
 import { dlog } from './debuglog.js';
@@ -22,7 +22,7 @@ export const onCloud = fn => { listeners.add(fn); return () => listeners.delete(
 export const cloudInfo = () => info;
 export const cloudOn = () => !!account.user();
 // Until the account's copy has been read (or the attempt failed), a signed-in person's screens wait, so the
-// sample quests on this device never flash on screen before their own quests load.
+// screen never shows an empty or out-of-date list before their own quests load.
 let ready = !account.user();
 export const cloudReady = () => ready;
 const becomeReady = () => { if (!ready) { ready = true; emit(); } };
@@ -68,7 +68,6 @@ async function runSync() {
     if (!(await account.firebaseUser())) throw new Error('signed out');
     const meta = F.doc(db, 'taskflowUsers', u.uid);
     const mine = syncDoc();
-    const samples = getState().seeded && !getState().history.length;   // untouched sample or starter quests
     // read the account's copy first (outside the transaction: big reads are cheaper to do once)
     const read = async get => {
       const m = await get(meta);
@@ -84,14 +83,10 @@ async function runSync() {
       return { md, doc };
     };
     const { md, doc } = await read(F.getDoc);
-    // sample quests that an earlier version copied into the account are removed on the next sync
-    // (and examples a later version turned into ordinary quests by accident: markSamples finds those too)
-    if (doc?.quests) doc.quests = markSamples(doc.quests).filter(q => !q.sample);
+    // examples an older version put in the account go
+    if (doc?.quests) doc.quests = dropSamples(doc.quests);
     const hadData = !!doc?.quests?.length;
-    // example quests are never part of an account, new or old: they're this device's sample, not the person's quests
-    mine.quests = (mine.quests || []).filter(q => !q.sample);
-    // signing in to an account that has quests: don't mix this device's sample quests into it
-    if (hadData && samples) { mine.quests = []; mine.tombstones = []; }
+    mine.quests = dropSamples(mine.quests);
     const merged = mergeDocs(doc || {}, mine);
     let nextRev = md.rev || 0;
     if (!doc || norm(doc) !== canon(merged)) {
@@ -205,7 +200,7 @@ export function setSharedEvents(items) { sharedEvents = items || []; queueShare(
 function queueShare() { clearTimeout(shareT); shareT = setTimeout(writeShare, 1500); }
 async function writeShare() {
   const u = account.user(); if (!u) return;
-  const quests = getState().quests.filter(q => !q.done && !q.sample).map(q => ({
+  const quests = getState().quests.filter(q => !q.done).map(q => ({
     id: q.id, title: q.title, tier: q.tier, due: q.due || null, time: q.time || null, repeat: q.repeat?.freq || null,
     notes: q.notes || '', subtasks: (q.subtasks || []).map(s => ({ title: s.title, done: !!s.done })), updatedAt: q.updatedAt || q.createdAt || null,
   }));

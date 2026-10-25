@@ -1,7 +1,7 @@
-// Keeps the app's data in step with the TaskFlow server (server.mjs), which is what the REST API and
-// webhooks read and change. The server is the shared copy: the app sends its data, the server merges
-// (last write wins per quest, deletions win over older copies) and sends back the result, which the app
-// adopts. Changes made through the API arrive as server-sent events. Offline, nothing is lost: the app
+// Keeps the app's data in step with the local TaskFlow server (server.mjs, on this computer only). The server
+// is the shared copy: the app sends its data, the server merges (last write wins per quest, deletions win over
+// older copies) and sends back the result, which the app adopts. Changes from another tab arrive as
+// server-sent events. Offline, nothing is lost: the app
 // keeps working on its own copy and sends it again when the server is back.
 import { getState, onSave, syncDoc, adoptSynced } from './store.js';
 import { canon } from './syncmerge.js';

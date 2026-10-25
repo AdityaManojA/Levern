@@ -56,7 +56,7 @@ function eventLines(q, stamp) {
 export function buildICS(quests, now = Date.now()) {
   const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//TaskFlow//Quests//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:TaskFlow'];
   // example quests stay out of whole-calendar exports and feeds (a single quest asked for by name is still included)
-  for (const q of quests) if (q.due && !q.done && (!q.sample || quests.length === 1)) L.push(...eventLines(q, now));
+  for (const q of quests) if (q.due && !q.done) L.push(...eventLines(q, now));
   L.push('END:VCALENDAR');
   return L.map(fold).join('\r\n') + '\r\n';
 }

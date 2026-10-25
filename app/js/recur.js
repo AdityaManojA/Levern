@@ -3,8 +3,8 @@
 // (0 = Sunday, 6 = Saturday), and day (and month, yearly) the date a monthly or yearly repeat keeps to (anchored).
 import { addDays, addMonths, weekday, todayStr, MONTHS } from './dates.js';
 
+// the repeats to pick from once "Repeats" is chosen (How often: Once · Repeats · Times per week, see oftenSeg)
 export const REPEATS = [
-  ['', 'Does not repeat'],
   ['daily', 'Every day'],
   ['alternate', 'Every other day'],
   ['weekdays', 'Every weekday (Mon–Fri)'],
@@ -12,8 +12,12 @@ export const REPEATS = [
   ['monthly', 'Every month'],
   ['yearly', 'Every year'],
   ['custom', 'On the days I choose…'],
-  ['goal', 'A goal: a set number of times a week'],   // not a repeat: a weekly goal (goals.js), no day
 ];
+// How often a quest happens: once, on a repeat, or a number of times a week (a weekly goal, goals.js: no day,
+// it counts the times done). attr: the attribute the buttons carry (the add sheet and the detail screen differ).
+export const oftenOf = q => (q.goal ? 'week' : q.repeat ? 'repeat' : 'once');
+export const oftenSeg = (mode, attr) => `<div class="seg often" role="radiogroup" aria-label="How often">${[['once', 'Once'], ['repeat', 'Repeats'], ['week', 'Times per week']]
+  .map(([k, l]) => `<button type="button" role="radio" aria-checked="${mode === k}" class="${mode === k ? 'on' : ''}" ${attr}="${k}">${l}</button>`).join('')}</div>`;
 const DAY_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];   // the picker starts on Monday
 // "Mon Wed Fri", in week order

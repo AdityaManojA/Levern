@@ -1,7 +1,8 @@
 // Quest detail: edit everything about one quest. Fields save as you go.
 import { findQuest, updateQuest, deleteQuest, addSubtask, updateSubtask, removeSubtask, setReminder, setAlerts, tierLabel, TIER_COLORS, getState } from '../store.js';
 import { dueLabel, dueStatus, fmtStamp, todayStr } from '../dates.js';
-import { REPEATS, describe } from '../recur.js';
+import { REPEATS, describe, oftenOf, oftenSeg } from '../recur.js';
+import { multiLabel } from '../multi.js';
 import { googleLink, buildICS } from '../ics.js';
 import { esc, ICON, toast, play, confirmBox, download } from '../ui.js';
 import { tierPicker, reminderPicker, bindPicker, bindAlerts, goalBlock } from './common.js';
@@ -51,13 +52,15 @@ export function render(params) {
       <button class="chip chip-btn" data-act="due-quick" data-d="7">In a week</button>${q.due ? '<button class="chip chip-btn" data-act="due-quick" data-d="">No date</button>' : ''}
     </div>
 
-    <label class="lbl" for="repeat">Repeat</label>
-    <select class="field" id="repeat" data-change="repeat">${REPEATS.map(([k, l]) => `<option value="${k}" ${(q.repeat?.freq || (q.goal ? 'goal' : '')) === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <label class="lbl">How often</label>
+    ${oftenSeg(oftenOf(q), 'data-act="often" data-k')}
+    ${q.repeat ? `<select class="field" id="repeat" data-change="repeat" aria-label="Repeats">${REPEATS.map(([k, l]) => `<option value="${k}" ${q.repeat.freq === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : ''}
     ${q.repeat && q.due && (q.repeat.freq === 'monthly' || q.repeat.freq === 'yearly') ? `<div class="small" style="margin:6px 0 10px">${esc(describe(q.repeat, q.due))}. To repeat on another date, change the due date.</div>` : ''}
     ${q.goal ? goalBlock(q) : ''}
 
-    <label class="lbl">Reminder</label>
+    <label class="lbl">Reminders</label>
     <div data-picker>${reminderPicker(q)}</div>
+    ${q.remind?.multi && !q.done ? `<div class="srow multi-on"><div class="l"><b>Also through the day</b><small>${esc(multiLabel(q.remind.multi))}</small></div><button class="mini" data-act="multi-off">Stop</button></div>` : ''}
 
     <label class="lbl">Subtasks ${q.subtasks.length ? `<span class="small">${done}/${q.subtasks.length}</span>` : ''}</label>
     <div class="card" data-tour="subtasks" style="padding:6px 12px">
@@ -124,6 +127,17 @@ export const actions = {
   'sub-del': el => removeSubtask(current.id, el.dataset.sid),
   'ink-new': el => openInk(current.id, { kind: el.dataset.kind }),
   'sketch-view': el => openSketch(current.id, el.dataset.kid),
+  // the several-times-a-day reminder stops; the quest's own alerts stay
+  'multi-off': () => { const q = current; setReminder(q.id, null); if (q.due) setAlerts(q.id, [0]); play('click', 0.4); toast(q.due ? 'Back to one reminder, at its due time' : 'No more reminders through the day'); },
+  // How often: once, a repeat (every day to start with) or a number of times a week (no date)
+  often: el => {
+    const q = current, k = el.dataset.k;
+    if (k === oftenOf(q)) return;
+    play('click', 0.4);
+    if (k === 'once') updateQuest(q.id, { repeat: null, goal: null });
+    if (k === 'repeat') { updateQuest(q.id, { repeat: { freq: 'daily' }, goal: null }); toast('Repeats every day. Pick another repeat below.'); }
+    if (k === 'week') { updateQuest(q.id, { goal: q.goal || { target: GOAL_DEFAULT, log: [] }, repeat: null, due: null, time: null, alerts: undefined }); toast('Weekly goal set. Tick it each time you do it.'); }
+  },
   'goal-step': el => { const q = current; updateQuest(q.id, { goal: { ...q.goal, target: clampGoal(q.goal.target + +el.dataset.d) } }); play('click', 0.4); },
   'goal-undo': el => { undoGoal(el.dataset.id); play('click', 0.4); toast('Took back the last time'); },
   'due-quick': el => { const d = el.dataset.d; updateQuest(current.id, d === '' ? { due: null, time: null, repeat: null } : { due: addDaysFromToday(+d) }); play('click', 0.5); },
@@ -139,8 +153,7 @@ export function onChange(el) {
   const k = el.dataset.change, q = current;
   if (k === 'due') updateQuest(q.id, el.value ? { due: el.value } : { due: null, time: null, repeat: null });
   if (k === 'time') updateQuest(q.id, { time: el.value || null });
-  if (k === 'repeat' && el.value === 'goal') { updateQuest(q.id, { goal: q.goal || { target: GOAL_DEFAULT, log: [] }, repeat: null, due: null, time: null, alerts: undefined }); toast('Weekly goal set. Tick it each time you do it.'); }
-  else if (k === 'repeat') { updateQuest(q.id, { repeat: el.value ? { freq: el.value } : null, goal: null }); if (el.value) { const d = describe({ freq: el.value }, q.due); toast(`Repeats ${d[0].toLowerCase() + d.slice(1)}`); } }
+  if (k === 'repeat') { updateQuest(q.id, { repeat: el.value ? { freq: el.value } : null, goal: null }); if (el.value) { const d = describe({ freq: el.value }, q.due); toast(`Repeats ${d[0].toLowerCase() + d.slice(1)}`); } }
   if (k === 'sub-tier') updateSubtask(q.id, el.dataset.sid, { tier: +el.value });
 }
 // typing saves quietly (no re-render, so the cursor stays put)
