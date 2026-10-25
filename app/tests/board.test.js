@@ -49,7 +49,7 @@ test('one load gives every board: this season, Legacy and each past season, best
     { id: 'b', name: 'B', exp: 300, season: 1, seasonExp: 120, past: {}, me: true },     // hasn't been back since season 1
     { id: 'c', name: 'C', exp: 900, season: 2, seasonExp: 70, past: {}, me: false },     // joined in season 2
   ];
-  assert.deepEqual(standings(all, 'season', 2).map(r => r.id), ['c', 'a']);
+  assert.deepEqual(standings(all, 'season', 2).map(r => [r.id, r.exp]), [['c', 70], ['a', 40], ['b', 0]]);   // b hasn't been back: 0 this season
   assert.deepEqual(standings(all, 'legacy', 2).map(r => r.id), ['c', 'a', 'b']);
   assert.deepEqual(standings(all, 1, 2).map(r => [r.id, r.exp]), [['b', 120], ['a', 90]]);
   // moving to a new season keeps the one just finished, once, with the score it ended on

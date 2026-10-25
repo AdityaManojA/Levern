@@ -7,6 +7,7 @@ export const CHANGELOG = [
       'Finish a season in the top three and you wear an aura all next season: a turning gold, silver or aurora ring, a shimmering name and a sparkle, on the leaderboard and your profile. It passes to the new top three every season.',
       'The aura turns faster, with a bright highlight racing round the ring.',
       'Refreshing the leaderboard keeps it in place while it loads, and the first load shows the board’s outline instead of jumping.',
+      'A new season shows everyone on the board at 0 EXP and Iron until they earn some. Ties go to the one with more EXP overall.',
     ],
   },
   {

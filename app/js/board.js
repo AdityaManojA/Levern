@@ -140,14 +140,16 @@ export function topThreeFrom(list, now = seasonOf()) {
 // season. People who join after that don't get it; the ones who have it keep it. Shown as a small badge by the name.
 export const OG_UNTIL = 3;
 export const isOg = e => !!e && ((e.season >= 1 && e.season <= OG_UNTIL) || Object.keys(e.past || {}).some(k => +k >= 1 && +k <= OG_UNTIL));
-// One board, best first: [{ id, name, exp, me }]. which: 'legacy' (all-time EXP), 'season' (this season) or a past
-// season's number (its final scores: kept in past, or still the season's score if the entry hasn't moved on).
+// One board, best first: [{ id, name, exp, me }]. which: 'legacy' (all-time EXP), 'season' (this season: everyone on
+// the board, starting from 0 until they earn some, so a new season shows everyone at Iron) or a past season's number
+// (its final scores: kept in past, or still the season's score if the entry hasn't moved on).
 export function standings(list, which, now = seasonOf()) {
   const score = which === 'legacy' ? r => r.exp
-    : which === 'season' ? r => (r.season === now ? r.seasonExp : null)
+    : which === 'season' ? r => (r.season === now ? r.seasonExp : 0)
     : r => r.past?.[which] ?? (r.season === which ? r.seasonExp : null);
-  return (list || []).map(r => ({ id: r.id, name: r.name, me: r.me, og: r.og, exp: score(r) }))
-    .filter(r => r.exp != null && (which === 'legacy' || r.exp > 0 || r.me)).sort((a, b) => b.exp - a.exp);
+  // a tie goes to the one with more all-time EXP (a new season starts with everyone on 0)
+  return (list || []).map(r => ({ id: r.id, name: r.name, me: r.me, og: r.og, exp: score(r), total: r.exp }))
+    .filter(r => r.exp != null && (which === 'legacy' || which === 'season' || r.exp > 0 || r.me)).sort((a, b) => b.exp - a.exp || b.total - a.total);
 }
 
 export function startBoard() {
