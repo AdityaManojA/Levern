@@ -275,8 +275,9 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .notify-act { margin-top: 14px; }
 .notify-act p { margin: 0; }
 /* weekly goals (goals.js): the progress tag on a quest, the times-a-week stepper, and the detail controls */
-.tag.goal { background: var(--mint); }
-.tag.goal.met { background: var(--butter); font-weight: 700; }
+/* a weekly goal's label: the same quiet chip as the reminder one, so it never clashes with the quest's colour */
+.tag.goal { border: 1.5px solid var(--edge); border-radius: 8px; padding: 0 7px 0 5px; background: var(--card); font-weight: 600; line-height: 18px; }
+.tag.goal.met { font-weight: 700; }
 .goalstep { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .goalstep b { min-width: 28px; text-align: center; font-size: 16px; }
 .step-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--edge); background: var(--card); font-weight: 700; font-size: 16px; }
@@ -1169,3 +1170,20 @@ a.lb-name:hover, a.lb-n:hover { text-decoration: underline; }
 /* Home: "+3 more quests" under Up next (S-011), quiet so the list stays the focus */
 .more-q { display: block; width: fit-content; margin: 2px auto 0; padding: 4px 10px; border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 600; text-decoration: none; }
 .more-q:hover { background: var(--paper); color: var(--ink); }
+
+/* Leaderboard: the board options in a closed Settings dropdown, Show more, past seasons */
+.lb-settings { padding: 0 16px; }
+.lb-settings > summary { display: flex; align-items: baseline; gap: 10px; padding: 12px 0; cursor: pointer; list-style: none; }
+.lb-settings > summary::-webkit-details-marker, .lb-past > summary::-webkit-details-marker { display: none; }
+.lb-settings > summary::after, .lb-past > summary::after { content: ""; margin-left: auto; align-self: center; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .2s var(--ease); flex: none; }
+.lb-settings[open] > summary::after, .lb-past[open] > summary::after { transform: rotate(-135deg); }
+.lb-settings[open] > summary { border-bottom: 2px solid rgba(var(--ink-rgb),.08); }
+.lb-settings > .srow:last-child { padding-bottom: 12px; }
+.lb-more { display: block; margin: 10px auto 0; }
+.lb-past { padding: 0 14px; margin-bottom: 10px; }
+.lb-past > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 12px 0; cursor: pointer; list-style: none; }
+.lb-past-sum { flex-basis: 100%; color: var(--ink); }
+.lb-past[open] > .lb-list { margin: 0 -14px; box-shadow: none; border-width: 0; border-top: 2px solid rgba(var(--ink-rgb),.08); border-radius: 0; }
+.lb-past .lb-more { margin-bottom: 12px; }
+.lb-past > summary { position: relative; padding-right: 24px; }
+.lb-past > summary::after { position: absolute; right: 4px; top: 18px; margin: 0; }

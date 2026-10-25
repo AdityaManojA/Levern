@@ -1,7 +1,8 @@
-// Leaderboard: the people who chose to show on the board. Two boards: Legacy (all EXP since the start, the
-// board everyone already knows, so it opens first and never resets) and this season (two weeks, ranked tiers
-// from Iron to Master, everyone starts again when a new season begins).
-// Joining is a switch at the top; nothing is shared until it's on. Reached from the EXP card on Home (not in the nav bar).
+// Leaderboard: the people who chose to show on the board. Two tabs: this season (two weeks, ranked tiers from Iron
+// to Master, everyone starts again when a new season begins), which opens first, and Legacy (all EXP since the
+// start, never resets). Each shows the top 15, then 15 more per "Show more". Every finished season's final
+// standings are at the bottom. The board options (joining, a public profile, the board name) sit in a closed
+// Settings dropdown above the boards; nothing is shared until joining. Reached from the EXP card on Home.
 import { getState } from '../store.js';
 import * as board from '../board.js';
 import * as account from '../account.js';
@@ -15,7 +16,9 @@ import { rankChip } from './common.js';
 import * as profile from '../profile.js';
 import { confirmBox } from '../ui.js';
 
-let rows = null, loading = false, failed = false, asked = false, mode = 'legacy', editing = false;
+let all = null, rows = null, loading = false, failed = false, asked = false, mode = 'season', editing = false;
+const PAGE = 15;
+let shown = {}, openPast = new Set(), settingsOpen = false;   // rows shown per board; past seasons opened
 // the podium and rows rise in once, when a board has just loaded; any later redraw shows them as they are
 let enter = false;
 
@@ -45,8 +48,8 @@ export function mount() { visit += 1; announce(); }
 async function load() {
   if (loading) return;
   loading = true; failed = false; swap(render());
-  try { if (board.isOn()) await board.publish().catch(() => {}); rows = await board.top(mode); enter = true; }
-  catch (e) { failed = true; rows = null; }
+  try { if (board.isOn()) await board.publish().catch(() => {}); all = await board.entries(); rows = board.standings(all, mode); enter = true; }
+  catch (e) { failed = true; all = rows = null; }
   loading = false;
   swap(render());
   if (location.hash.startsWith('#/leaderboard')) announce();
@@ -78,11 +81,35 @@ function nameRow(signed) {
     : `<div class="srow"><div class="l"><b>Name on the board</b><small>${esc(shown)}</small></div><button class="mini" data-act="lb-name-edit">Change</button></div>`;
 }
 
+// the rows of one board after the podium: the first 15, then 15 more per "Show more" until everyone is shown
+function listCard(list, key, chips) {
+  const n = shown[key] || PAGE, more = list.length - n;
+  return `<div class="card lb-list${enter ? ' enter' : ''}">${list.slice(0, n).map((r, i) => `<div class="lb-row${r.me ? ' me' : ''}" data-key="lb-${key}-${r.id}">
+      <span class="lb-rank">${i + 1}</span><a class="lb-n" href="#/profile/${r.me ? 'me' : esc(r.id)}">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</a>${chips ? rankChip(r.exp) : ''}<span class="lb-x">${fmt(r.exp)}</span></div>`).join('')}</div>
+    ${more > 0 ? `<button class="btn white sm lb-more" data-act="lb-more" data-k="${esc(String(key))}">Show more <span class="small">(${more} more)</span></button>` : ''}`;
+}
+
+const day = ms => new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+// every finished season, newest first: its dates, its winner, and (opened) its full final standings
+function pastSeasons() {
+  const now = seasonOf(), seasons = Array.from({ length: now - 1 }, (_, i) => now - 1 - i);
+  const head = '<div class="sec">Past seasons</div>';
+  if (!seasons.length) return `${head}<div class="card lb-note small">Season ${now} is the first season. When it ends (in ${daysLeft()} day${daysLeft() === 1 ? '' : 's'}), its final standings stay here.</div>`;
+  return head + seasons.map(n => {
+    const list = board.standings(all, n), { start, end } = seasonRange(n), open = openPast.has(n), mine = list.findIndex(r => r.me);
+    return `<details class="card lb-past" data-season="${n}" ${open ? 'open' : ''}>
+      <summary><b>Season ${n}</b><span class="small">${day(start)} – ${day(end - 1)}</span>
+        <span class="lb-past-sum small">${list[0] ? `🏆 ${esc(list[0].name)} · ${fmt(list[0].exp)} EXP` : 'Nobody played'}${mine >= 0 ? ` · you: #${mine + 1}` : ''}</span></summary>
+      ${open && list.length ? listCard(list, 'p' + n, true) : ''}
+    </details>`;
+  }).join('');
+}
+
 export function render() {
   const on = board.isOn(), signed = !!account.user(), mine = mode === 'season' ? board.mySeasonExp() : board.myExp();
   if (!asked && signed && rows === null && !loading && !failed) { asked = true; setTimeout(load, 0); }
   const list = rows || [];
-  const emptySeason = `<div class="card lb-note"><b>Nobody on the board yet</b><p class="small">${mode === 'season' ? 'A new season just started. Earn some EXP and be the first.' : `Turn on "Show me on the board" and you'll be the first.`}</p></div>`;
+  const emptySeason = `<div class="card lb-note"><b>Nobody on the board yet</b><p class="small">${mode === 'season' ? 'A new season just started. Earn some EXP and be the first.' : `Turn on "Show me on the board" in Settings above and you'll be the first.`}</p></div>`;
   const body = !signed
     ? `<div class="card lb-note"><b>Sign in to join the board</b><p class="small">Sign in with Google in Settings. Then turn on "Show me on the board" to see where you stand.</p>
          <a class="btn white sm" href="#/settings">Open Settings</a></div>`
@@ -91,29 +118,27 @@ export function render() {
            <button class="btn white sm" data-act="lb-refresh">Try again</button></div>`
       : rows === null || loading
         ? `<div class="card lb-note small">Loading the board…</div>`
-        : list.length
-          ? `${podium(list)}
-             <div class="card lb-list${enter ? ' enter' : ''}">${list.map((r, i) => `<div class="lb-row${r.me ? ' me' : ''}" data-key="lb-${r.id}">
-               <span class="lb-rank">${i + 1}</span><a class="lb-n" href="#/profile/${r.me ? 'me' : esc(r.id)}">${esc(r.name)}${r.me ? ' <small>(you)</small>' : ''}</a>${mode === 'season' ? rankChip(r.exp) : ''}<span class="lb-x">${fmt(r.exp)}</span></div>`).join('')}</div>`
-          : emptySeason;
+        : list.length ? `${podium(list)}${listCard(list, mode, mode === 'season')}` : emptySeason;
   const html = `
     <div class="h-sub">Who's on top</div>
     <h1 class="h-title">Leaderboard</h1>
     <a class="lb-back" href="#/home">‹ Home</a>
-    <div class="card lb-join">
+    <details class="card lb-join lb-settings" ${settingsOpen ? 'open' : ''}>
+      <summary><b>Settings</b><span class="small">${signed ? (on ? `On the board as ${esc(board.myBoardName())}` : 'Not on the board') : 'Sign in first'}</span></summary>
       <div class="srow"><div class="l"><b>Show me on the board</b><small>${signed ? (on ? `Your name and ${fmt(mine)} EXP are shown` : 'Off. Nothing about you is shared') : 'Sign in first'}</small></div>
         <button class="tog" role="switch" aria-checked="${on}" aria-label="Show me on the board" data-act="lb-toggle" ${signed ? '' : 'disabled'}></button></div>
       <div class="srow"><div class="l"><b>Make my profile public</b><small>${signed ? (profile.isPublic() ? 'Anyone signed in can open your profile' : 'Off. Others only see your board name and rank') : 'Sign in first'}</small></div>
         <button class="tog" role="switch" aria-checked="${profile.isPublic()}" aria-label="Make my profile public" data-act="lb-public" ${signed ? '' : 'disabled'}></button></div>
       ${nameRow(signed)}
       ${signed ? '<div class="srow"><div class="l"><b>My profile</b><small>Your ranks, streaks and a year of activity</small></div><a class="mini" href="#/profile/me">Open</a></div>' : ''}
-    </div>
+    </details>
     <div class="seg lb-tabs" role="tablist">
-      <button role="tab" aria-selected="${mode === 'legacy'}" class="${mode === 'legacy' ? 'on' : ''}" data-act="lb-mode" data-mode="legacy">Legacy</button>
       <button role="tab" aria-selected="${mode === 'season'}" class="${mode === 'season' ? 'on' : ''}" data-act="lb-mode" data-mode="season">Season ${seasonOf()}</button>
+      <button role="tab" aria-selected="${mode === 'legacy'}" class="${mode === 'legacy' ? 'on' : ''}" data-act="lb-mode" data-mode="legacy">Legacy</button>
     </div>
     ${mode === 'season' ? seasonCard() : '<div class="small lb-legacy-note">All the EXP everyone has earned since they started. It never resets.</div>'}
     ${body}
+    ${signed && all && !loading && !failed ? pastSeasons() : ''}
     ${signed && !loading ? '<button class="link lb-refresh" data-act="lb-refresh">Refresh</button>' : ''}`;
   if (rows) enter = false;
   return html;
@@ -140,8 +165,11 @@ export const actions = {
   'lb-mode': el => {
     if (el.dataset.mode === mode) return;
     mode = el.dataset.mode; play('click', 0.4);
-    rows = null; asked = false; visit += 1; swap(render());
+    // the entries are already here: switching tabs only re-ranks them
+    if (all) { rows = board.standings(all, mode); enter = true; visit += 1; swap(render()); announce(); }
+    else { rows = null; asked = false; visit += 1; swap(render()); }
   },
+  'lb-more': el => { const k = el.dataset.k; shown[k] = (shown[k] || PAGE) + PAGE; play('click', 0.3); swap(render()); },
   'lb-name-edit': () => { editing = true; swap(render()); document.querySelector('.lb-name-edit input')?.focus(); },
 };
 
@@ -154,3 +182,14 @@ document.addEventListener('submit', e => {
   editing = false; play('click', 0.5); toast('Board name saved', 'good');
   rows = null; asked = false; swap(render());
 });
+
+// the Settings dropdown and the past seasons remember being open across redraws
+document.addEventListener('toggle', e => {
+  const d = e.target;
+  if (d.classList?.contains('lb-settings')) settingsOpen = d.open;
+  else if (d.classList?.contains('lb-past')) {
+    const n = +d.dataset.season, was = openPast.has(n);
+    d.open ? openPast.add(n) : openPast.delete(n);
+    if (d.open !== was) swap(render());   // opening one draws its standings
+  }
+}, true);

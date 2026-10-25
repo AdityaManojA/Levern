@@ -4,6 +4,8 @@
 // is cleared and it's marked hidden (the rules don't allow deleting it, see below).
 // Two boards come from the same documents: this season's (two weeks, see stats.js) and Legacy (all-time EXP).
 // The name shown is the person's own board name (or their name), run through the swear filter.
+// Past seasons: when an entry moves to a new season, its final score for the season before is kept in past
+// ({ '1': 120 }), so every finished season keeps its full standings (the rules only let that score be copied).
 //
 // EXP is worked out here in the app (the free Firebase plan has no server code), so firestore.rules limit how
 // fast an entry's EXP can grow: a bucket of up to 60 EXP that refills 15 an hour, and at most 3000 EXP for a
@@ -42,11 +44,18 @@ export function allowed(o, want, nowMs = Date.now()) {
 
 let lastSent = '', pushT = null, catchUpT = null;
 
+// the past scores to write: as they are, plus the season just finished when the entry moves on to a new one
+export function carryPast(o, season) {
+  const past = { ...(o?.past || {}) };
+  if (o && o.season && o.season !== season && past[o.season] === undefined) past[o.season] = o.seasonExp || 0;
+  return past;
+}
+
 async function current(F, ref) {
   const snap = await F.getDoc(ref);
   if (!snap.exists()) return null;
   const d = snap.data();
-  return { exp: d.exp || 0, season: d.season || 0, seasonExp: d.seasonExp || 0, bank: d.bank || 0, updatedMs: d.updated?.toMillis?.() ?? 0, hidden: !!d.hidden };
+  return { exp: d.exp || 0, season: d.season || 0, seasonExp: d.seasonExp || 0, bank: d.bank || 0, updatedMs: d.updated?.toMillis?.() ?? 0, hidden: !!d.hidden, past: d.past || {} };
 }
 
 // write (or refresh) my entry, only when something on it changed
@@ -59,8 +68,8 @@ export async function publish() {
   if (sig === lastSent) return true;
   const { db, F } = await account.database();
   const ref = F.doc(db, COL, fu.uid);
-  const got = allowed(await current(F, ref), want);
-  await F.setDoc(ref, { name, exp: got.exp, season: want.season, seasonExp: got.seasonExp, bank: got.bank, hidden: false, updated: F.serverTimestamp() });
+  const o = await current(F, ref), got = allowed(o, want), past = carryPast(o, want.season);
+  await F.setDoc(ref, { name, exp: got.exp, season: want.season, seasonExp: got.seasonExp, bank: got.bank, hidden: false, updated: F.serverTimestamp(), ...(Object.keys(past).length ? { past } : {}) });
   // all of it went up: done until something changes. Otherwise send the rest when the limit allows.
   clearTimeout(catchUpT);
   if (got.exp === want.exp && got.seasonExp === want.seasonExp) lastSent = sig;
@@ -76,7 +85,8 @@ export async function unpublish() {
   const ref = F.doc(db, COL, fu.uid), o = await current(F, ref);
   if (!o || o.hidden) { lastSent = ''; return true; }
   const season = seasonOf(), got = allowed(o, { exp: o.exp, season, seasonExp: o.season === season ? o.seasonExp : 0 });
-  await F.setDoc(ref, { name: '', exp: got.exp, season, seasonExp: got.seasonExp, bank: got.bank, hidden: true, updated: F.serverTimestamp() });
+  const past = carryPast(o, season);
+  await F.setDoc(ref, { name: '', exp: got.exp, season, seasonExp: got.seasonExp, bank: got.bank, hidden: true, updated: F.serverTimestamp(), ...(Object.keys(past).length ? { past } : {}) });
   lastSent = '';
   return true;
 }
@@ -101,20 +111,25 @@ export function setBoardName(raw) {
   return true;
 }
 
-// The top of a board, best first: [{ id, name, exp, me }]. 'season' ranks this season's EXP, 'legacy' all-time EXP.
-// Hidden entries (people who left the board) are skipped. The season board asks only for this season's entries
-// (no composite index needed) and sorts them here.
-export async function top(mode = 'season', limit = 25) {
+// Everyone on the board (people who left it are skipped), loaded once for all the boards: this season, Legacy
+// and every past season are worked out from these entries (standings).
+export async function entries() {
   const fu = await account.firebaseUser();
   const { db, F } = await account.database();
-  const row = (d, exp) => ({ id: d.id, name: shownName(d.data().name), exp: exp || 0, me: !!fu && d.id === fu.uid });
-  const shown = d => !d.data().hidden;
-  if (mode === 'legacy') {
-    const snap = await F.getDocs(F.query(F.collection(db, COL), F.orderBy('exp', 'desc'), F.limit(limit * 3)));
-    return snap.docs.filter(shown).slice(0, limit).map(d => row(d, d.data().exp));
-  }
-  const snap = await F.getDocs(F.query(F.collection(db, COL), F.where('season', '==', seasonOf()), F.limit(500)));
-  return snap.docs.filter(shown).map(d => row(d, d.data().seasonExp)).sort((a, b) => b.exp - a.exp).slice(0, limit);
+  const snap = await F.getDocs(F.query(F.collection(db, COL), F.limit(1000)));
+  return snap.docs.filter(d => !d.data().hidden).map(d => {
+    const x = d.data();
+    return { id: d.id, name: shownName(x.name), exp: x.exp || 0, season: x.season || 0, seasonExp: x.seasonExp || 0, past: x.past || {}, me: !!fu && d.id === fu.uid };
+  });
+}
+// One board, best first: [{ id, name, exp, me }]. which: 'legacy' (all-time EXP), 'season' (this season) or a past
+// season's number (its final scores: kept in past, or still the season's score if the entry hasn't moved on).
+export function standings(list, which, now = seasonOf()) {
+  const score = which === 'legacy' ? r => r.exp
+    : which === 'season' ? r => (r.season === now ? r.seasonExp : null)
+    : r => r.past?.[which] ?? (r.season === which ? r.seasonExp : null);
+  return (list || []).map(r => ({ id: r.id, name: r.name, me: r.me, exp: score(r) }))
+    .filter(r => r.exp != null && (which === 'legacy' || r.exp > 0 || r.me)).sort((a, b) => b.exp - a.exp);
 }
 
 export function startBoard() {

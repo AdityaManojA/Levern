@@ -136,7 +136,7 @@ test('Google event priorities merge per event, the later choice wins', async () 
   assert.deepEqual(mergeDocs({ eventMeta: a }, {}).eventMeta, a);
 });
 
-test('example quests never go to calendars; editing one makes it yours', async () => {
+test('example quests never go to calendars, and none are added', async () => {
   const { syncable } = await import('../js/gcalmap.js');
   const { buildICS } = await import('../js/ics.js');
   const S = await import('../js/store.js');
@@ -150,8 +150,9 @@ test('example quests never go to calendars; editing one makes it yours', async (
   const legacy = [{ id: 'x', title: 'Book dentist', createdAt: 1000, updatedAt: 1500 }, { id: 'y', title: 'Book dentist', createdAt: 1000, updatedAt: 999999 }];
   S.markSamples(legacy);
   assert.equal(legacy[0].sample, true); assert.equal(legacy[1].sample, undefined);
+  // no placeholder quests: a new list starts empty, and examples an older version left on a device are removed
   S.init(memoryAdapter());
-  const q = S.getState().quests.find(x => x.sample);
-  S.updateQuest(q.id, { title: 'My own title' });
-  assert.equal(S.findQuest(q.id).sample, false);
+  assert.equal(S.getState().quests.length, 0);
+  S.init(memoryAdapter({ v: 3, quests: [{ id: 's', title: 'Book dentist', sample: true, createdAt: 1 }, { id: 'm', title: 'Mine', createdAt: 1 }], history: [], sessions: [], settings: {} }));
+  assert.deepEqual(S.getState().quests.map(x => x.id), ['m']);
 });

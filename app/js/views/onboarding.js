@@ -2,7 +2,7 @@
 // Welcome · What's a quest? · How will you use TaskFlow? · How many quests a day? · Make it yours · Tour prompt.
 // Shown once (state.onboarded); Settings → You → Welcome screens reopens it.
 // Copy rule from the design brief: every game word gets a plain meaning the first time it appears.
-import { getState, setSetting, applyStarter, finishOnboarding, TIER_COLORS } from '../store.js';
+import { getState, setSetting, finishOnboarding, TIER_COLORS } from '../store.js';
 import { dayExp } from '../stats.js';
 import { speechSupported } from '../speech.js';
 import { esc, play, toast, download, confirmBox } from '../ui.js';
@@ -30,9 +30,9 @@ const G_LOGO = '<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="tru
 let step = 0, root = null, profile = '', stops = [], onFinish = null, linked = {}, busy = false, returning = false;
 
 const USES = [
-  ['student', 'Student', 'Classes, a timetable and exam prep', 'var(--sky)', 'Students get starter quests for revision, essays and exams.'],
-  ['work', 'Work', 'Projects, meetings and deadlines', 'var(--butter)', 'You get starter quests for emails, meetings and projects.'],
-  ['personal', 'Personal', 'Habits, chores and goals', 'var(--mint)', 'You get starter quests for habits, chores and people.'],
+  ['student', 'Student', 'Classes, a timetable and exam prep', 'var(--sky)'],
+  ['work', 'Work', 'Projects, meetings and deadlines', 'var(--butter)'],
+  ['personal', 'Personal', 'Habits, chores and goals', 'var(--mint)'],
 ];
 
 function screen(name) {
@@ -68,15 +68,13 @@ function screen(name) {
       <div class="ob-chips">${TIER_COLORS.map((c, i) => `<span style="--c:${c}">P${i + 1}</span>`).join('')}</div>
       <p class="ob-p muted small">The colour shows priority: P1 (red) is most urgent, P6 (lilac) is "someday".</p>`;
     case 'use': {
-      const note = USES.find(u => u[0] === profile)?.[4];
       return `
       <h1 class="ob-h">How will you use TaskFlow?</h1>
       <p class="ob-p muted">Pick one. You can change it later.</p>
       <div class="ob-uses" role="radiogroup" aria-label="How will you use TaskFlow?">
         ${USES.map(([k, l, d, c]) => `<button type="button" role="radio" aria-checked="${profile === k}" class="ob-use${profile === k ? ' on' : ''}" style="--c:${c}" data-ob-profile="${k}">
           <span class="radio" aria-hidden="true"></span><span><b>${l}</b><small>${d}</small></span></button>`).join('')}
-      </div>
-      ${note && getState().seeded ? `<div class="ob-note">${note}</div>` : ''}`;
+      </div>`;
     }
     case 'target': {
       const t = s.target, some = Math.max(1, Math.min(t - 1, Math.round(t * 0.6)));
@@ -156,7 +154,6 @@ const refresh = () => { const y = root.scrollTop; root.innerHTML = frame(); moun
 
 function go(dir) {
   if (STEPS[step] === 'account' && dir > 0 && !account.user()) return;
-  if (STEPS[step] === 'use' && dir > 0 && profile) applyStarter(profile);
   step = Math.max(0, Math.min(STEPS.length - 1, step + dir));
   play('click', 0.4);
   draw(dir);

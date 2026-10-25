@@ -2,6 +2,17 @@
 // the first one is the version shown at the bottom of Settings.
 export const CHANGELOG = [
   {
+    v: '1.04', date: '2026-10-25', title: 'A tidier leaderboard, and no example quests',
+    items: [
+      'Leaderboard: the season opens first, with Legacy on the second tab.',
+      'Leaderboard: your board options (showing on the board, a public profile, your board name) are in a Settings dropdown.',
+      'Leaderboard: the top 15, then Show more for everyone else.',
+      'Leaderboard: past seasons at the bottom, each with its final standings.',
+      'No more example quests: a new list starts empty, and old examples are removed.',
+      'A weekly goal’s label matches the other chips on a quest.',
+    ],
+  },
+  {
     v: '1.03', date: '2026-10-25', title: 'A monochrome theme',
     items: [
       'Mono: a new theme in greys only (Settings → Theme).',

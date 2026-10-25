@@ -32,8 +32,8 @@ const subs = new Set();
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-// Example quests (the samples and the onboarding starters) are marked sample: true. They stay in the app
-// to show how it works, but never go to anyone's account, calendar or Solodesk. Rewriting one makes it yours.
+// Example quests (the samples and the onboarding starters of older versions) are marked sample: true. They never
+// go to anyone's account, calendar or Solodesk, and are removed from devices (migrate). Rewriting one made it yours.
 const SAMPLE_TITLES = new Set(['Submit lab report', 'Book dentist', 'Read chapter 4', 'Water the plants', 'Organise notes folder', 'Learn to bake sourdough',
   'Revise for the maths test', 'Finish history essay draft', 'Pack bag for tomorrow', 'Reply to client email', 'Prepare Monday slides', 'Weekly team sync',
   'Update project tracker', 'Clear out downloads folder', 'Call mum', 'Go for a walk']);
@@ -64,37 +64,12 @@ export const dropLeaked = quests => (quests || []).filter(q => !q.leaked);
 // out on purpose: the app changes them by itself (ticking a repeating example moves its date), which must not.
 const sampleKey = q => JSON.stringify([q.title, q.notes, (q.subtasks || []).map(s => s.title)]);
 
-function seed() {
-  const t = todayStr();
-  const q = (title, tier, due, extra = {}) => ({ id: uid(), title, tier, due, time: null, notes: '', subtasks: [], repeat: null, remind: null, done: false, doneAt: null, createdAt: Date.now(), sample: true, ...extra });
-  return [
-    q('Submit lab report', 0, t, { time: '17:00', subtasks: [{ id: uid(), title: 'Write up method', done: true, tier: 0 }, { id: uid(), title: 'Add graphs', done: false, tier: 1 }],
-      remind: { at: at(t, '17:00') - 3600000, offset: 3600000, fired: false, dismissed: false } }),
-    q('Book dentist', 1, addDays(t, 1)),
-    q('Read chapter 4', 2, addDays(t, 3), { notes: 'Pages 80–112. Make flashcards for the key terms.' }),
-    q('Water the plants', 3, t, { repeat: { freq: 'daily' } }),
-    q('Organise notes folder', 4, null),
-    q('Learn to bake sourdough', 5, null),
-  ];
-}
-
-// starter quests picked in onboarding ("About you"), replacing the samples while nothing has been touched
-const STARTERS = {
-  student: [['Revise for the maths test', 1, 2], ['Finish history essay draft', 2, 4], ['Read chapter 4', 2, 3], ['Pack bag for tomorrow', 3, 0, { repeat: { freq: 'weekdays' } }], ['Organise notes folder', 4, null]],
-  work: [['Reply to client email', 0, 0], ['Prepare Monday slides', 1, 3], ['Weekly team sync', 3, 1, { repeat: { freq: 'weekly' }, time: '10:00' }], ['Update project tracker', 3, 2], ['Clear out downloads folder', 4, null]],
-  personal: [['Book dentist', 1, 1], ['Water the plants', 3, 0, { repeat: { freq: 'daily' } }], ['Call mum', 2, 2, { time: '18:00' }], ['Go for a walk', 3, 0], ['Learn to bake sourdough', 5, null]],
-};
-export function applyStarter(kind) {
-  commit(s => {
-    if (!s.seeded || s.history.length) return;
-    const t = todayStr();
-    s.quests = kind === 'empty' ? [] : (STARTERS[kind] || []).map(([title, tier, inDays, extra = {}]) => ({ id: uid(), title, tier, due: inDays == null ? null : addDays(t, inDays), time: null, notes: '', subtasks: [], repeat: null, remind: null, done: false, doneAt: null, createdAt: Date.now(), sample: true, ...extra }));
-  });
-}
+// No example or starter quests, ever: a new list starts empty, and quests only ever come from the person.
+// (Older versions added examples and starters, marked sample: true; any still on a device are removed in migrate.)
 export function finishOnboarding() { commit(s => { s.onboarded = true; }); }
 
 function fresh() {
-  return { v: VERSION, quests: seed(), history: [], sessions: [], timer: null, settings: { ...DEFAULT_SETTINGS }, seeded: true };
+  return { v: VERSION, quests: [], history: [], sessions: [], timer: null, settings: { ...DEFAULT_SETTINGS }, seeded: true };
 }
 
 export function init(customAdapter) {
@@ -111,7 +86,7 @@ function migrate(s) {
   s.settingsStamps ||= Object.fromEntries(Object.keys(s.settings).map(k => [k, s.settingsUpdatedAt || 0]));
   for (const q of s.quests) q.updatedAt ??= q.createdAt || 0;
   for (const q of s.quests) { q.subtasks ||= []; q.notes ??= ''; if (q.sketches) q.sketches = cleanSketches(q.sketches); }
-  s.quests = dropLeaked(markSamples(s.quests));
+  s.quests = markSamples(s.quests).filter(q => !q.sample);   // examples from older versions go, leaked copies too
   // saves from v1 never had seeded cleared when quests were added, so never swap their quests for starters
   if ((s.v || 1) < 2) s.seeded = false;
   s.v = VERSION;
@@ -171,7 +146,8 @@ export function setEventTier(id, tier) {
   commit(s => { s.eventMeta = { ...(s.eventMeta || {}), [id]: { tier, at: Date.now() } }; });
 }
 export const syncDoc = () => Object.fromEntries(SYNC_KEYS.map(k => [k, state[k]]));
-export function adoptSynced(doc) { if (doc.quests) doc.quests = dropLeaked(markSamples(doc.quests)); commit(s => { for (const k of SYNC_KEYS) if (doc[k] !== undefined) s[k] = k === 'settings' ? { ...DEFAULT_SETTINGS, ...doc[k] } : doc[k]; }, { fromSync: true }); }
+export function adoptSynced(doc) { if (doc.quests) doc.quests = markSamples(doc.quests).filter(q => !q.sample);   // no examples, from anywhere
+ commit(s => { for (const k of SYNC_KEYS) if (doc[k] !== undefined) s[k] = k === 'settings' ? { ...DEFAULT_SETTINGS, ...doc[k] } : doc[k]; }, { fromSync: true }); }
 
 export const findQuest = id => state.quests.find(q => q.id === id);
 export const tierLabel = t => `P${t + 1} · ${state.settings.tierNames[t]}`;
