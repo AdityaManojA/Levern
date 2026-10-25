@@ -8,6 +8,11 @@ export const CHANGELOG = [
       'Pull to refresh with Cookie: he stretches, hangs on and spins, like Mochi.',
       'Fixed: a smudged, blurry pose Cookie sometimes made after a tap. He now jumps up surprised instead.',
       'No more glow around the cats in dark mode.',
+      'Fixed: a second Cookie sometimes showing up beside him, after an update or between moves.',
+      'Cookie lands properly when you throw him: flat on the floor, then back up to sit. His old smudged surprised pose is gone.',
+      'Cookie’s loaf, drinking, grumpy and excited moves start and end at his normal size.',
+      'Mochi has a new walk.',
+      'The name field is gone from Settings.',
     ],
   },
   {

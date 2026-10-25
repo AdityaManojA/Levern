@@ -11,7 +11,6 @@ import { COATS, CAT_VOICE } from '../mochi.js';
 // the cat on the bar: Mochi ('black') or Cookie; older coats ('ginger' became Cookie, grey and brown were Mochi)
 const coatNow = s => (s.mochiColor === 'ginger' || s.mochiColor === 'cookie' ? 'cookie' : 'black');
 const catName = s => (coatNow(s) === 'cookie' ? 'Cookie' : 'Mochi');
-import { isClean } from '../namefilter.js';
 import { mySeasonExp } from '../board.js';
 import { applyTheme } from '../theme.js';
 import { APP_VERSION, CHANGELOG } from '../changelog.js';
@@ -56,7 +55,6 @@ export function render() {
     <div class="card">
       ${accountRow()}
       ${account.user() ? `<div class="srow"><div class="l"><b>Delete account</b><small>Removes your account and everything TaskFlow keeps for you</small></div><button class="mini danger-mini" data-act="acct-delete">Delete…</button></div>` : ''}
-      <div class="srow"><div class="l"><b>Name</b><small>Used in the greeting on Home</small></div><input class="field" style="width:150px" value="${esc(s.name)}" maxlength="30" data-input="name" aria-label="Your name" placeholder="Optional"></div>
       <div class="srow"><div class="l"><b>Welcome screens</b><small>See the introduction again</small></div><button class="mini" data-act="onboard">Show again</button></div>
       <div class="srow"><div class="l"><b>Quick tour</b><small>${catName(s)} shows you around (30 seconds)</small></div><button class="mini" data-act="tour">Start</button></div>
     </div>
@@ -285,13 +283,6 @@ export function onChange(el) {
   }
 }
 export function onInput(el) {
-  // a name with a swear word or slur isn't saved: the field shows red until it's changed
-  if (el.dataset.input === 'name') {
-    const v = el.value.trim(), ok = !v || isClean(v);
-    el.toggleAttribute('aria-invalid', !ok);
-    el.title = ok ? '' : "That name isn't allowed";
-    if (ok) setSetting('name', v, { quiet: true });
-  }
   if (el.dataset.input === 'tier') { const n = getState().settings.tierNames.slice(); n[+el.dataset.i] = el.value.trim() || `P${+el.dataset.i + 1}`; setSetting('tierNames', n, { quiet: true }); }
 }
 function rerender() { swap(render({})); }

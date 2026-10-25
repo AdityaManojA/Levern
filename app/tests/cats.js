@@ -11,7 +11,7 @@ async function check(cat) {
   for (const [n, a] of Object.entries(V.anims)) {
     const errs = [];
     let img;
-    try { img = await createImageBitmap(await (await fetch('../' + V.base + 'strips/' + n + '.' + (V.ext || 'png'))).blob()); }
+    try { img = await createImageBitmap(await (await fetch('../' + V.base + 'strips/' + n + '.' + (V.ext || 'png') + '?v=' + (V.anims[n].v || ''))).blob()); }
     catch (e) { out[n] = ['strip missing']; continue; }
     img.naturalWidth = img.width; img.naturalHeight = img.height;
     const k = V.scale || 3, W = Math.round(a.w * a.frames * k), H = Math.round(a.h * k);
@@ -41,7 +41,7 @@ function show(cat, results) {
     g.append(c);
     const s = c.querySelector('.s');
     s.style.width = a.w + 'px'; s.style.height = a.h + 'px';
-    s.style.backgroundImage = `url("../${V.base}strips/${n}.${V.ext || 'png'}")`;
+    s.style.backgroundImage = `url("../${V.base}strips/${n}.${V.ext || 'png'}?v=${V.anims[n].v || ''}")`;
     s.style.backgroundSize = `${a.w * a.frames}px ${a.h}px`;
     // the stage floor is his ground line
     s.style.marginBottom = -(a.h - a.gy) + 'px';

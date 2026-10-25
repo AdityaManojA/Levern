@@ -24,7 +24,9 @@ let V = MOCHI, A = V.anims, catName = 'mochi';
 const has = n => Object.prototype.hasOwnProperty.call(A, n);
 // small sprites elsewhere follow the nav-bar cat; with no cat on the bar they follow the setting
 export const hasAnim = n => { if (!M) useCat(); return has(n); };
-const baseUrl = n => V.base + 'strips/' + n + '.' + (V.ext || 'png');
+// ?v= is the strip's version (design/mochi/v3/sync.py): a changed strip is fetched fresh, never mixed with old sizes
+const urlOf = (v, n) => v.base + 'strips/' + n + '.' + (v.ext || 'png') + (v.anims[n] && v.anims[n].v ? '?v=' + v.anims[n].v : '');
+const baseUrl = n => urlOf(V, n);
 // one of these names that this cat has, at random (the variants of a reaction)
 const variant = (...names) => { const ok = names.filter(has); return ok[Math.floor(Math.random() * ok.length)] || names[0]; };
 
@@ -75,7 +77,7 @@ function switchCat(then) {
   const name = COATS[coat()].cat || 'mochi';
   if (name === catName) { switching++; return; }
   const ticket = ++switching, v = CATS[name];
-  warm(v.base + 'strips/rest.' + (v.ext || 'png')).then(() => { if (ticket === switching && useCat()) then(); });
+  warm(urlOf(v, 'rest')).then(() => { if (ticket === switching && useCat()) then(); });
 }
 const stripUrl = n => baseUrl(n);
 const SPEED = { slow: 28, normal: 50, zoomy: 95 }, SPRINT = 170, SINK = 2;
@@ -211,8 +213,13 @@ export function createMochi(env) {
     } else bub.classList.remove('show');
   }
   let ghostEl = null;
+  // A 0.1 s fade of the last frame over the next, softening a change of pose. Only for Mochi: his moves start and
+  // end on his exact resting pose, so the fading copy sits right on top of him. Cookie's three-quarter art never
+  // lands on one exact pose, so the copy would show as a second Cookie beside him. Never after a throw either: he
+  // has moved since that frame.
   function ghost() {
-    if (!shown || M.sprint) return;
+    if (M.landed) { M.landed = false; return; }
+    if (!shown || M.sprint || catName === 'cookie') return;
     ghostEl?.remove();
     const g = el.cloneNode(true); g.removeAttribute('id'); g.className = 'mochi ghost'; g.removeAttribute('tabindex');
     el.after(g); ghostEl = g;
@@ -496,8 +503,11 @@ export function createMochi(env) {
     M.lastActive = Date.now();
     M.state = 'idle'; M.busy = true;
     if (!M.holding) say(['oof!', 'mrp.', 'again?', '*lands*'][Math.floor(Math.random() * 4)], 1100);
-    // lands crouched (startled frames 4–6 end on the resting pose); still holding a reminder? paw back up
-    play('startled', { from: 4, to: A.startled.frames, then: () => { if (M.holding) holdPose(true); else { goRest(); schedule(2.5, 5); } } });
+    // lands crouched (Cookie: his own landing; Mochi: startled frames 4–6, which end on the resting pose); still
+    // holding a reminder? paw back up
+    const after = () => { if (M.holding) holdPose(true); else { goRest(); schedule(2.5, 5); } };
+    M.landed = true;
+    if (has('land')) play('land', { then: after }); else play('startled', { from: 4, to: A.startled.frames, then: after });
   }
   el.addEventListener('pointerdown', e => {
     e.stopPropagation();
