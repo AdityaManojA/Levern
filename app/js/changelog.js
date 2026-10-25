@@ -10,7 +10,7 @@ export const CHANGELOG = [
       'No more glow around the cats in dark mode.',
       'Fixed: a second Cookie sometimes showing up beside him, after an update or between moves.',
       'Cookie lands properly when you throw him: flat on the floor, then back up to sit. His old smudged surprised pose is gone.',
-      'Cookie’s loaf, drinking, grumpy and excited moves start and end at his normal size.',
+      'Cookie stays the same size in every move: walking, running and sniffing no longer shrink him, and his newer moves no longer make him bigger.',
       'Mochi has a new walk.',
       'The name field is gone from Settings.',
     ],
