@@ -68,3 +68,12 @@ test('OG: everyone who was on the board in Season 1', async () => {
   const rows = standings([{ id: 'a', name: 'A', exp: 9, season: 2, seasonExp: 5, past: { 1: 3 }, og: true }], 'legacy', 2);
   assert.equal(rows[0].og, true);
 });
+
+test('aura: last season\'s top three, for the whole of this season', async () => {
+  const { topThreeFrom } = await import('../js/board.js');
+  const e = (id, past, season = 3, seasonExp = 0) => ({ id, name: id, exp: 100, season, seasonExp, past, me: false });
+  const all = [e('a', { 2: 90 }), e('b', { 2: 120 }), e('c', { 2: 40 }), e('d', { 2: 70 }), e('z', { 2: 0 }), e('n', {}, 2, 200)];   // n hasn't moved on yet
+  assert.deepEqual(topThreeFrom(all, 3), { n: 1, b: 2, a: 3 });
+  assert.deepEqual(topThreeFrom(all, 1), {});                         // Season 1 has no season before it
+  assert.deepEqual(topThreeFrom([e('a', { 2: 0 })], 3), {});          // no EXP, no aura
+});

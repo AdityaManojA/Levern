@@ -12,11 +12,11 @@ import { swap } from '../motion.js';
 import { esc, play, toast } from '../ui.js';
 import { sfx } from '../sound.js';
 import { mascot } from '../mascot.js';
-import { rankChip, ogChip } from './common.js';
+import { rankChip, ogChip, auraOf, auraName, auraSpark } from './common.js';
 import * as profile from '../profile.js';
 import { confirmBox } from '../ui.js';
 
-let all = null, rows = null, loading = false, failed = false, asked = false, mode = 'season', editing = false;
+let all = null, top3 = {}, rows = null, loading = false, failed = false, asked = false, mode = 'season', editing = false;
 const PAGE = 15;
 let shown = {}, openPast = new Set(), settingsOpen = false;   // rows shown per board; past seasons opened
 // the podium and rows rise in once, when a board has just loaded; any later redraw shows them as they are
@@ -48,7 +48,7 @@ export function mount() { visit += 1; announce(); }
 async function load() {
   if (loading) return;
   loading = true; failed = false; swap(render());
-  try { if (board.isOn()) await board.publish().catch(() => {}); all = await board.entries(); rows = board.standings(all, mode); enter = true; }
+  try { if (board.isOn()) await board.publish().catch(() => {}); all = await board.entries(); rows = board.standings(all, mode); top3 = board.topThreeFrom(all); enter = true; }
   catch (e) { failed = true; all = rows = null; }
   loading = false;
   swap(render());
@@ -56,8 +56,10 @@ async function load() {
 }
 
 function podium(list) {
-  const slot = (r, n) => r ? `<div class="lb-slot lb-${n}${r.me ? ' me' : ''}">
-      <span class="lb-medal">${n}</span><a class="lb-name" href="#/profile/${r.me ? 'me' : esc(r.id)}">${esc(r.name)}${ogChip(r.og)}${r.me ? ' <small>(you)</small>' : ''}</a><span class="lb-exp">${fmt(r.exp)} EXP</span>${mode === 'season' ? rankChip(r.exp) : ''}</div>` : '<div class="lb-slot lb-empty"></div>';
+  const slot = (r, n) => { if (!r) return '<div class="lb-slot lb-empty"></div>';
+    const p = top3[r.id], au = auraOf(p, seasonOf() - 1);
+    return `<div class="lb-slot lb-${n}${r.me ? ' me' : ''}${au.cls}"${au.title}>${auraSpark(p)}
+      <span class="lb-medal">${n}</span><a class="lb-name" href="#/profile/${r.me ? 'me' : esc(r.id)}">${auraName(p, esc(r.name))}${ogChip(r.og)}${r.me ? ' <small>(you)</small>' : ''}</a><span class="lb-exp">${fmt(r.exp)} EXP</span>${mode === 'season' ? rankChip(r.exp) : ''}</div>`; };
   return `<div class="lb-podium${enter ? ' enter' : ''}" aria-label="Top three">${slot(list[1], 2)}${slot(list[0], 1)}${slot(list[2], 3)}</div>`;
 }
 
@@ -84,8 +86,9 @@ function nameRow(signed) {
 // the rows of one board after the podium: the first 15, then 15 more per "Show more" until everyone is shown
 function listCard(list, key, chips) {
   const n = shown[key] || PAGE, more = list.length - n;
-  return `<div class="card lb-list${enter ? ' enter' : ''}">${list.slice(0, n).map((r, i) => `<div class="lb-row${r.me ? ' me' : ''}" data-key="lb-${key}-${r.id}">
-      <span class="lb-rank">${i + 1}</span><a class="lb-n" href="#/profile/${r.me ? 'me' : esc(r.id)}">${esc(r.name)}${ogChip(r.og)}${r.me ? ' <small>(you)</small>' : ''}</a>${chips ? rankChip(r.exp) : ''}<span class="lb-x">${fmt(r.exp)}</span></div>`).join('')}</div>
+  return `<div class="card lb-list${enter ? ' enter' : ''}">${list.slice(0, n).map((r, i) => { const p = typeof key === 'string' && key.startsWith('p') ? 0 : top3[r.id], au = auraOf(p, seasonOf() - 1);
+      return `<div class="lb-row${r.me ? ' me' : ''}${au.cls}"${au.title} data-key="lb-${key}-${r.id}">${auraSpark(p)}
+      <span class="lb-rank">${i + 1}</span><a class="lb-n" href="#/profile/${r.me ? 'me' : esc(r.id)}">${auraName(p, esc(r.name))}${ogChip(r.og)}${r.me ? ' <small>(you)</small>' : ''}</a>${chips ? rankChip(r.exp) : ''}<span class="lb-x">${fmt(r.exp)}</span></div>`; }).join('')}</div>
     ${more > 0 ? `<button class="btn white sm lb-more" data-act="lb-more" data-k="${esc(String(key))}">Show more <span class="small">(${more} more)</span></button>` : ''}`;
 }
 

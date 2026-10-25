@@ -116,14 +116,24 @@ export function setBoardName(raw) {
 
 // Everyone on the board (people who left it are skipped), loaded once for all the boards: this season, Legacy
 // and every past season are worked out from these entries (standings).
-export async function entries() {
+let lastLoad = null;   // { at, list }: the board as last loaded, for a profile opened right after
+export async function entries({ fresh = true } = {}) {
+  if (!fresh && lastLoad && Date.now() - lastLoad.at < 120000) return lastLoad.list;
   const fu = await account.firebaseUser();
   const { db, F } = await account.database();
   const snap = await F.getDocs(F.query(F.collection(db, COL), F.limit(1000)));
-  return snap.docs.filter(d => !d.data().hidden).map(d => {
+  const list = snap.docs.filter(d => !d.data().hidden).map(d => {
     const x = d.data();
     return { id: d.id, name: shownName(x.name), exp: x.exp || 0, season: x.season || 0, seasonExp: x.seasonExp || 0, past: x.past || {}, me: !!fu && d.id === fu.uid, og: isOg(x) };
   });
+  lastLoad = { at: Date.now(), list };
+  return list;
+}
+// Last season's top three ({ id: place }, people with EXP only): they wear an aura (a colour ring, a shimmering name
+// and a sparkle) for the whole of this season, then it passes to the next season's top three.
+export function topThreeFrom(list, now = seasonOf()) {
+  if (now < 2) return {};
+  return Object.fromEntries(standings(list, now - 1, now).filter(r => r.exp > 0).slice(0, 3).map((r, i) => [r.id, i + 1]));
 }
 // OG: someone who was on the board in Season 1, the first season (its score is kept in past when the entry moves
 // on; an entry nobody has opened since still says season 1). Shown as a small badge by their name.

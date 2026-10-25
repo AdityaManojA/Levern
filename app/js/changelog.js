@@ -2,6 +2,12 @@
 // the first one is the version shown at the bottom of Settings.
 export const CHANGELOG = [
   {
+    v: '1.07', date: '2026-10-25', title: 'An aura for the top three',
+    items: [
+      'Finish a season in the top three and you wear an aura all next season: a turning gold, silver or aurora ring, a shimmering name and a sparkle, on the leaderboard and your profile. It passes to the new top three every season.',
+    ],
+  },
+  {
     v: '1.06', date: '2026-10-25', title: 'For the day ones',
     items: [
       'An OG badge for everyone who was on the leaderboard in Season 1: by your name on the board and on your profile. Thank you for being here from the start.',

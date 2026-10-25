@@ -180,6 +180,11 @@ export function rankChip(exp) {
   return `<span class="rank rank-${r.toLowerCase()}" title="${label}${masterLevel(exp) ? '' : `, rank ${n} of ${RANKS.length}`}"><i class="rank-dot"></i>${label}<span class="rank-bars" aria-hidden="true">${bars}</span></span>`;
 }
 // a chip for a rank saved by name ('Gold', 'Master 3'), e.g. a past season's best
+// Aura: last season's top three (1 gold, 2 silver, 3 aurora). auraOf gives the class and hover text for the card or
+// row, auraName wraps the name so it shimmers, auraSpark is the twinkle in the corner.
+export const auraOf = (place, season) => place ? { cls: ` aura aura-${place}`, title: ` title="#${place} in Season ${season}"` } : { cls: '', title: '' };
+export const auraName = (place, html) => place ? `<span class="aura-name">${html}</span>` : html;
+export const auraSpark = place => place ? '<i class="aura-sp" aria-hidden="true"></i>' : '';
 // OG: there since Season 1. A tiny badge by the name (the day ones)
 export const ogChip = on => on ? '<span class="og" title="OG: here since Season 1" aria-label="OG, here since Season 1">OG</span>' : '';
 export function rankChipNamed(label) {

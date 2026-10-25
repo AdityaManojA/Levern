@@ -1219,3 +1219,29 @@ a.lb-name:hover, a.lb-n:hover { text-decoration: underline; }
 h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
 :root[data-theme="dark"] .og { --og: #FFCB57; }
 :root[data-theme="mono"] .og { --og: #141414; }
+
+/* Aura: last season's top three wear it all season (1 gold, 2 silver, 3 aurora): a colour ring that keeps turning,
+   a shimmering name and a twinkling sparkle. On leaderboard rows, the podium and the profile card. */
+.aura-1 { --au-a: #FFD45C; --au-b: #F5A524; --au-c: #FFE49A; --au-d: #E07B0A; --au-t1: #B85F00; --au-t2: #E89600; }
+.aura-2 { --au-a: #C3CCD6; --au-b: #8C9AAA; --au-c: #DCE2E9; --au-d: #6B7887; --au-t1: #3F4A56; --au-t2: #7D8A99; }
+.aura-3 { --au-a: #B59CF0; --au-b: #5EC7B3; --au-c: #F0A8D6; --au-d: #7A5BD6; --au-t1: #6A4FC9; --au-t2: #2E9C88; }
+.aura { position: relative; isolation: isolate; overflow: hidden; border-color: transparent !important; --au-bg: var(--card); }
+/* a square well past the corners (a stretched one leaves gaps on wide rows as it turns) */
+.aura::before { content: ""; position: absolute; left: 50%; top: 50%; width: 260%; aspect-ratio: 1; z-index: -2; background: conic-gradient(var(--au-a), var(--au-b), var(--au-c), var(--au-d), var(--au-a)); transform: translate(-50%, -50%); animation: aura-spin 4s linear infinite; }
+.aura::after { content: ""; position: absolute; inset: 2.5px; z-index: -1; border-radius: calc(var(--au-r, 12px) - 2.5px); background: var(--au-bg); }
+.aura-name { background: linear-gradient(90deg, var(--au-t1), var(--au-t2), var(--au-t1)); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: aura-shine 3s linear infinite; }
+.aura-sp { position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; z-index: 1; background: var(--au-b); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: aura-twinkle 1.4s ease-in-out infinite alternate; pointer-events: none; }
+.lb-row.aura { --au-r: 12px; border-radius: 12px; border-top: none; margin: 4px -8px; padding-left: 8px; padding-right: 8px; }
+.lb-row.aura + .lb-row { border-top: none; }
+.lb-row.me.aura { --au-bg: color-mix(in srgb, #FFF6CC 60%, var(--card)); background: none; box-shadow: none; }
+.lb-slot.aura { --au-r: 16px; }
+.lb-1.aura { --au-bg: var(--butter); }
+.pf-top.aura, .pf-private.aura { --au-r: var(--r); }
+@keyframes aura-spin { from { transform: translate(-50%, -50%) rotate(0); } to { transform: translate(-50%, -50%) rotate(1turn); } }
+@keyframes aura-shine { to { background-position: 200% 0; } }
+@keyframes aura-twinkle { from { opacity: .35; transform: scale(.7) rotate(0deg); } to { opacity: 1; transform: scale(1.1) rotate(45deg); } }
+:root[data-theme="dark"] .aura-name { background-image: linear-gradient(90deg, var(--au-b), var(--au-c), var(--au-b)); }
+:root[data-theme="dark"] .lb-row.me.aura { --au-bg: color-mix(in srgb, #FF9A3D 12%, var(--card)); }
+:root[data-theme="mono"] .aura::before, :root[data-theme="mono"] .aura-sp { filter: grayscale(1); }
+:root[data-theme="mono"] .aura-name { background-image: linear-gradient(90deg, #141414, #8A8A8A, #141414); }
+@media (prefers-reduced-motion: reduce) { .aura::before, .aura-name, .aura-sp { animation: none; } }
