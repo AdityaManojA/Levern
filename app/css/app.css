@@ -1265,3 +1265,15 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
 .lb-refresh.busy .lb-spin { display: inline-block; }
 @keyframes lb-spin { to { transform: rotate(1turn); } }
 @media (prefers-reduced-motion: reduce) { .lb-skel .sk, .lb-refresh .lb-spin { animation: none; } }
+
+/* Late pop-up: a quest ticked after it was due (js/latepop.js), on the rank-up card. A wobbling "!" badge. */
+.late-bang { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--coral); border: var(--line); animation: late-wobble 1.6s var(--ease) infinite; }
+.late-bang span { font-size: 32px; font-weight: 900; line-height: 1; color: var(--ink); }
+.late-exp { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.late-half { padding: 3px 10px; border-radius: 999px; border: 1.5px solid var(--edge); background: var(--butter); font-weight: 800; font-size: 13px; }
+.late-vs { font-size: 12px; color: var(--muted); font-weight: 600; text-decoration: line-through; text-decoration-color: rgba(var(--ink-rgb), .35); }
+@keyframes late-wobble { 0%, 60%, 100% { transform: rotate(0); } 10% { transform: rotate(-12deg) scale(1.06); } 20% { transform: rotate(10deg); } 30% { transform: rotate(-6deg); } 40% { transform: rotate(4deg); } }
+:root[data-theme="dark"] .late-bang { background: color-mix(in srgb, var(--a-coral) 22%, var(--card)); border-color: var(--a-coral); }
+:root[data-theme="dark"] .late-bang span { color: var(--a-coral); }
+:root[data-theme="dark"] .late-half { background: color-mix(in srgb, var(--a-butter) 18%, var(--card)); border-color: var(--a-butter); color: var(--a-butter); }
+@media (prefers-reduced-motion: reduce) { .late-bang { animation: none; } }

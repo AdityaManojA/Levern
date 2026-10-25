@@ -78,3 +78,14 @@ test('aura: last season\'s top three, for the whole of this season', async () =>
   assert.deepEqual(topThreeFrom(all, 1), {});                         // Season 1 has no season before it
   assert.deepEqual(topThreeFrom([e('a', { 2: 0 })], 3), {});          // no EXP, no aura
 });
+
+test('the board tries again as soon as the bucket has room, and leaves the entry alone until then', async () => {
+  const { waitForRoom, allowed } = await import('../js/board.js');
+  const o = { exp: 135, season: 2, seasonExp: 0, bank: 0.27 };
+  const min = waitForRoom(o, { exp: 143, season: 2, seasonExp: 8 }, 0.27) / 60000;
+  assert.ok(min > 7.5 && min < 8.5, `about 8 minutes at 60 an hour, got ${min}`);
+  assert.equal(waitForRoom(o, { exp: 135, season: 2, seasonExp: 0 }, 60), 30000);     // nothing to send: the minimum
+  // ten minutes after the last update there's room for 8 EXP (no 6-minute margin eating the refill)
+  const got = allowed({ ...o, updatedMs: t0 }, { exp: 143, season: 2, seasonExp: 8 }, t0 + 10 * 60000);
+  assert.deepEqual([got.exp, got.seasonExp], [143, 8]);
+});

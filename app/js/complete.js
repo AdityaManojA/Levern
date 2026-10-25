@@ -5,6 +5,7 @@ import { fmtDate, todayStr as fmtToday } from './dates.js';
 import { summary } from './stats.js';
 import { mascot } from './mascot.js';
 import { sfx } from './sound.js';
+import { latePopup } from './latepop.js';
 
 export function completeQuest(id) {
   const q = store.findQuest(id); if (!q) return;
@@ -22,6 +23,11 @@ export function completeQuest(id) {
   const st = store.getState();
   if (!r.done) { play('tap', 0.8); mascot.react('suspicious', 'hmm… sure?'); return toast('Marked as not done'); }
   const after = before + 1;
+  // done late: still counts, for half the EXP, and a pop-up says so (with a wink); hitting the target still celebrates
+  if (r.late) {
+    latePopup(q);
+    if (after !== st.settings.target) { play('tap', 0.8); mascot.react('suspicious', 'a bit late…'); return; }
+  }
   const openToday = st.quests.filter(x => !x.done && x.due && x.due <= fmtToday()).length;
   // a quest that had steps: finishing the whole questline is a bigger moment than a single tick
   // reaching the daily target: a celebration sound, and Mochi jumps to say so (checked first, so it always happens)

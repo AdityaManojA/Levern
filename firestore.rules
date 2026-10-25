@@ -54,7 +54,8 @@ service cloud.firestore {
         allow delete: if isOwner();
       }
       // Requests and questions from the client ("Can you add a blog?"). The owner answers with a label.
-      match /requests/{request} {
+      // (Named requestId: a wildcard called `request` would hide Firestore's built-in request object.)
+      match /requests/{requestId} {
         allow read: if isOwner() || isClient();
         allow create: if isClient() &&
           request.resource.data.keys().hasOnly(['title','details','projectId','at','email']) &&
@@ -129,7 +130,7 @@ service cloud.firestore {
     // TaskFlow leaderboard: a name, all-time EXP and this season's EXP for people who chose to show on the
     // board (off by default). Anyone signed in can read it; only the owner writes their own entry.
     // EXP is worked out in the app (no server code on the free plan), so these rules cap how fast it can grow:
-    // a bucket of at most 60 EXP that refills 15 an hour. Real use earns less (30 a day from quests, 12 an hour
+    // a bucket of at most 60 EXP that refills 60 an hour. Real use earns less (30 a day from quests, 12 an hour
     // from nonstop focus). A new entry starts at most at 3000 EXP. Leaving the board hides the entry (name
     // cleared, hidden: true) rather than deleting it, so the cap can't be reset by leaving and rejoining.
     // Seasons are two weeks, ending every second Sunday at midnight India time (18:30 UTC), counted from
@@ -151,7 +152,7 @@ service cloud.firestore {
     }
     // n: the new entry, o: the entry as it was
     function tfBoardGrowth(n, o) {
-      let room = o.get('bank', 0) + 15 * (request.time.toMillis() - o.updated.toMillis()) / 3600000;
+      let room = o.get('bank', 0) + 60 * (request.time.toMillis() - o.updated.toMillis()) / 3600000;
       let delta = n.exp - o.exp;
       let sameSeason = n.season == o.get('season', 0);
       // past (each finished season's final score): unchanged, or, on moving to a new season, the season left

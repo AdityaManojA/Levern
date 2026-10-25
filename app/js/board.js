@@ -8,7 +8,7 @@
 // ({ '1': 120 }), so every finished season keeps its full standings (the rules only let that score be copied).
 //
 // EXP is worked out here in the app (the free Firebase plan has no server code), so firestore.rules limit how
-// fast an entry's EXP can grow: a bucket of up to 60 EXP that refills 15 an hour, and at most 3000 EXP for a
+// fast an entry's EXP can grow: a bucket of up to 60 EXP that refills 60 an hour, and at most 3000 EXP for a
 // new entry. Honest use never gets near that (30 a day from quests, 12 an hour from nonstop focus). The app
 // sends what the rules will accept, so a big jump (lowering the daily target raises past days' EXP) shows up
 // over the following hours instead of being refused.
@@ -18,7 +18,7 @@ import { summary, seasonExp, seasonOf } from './stats.js';
 import { shownName, isClean, tidyName } from './namefilter.js';
 
 const COL = 'taskflowBoard';
-export const BUCKET = 60, REFILL = 15, START_CAP = 3000, START_SEASON_CAP = 420;
+export const BUCKET = 60, REFILL = 60, START_CAP = 3000, START_SEASON_CAP = 420;
 export const isOn = () => !!getState().settings.board;
 export const myExp = () => { const st = getState(); return summary(st.history, st.sessions, st.settings.target).exp; };
 export const mySeasonExp = () => { const st = getState(); return seasonExp(st.history, st.sessions, st.settings.target); };
@@ -32,7 +32,7 @@ export function allowed(o, want, nowMs = Date.now()) {
     const exp = Math.min(want.exp, START_CAP);
     return { exp, seasonExp: Math.min(want.seasonExp, START_SEASON_CAP, exp), bank: 0 };
   }
-  const hrs = Math.max(0, (nowMs - o.updatedMs) / 3600000 - 0.1);
+  const hrs = Math.max(0, (nowMs - o.updatedMs - 20000) / 3600000);   // 20 s for clock differences
   const room = Math.floor(Math.min(BUCKET, (o.bank || 0) + REFILL * hrs) * 100) / 100;
   let exp = want.exp;
   if (exp - o.exp > room) exp = o.exp + Math.floor(room);
@@ -46,6 +46,12 @@ export function allowed(o, want, nowMs = Date.now()) {
 }
 
 let lastSent = '', pushT = null, catchUpT = null;
+// how long until the bucket holds what's still to send (at least 30 s, at most an hour)
+export function waitForRoom(o, want, bank) {
+  const need = Math.max(want.exp - o.exp, want.seasonExp - (o.season === want.season ? o.seasonExp : 0), 0);
+  const ms = (Math.min(need, BUCKET) - bank) / REFILL * 3600000 + 20000;
+  return Math.min(3600000, Math.max(30000, Math.ceil(ms)));
+}
 
 // the past scores to write: as they are, plus the season just finished when the entry moves on to a new one
 export function carryPast(o, season) {
@@ -58,7 +64,7 @@ async function current(F, ref) {
   const snap = await F.getDoc(ref);
   if (!snap.exists()) return null;
   const d = snap.data();
-  return { exp: d.exp || 0, season: d.season || 0, seasonExp: d.seasonExp || 0, bank: d.bank || 0, updatedMs: d.updated?.toMillis?.() ?? 0, hidden: !!d.hidden, past: d.past || {} };
+  return { name: d.name || '', exp: d.exp || 0, season: d.season || 0, seasonExp: d.seasonExp || 0, bank: d.bank || 0, updatedMs: d.updated?.toMillis?.() ?? 0, hidden: !!d.hidden, past: d.past || {} };
 }
 
 // write (or refresh) my entry, only when something on it changed
@@ -72,11 +78,14 @@ export async function publish() {
   const { db, F } = await account.database();
   const ref = F.doc(db, COL, fu.uid);
   const o = await current(F, ref), got = allowed(o, want), past = carryPast(o, want.season);
-  await F.setDoc(ref, { name, exp: got.exp, season: want.season, seasonExp: got.seasonExp, bank: got.bank, hidden: false, updated: F.serverTimestamp(), ...(Object.keys(past).length ? { past } : {}) });
-  // all of it went up: done until something changes. Otherwise send the rest when the limit allows.
   clearTimeout(catchUpT);
-  if (got.exp === want.exp && got.seasonExp === want.seasonExp) lastSent = sig;
-  else { lastSent = ''; catchUpT = setTimeout(publishSoon, 60 * 60 * 1000); }
+  const done = got.exp === want.exp && got.seasonExp === want.seasonExp;
+  // nothing new can go up yet: leave the entry alone (writing would restart the bucket's refill clock and lose it)
+  const same = o && !o.hidden && o.name === name && o.season === want.season && o.exp === got.exp && o.seasonExp === got.seasonExp && JSON.stringify(o.past) === JSON.stringify(past);
+  if (!same) await F.setDoc(ref, { name, exp: got.exp, season: want.season, seasonExp: got.seasonExp, bank: got.bank, hidden: false, updated: F.serverTimestamp(), ...(Object.keys(past).length ? { past } : {}) });
+  // all of it went up: done until something changes. Otherwise send the rest as soon as the bucket has room for it.
+  if (done) lastSent = sig;
+  else { lastSent = ''; catchUpT = setTimeout(publishSoon, waitForRoom(same ? o : { ...got, updatedMs: Date.now() }, want, same ? o.bank : got.bank)); }
   return true;
 }
 

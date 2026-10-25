@@ -2,8 +2,17 @@
 // history: [{ questId, title, tier, doneAt }]   sessions: [{ questId, minutes, endedAt }]
 import { toStr, todayStr, addDays, fromStr } from './dates.js';
 
-// Daily EXP (design brief): 20 x share of the daily target done, +10 bonus when the target is hit.
-export const dayExp = (count, target) => Math.round(20 * Math.min(1, count / target)) + (count >= target ? 10 : 0);
+// Daily EXP (design brief): 20 x share of the daily target done, +10 bonus when the target is hit. A quest finished
+// after it was due counts as half (LATE) toward the share: on time pays more. The bonus goes by the quests done.
+// count: the day's quests weighed that way; done: how many were done (defaults to count)
+export const LATE = 0.5;
+export const dayExp = (count, target, done = count) => Math.round(20 * Math.min(1, count / target)) + (done >= target ? 10 : 0);
+// each day's quests weighed for EXP: 1 on time, LATE when done after it was due (history entries marked late)
+export function weightsByDay(history) {
+  const m = new Map();
+  for (const h of history) { const d = toStr(new Date(h.doneAt)); m.set(d, (m.get(d) || 0) + (h.late ? LATE : 1)); }
+  return m;
+}
 // Focus EXP: 1 point per 5 focused minutes (a 25 min session = 5 EXP).
 export const focusExp = minutes => Math.floor(minutes / 5);
 
@@ -26,19 +35,19 @@ export function streaks(history, target, now = new Date()) {
 }
 
 export function lastDays(history, sessions, target, n, now = new Date()) {
-  const by = countsByDay(history), fm = new Map();
+  const by = countsByDay(history), w = weightsByDay(history), fm = new Map();
   for (const s of sessions) { const d = toStr(new Date(s.endedAt)); fm.set(d, (fm.get(d) || 0) + s.minutes); }
   const today = todayStr(now);
   return Array.from({ length: n }, (_, i) => {
     const date = addDays(today, i - n + 1), count = by.get(date) || 0, focus = fm.get(date) || 0;
-    return { date, count, focus, exp: (count ? dayExp(count, target) : 0) + focusExp(focus) };
+    return { date, count, focus, exp: (count ? dayExp(w.get(date), target, count) : 0) + focusExp(focus) };
   });
 }
 
 export function summary(history, sessions, target, now = new Date()) {
-  const by = countsByDay(history);
+  const by = countsByDay(history), w = weightsByDay(history);
   let exp = 0;
-  for (const c of by.values()) exp += dayExp(c, target);
+  for (const [d, c] of by) exp += dayExp(w.get(d), target, c);
   const focusMin = sessions.reduce((a, s) => a + s.minutes, 0);
   for (const s of sessions) exp += focusExp(s.minutes);
   const today = todayStr(now), month = today.slice(0, 7);
@@ -50,7 +59,7 @@ export function summary(history, sessions, target, now = new Date()) {
   const todayFocus = sessions.filter(s => toStr(new Date(s.endedAt)) === today).reduce((a, s) => a + s.minutes, 0);
   return {
     totalDone: history.length, exp, focusMin, todayCount, todayFocus,
-    todayExp: (todayCount ? dayExp(todayCount, target) : 0) + sessions.filter(s => toStr(new Date(s.endedAt)) === today).reduce((a, s) => a + focusExp(s.minutes), 0),
+    todayExp: (todayCount ? dayExp(w.get(today), target, todayCount) : 0) + sessions.filter(s => toStr(new Date(s.endedAt)) === today).reduce((a, s) => a + focusExp(s.minutes), 0),
     keptThisMonth, daysInMonthSoFar, tiers, ...streaks(history, target, now),
   };
 }
@@ -68,7 +77,8 @@ export const seasonRange = n => ({ start: n <= 1 ? FIRST_SEASON_FROM : SEASON_EP
 export function seasonExp(history, sessions, target, n = seasonOf()) {
   const { start, end } = seasonRange(n), inside = ms => ms >= start && ms < end;
   let exp = 0;
-  for (const [d, c] of countsByDay(history)) if (inside(fromStr(d).getTime())) exp += dayExp(c, target);
+  const w = weightsByDay(history);
+  for (const [d, c] of countsByDay(history)) if (inside(fromStr(d).getTime())) exp += dayExp(w.get(d), target, c);
   for (const s of sessions) if (inside(s.endedAt)) exp += focusExp(s.minutes);
   return exp;
 }

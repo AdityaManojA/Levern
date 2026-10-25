@@ -2,6 +2,14 @@
 // the first one is the version shown at the bottom of Settings.
 export const CHANGELOG = [
   {
+    v: '1.08', date: '2026-10-26', title: 'On time pays more',
+    items: [
+      'A quest finished after it was due earns half the EXP. Finish on time to get it all (the daily target bonus still counts).',
+      'Tick an overdue quest and a pop-up tells you so, with a wink.',
+      'Fixed: the leaderboard could take a long time to show EXP you’d just earned. It now catches up within minutes.',
+    ],
+  },
+  {
     v: '1.07', date: '2026-10-25', title: 'An aura for the top three',
     items: [
       'Finish a season in the top three and you wear an aura all next season: a turning gold, silver or aurora ring, a shimmering name and a sparkle, on the leaderboard and your profile. It passes to the new top three every season.',

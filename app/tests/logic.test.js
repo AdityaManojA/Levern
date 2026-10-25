@@ -144,3 +144,17 @@ test('no example quests: a new list starts empty, and old ones are dropped when 
   S.init(memoryAdapter({ v: 3, quests: [{ id: 's', title: 'Book dentist', sample: true, createdAt: 1 }, { id: 'm', title: 'Mine', createdAt: 1 }], history: [], sessions: [], settings: {} }));
   assert.deepEqual(S.getState().quests.map(x => x.id), ['m']);
 });
+
+test('a quest done after it was due counts half toward the day\'s EXP', async () => {
+  const { dayExp, summary, LATE } = await import('../js/stats.js');
+  assert.equal(LATE, 0.5);
+  const day = Date.UTC(2026, 9, 26, 6);
+  const h = (late, i) => ({ questId: 'q' + i, tier: 3, doneAt: day + i * 60000, ...(late ? { late: true } : {}) });
+  // target 5: one on time = 4 EXP, one late = 2 EXP
+  assert.equal(summary([h(false, 1)], [], 5, new Date(day)).exp, dayExp(1, 5));
+  assert.equal(summary([h(false, 1)], [], 5, new Date(day)).exp, 4);
+  assert.equal(summary([h(true, 1)], [], 5, new Date(day)).exp, 2);
+  // five done, two of them late: the share counts 4 of 5 (16 EXP), and the target bonus still comes (+10)
+  const five = [h(false, 1), h(false, 2), h(false, 3), h(true, 4), h(true, 5)];
+  assert.equal(summary(five, [], 5, new Date(day)).exp, 26);
+});

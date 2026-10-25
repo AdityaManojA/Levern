@@ -200,7 +200,9 @@ export function toggleDone(id) {
     }
     // a repeating quest counts once per occurrence: once its next date is ahead, today's is already done
     if (q.repeat && q.due && q.due > todayStr()) return { done: false, blocked: true, next: q.due };
-    s.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: Date.now() });
+    // done after it was due: it counts for less EXP (stats.js LATE), and the app says so
+    const late = dueStatus(q) === 'overdue';
+    s.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: Date.now(), ...(late ? { late: true } : {}) });
     noteNotif(s, q.id, 'done');
     if (q.repeat && q.due) {
       const next = rollForward(q.due, q.repeat);
@@ -208,11 +210,11 @@ export function toggleDone(id) {
       q.subtasks.forEach(st => { st.done = false; });
       if (q.remind) q.remind = q.remind.multi ? { ...q.remind, at: nextMultiAt(q.remind.multi, at(q.due, '00:00') - 1), fired: false, dismissed: false } : q.remind.offset != null ? { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false } : null;
       if (q.alerts) { q.remind = null; syncNearest(q, at(q.due, '00:00') - 1); }   // the alerts come back for the next occurrence
-      return { done: true, next };
+      return { done: true, next, late };
     }
     q.done = true; q.doneAt = Date.now();
     if (q.remind) q.remind.dismissed = true;
-    return { done: true };
+    return { done: true, late };
   });
 }
 
