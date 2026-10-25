@@ -1,12 +1,12 @@
 // Quest operations for the API (server side), matching what the app's store does. Pure: they take the
 // data document and a clock, and change the document in place.
 import { todayStr, at, addDays } from './dates.js';
-import { rollForward } from './recur.js';
+import { rollForward, anchored } from './recur.js';
 import { nextMultiAt } from './multi.js';
 import { parseQuest } from './parse.js';
 
 const rid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-const FREQS = ['daily', 'alternate', 'weekdays', 'weekly', 'monthly'];
+const FREQS = ['daily', 'alternate', 'weekdays', 'weekly', 'monthly', 'yearly'];
 const isDate = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(new Date(s + 'T00:00:00'));
 const isTime = s => typeof s === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
 export const reminderBase = q => q.due ? at(q.due, q.time || '09:00') : null;
@@ -47,6 +47,7 @@ export function createQuest(doc, body, now = Date.now()) {
     subtasks: (fields.subtasks || []).map(s => ({ ...s, tier: s.tier ?? fields.tier ?? 3 })), repeat: fields.due ? fields.repeat || null : null,
     remind: null, done: false, doneAt: null, createdAt: now, updatedAt: now };
   if (q.repeat && !q.due) q.due = todayStr(new Date(now));
+  q.repeat = anchored(q.repeat, q.due);
   doc.quests.push(q);
   if (body.reminder) setReminder(q, body.reminder, now);
   return q;
@@ -57,6 +58,7 @@ export function updateQuest(q, body, now = Date.now()) {
   const dueChanged = ('due' in f && f.due !== q.due) || ('time' in f && f.time !== q.time);
   Object.assign(q, f);
   if (!q.due) { q.time = null; q.repeat = null; }
+  if ('due' in f || 'repeat' in f) q.repeat = anchored(q.repeat, q.due);
   if (dueChanged && q.remind && q.remind.offset != null) {
     if (q.due) q.remind = { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false };
     else q.remind.offset = null;

@@ -61,6 +61,7 @@ const REPEAT_RULES = [
   ['weekdays', /\bweekdays?\b|\bon\s+weekdays\b|\bduring the week\b|\bmon(?:day)?\s*(?:-|to|through|until)\s*fri(?:day)?\b/i],
   ['weekly', /\b(?:every|each|per)\s+week\b|\bweekly\b/i],
   ['monthly', /\b(?:every|each|per)\s+month\b|\bmonthly\b/i],
+  ['yearly', /\b(?:every|each|per)\s+year\b|\byearly\b|\bannually\b|\bonce a year\b/i],
 ];
 // "every Monday, Wednesday and Friday"
 const DAY_LIST_RE = new RegExp(`\\b(?:every|each|on)\\s+(${DAY_NC}(?:\\s*(?:,|and|&|/|\\+|or)\\s*${DAY_NC})+)\\b`, 'i');

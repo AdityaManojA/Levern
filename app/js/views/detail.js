@@ -33,7 +33,7 @@ export function render(params) {
       <button class="chk${q.done ? ' on' : ''}" data-act="toggle" data-id="${q.id}" aria-label="${q.done ? 'Mark not done' : 'Complete'}"></button>
       <div style="flex:1;min-width:0">
         <input class="title-in" value="${esc(q.title)}" data-input="title" aria-label="Title" maxlength="140">
-        <div class="small" style="color:var(--ink)">${esc(tierLabel(q.tier))}${q.due ? ` · <span style="${st === 'overdue' ? 'color:var(--red);font-weight:700' : ''}">${esc(dueLabel(q))}</span>` : ''}${q.repeat ? ' · ' + esc(describe(q.repeat)) : ''}${q.done ? ' · done' : ''}</div>
+        <div class="small" style="color:var(--ink)">${esc(tierLabel(q.tier))}${q.due ? ` · <span style="${st === 'overdue' ? 'color:var(--red);font-weight:700' : ''}">${esc(dueLabel(q))}</span>` : ''}${q.repeat ? ' · ' + esc(describe(q.repeat, q.due)) : ''}${q.done ? ' · done' : ''}</div>
       </div>
     </div>
     ${q.repeat && history ? `<div class="small" style="margin:6px 2px 0">Completed ${history} time${history === 1 ? '' : 's'}. Ticking it moves it to the next date.</div>` : ''}
@@ -53,6 +53,7 @@ export function render(params) {
 
     <label class="lbl" for="repeat">Repeat</label>
     <select class="field" id="repeat" data-change="repeat">${REPEATS.map(([k, l]) => `<option value="${k}" ${(q.repeat?.freq || (q.goal ? 'goal' : '')) === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    ${q.repeat && q.due && (q.repeat.freq === 'monthly' || q.repeat.freq === 'yearly') ? `<div class="small" style="margin:6px 0 10px">${esc(describe(q.repeat, q.due))}. To repeat on another date, change the due date.</div>` : ''}
     ${q.goal ? goalBlock(q) : ''}
 
     <label class="lbl">Reminder</label>
@@ -139,7 +140,7 @@ export function onChange(el) {
   if (k === 'due') updateQuest(q.id, el.value ? { due: el.value } : { due: null, time: null, repeat: null });
   if (k === 'time') updateQuest(q.id, { time: el.value || null });
   if (k === 'repeat' && el.value === 'goal') { updateQuest(q.id, { goal: q.goal || { target: GOAL_DEFAULT, log: [] }, repeat: null, due: null, time: null, alerts: undefined }); toast('Weekly goal set. Tick it each time you do it.'); }
-  else if (k === 'repeat') { updateQuest(q.id, { repeat: el.value ? { freq: el.value } : null, goal: null }); if (el.value) toast(`Repeats ${describe({ freq: el.value }).toLowerCase()}`); }
+  else if (k === 'repeat') { updateQuest(q.id, { repeat: el.value ? { freq: el.value } : null, goal: null }); if (el.value) { const d = describe({ freq: el.value }, q.due); toast(`Repeats ${d[0].toLowerCase() + d.slice(1)}`); } }
   if (k === 'sub-tier') updateSubtask(q.id, el.dataset.sid, { tier: +el.value });
 }
 // typing saves quietly (no re-render, so the cursor stays put)

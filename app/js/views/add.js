@@ -3,7 +3,7 @@
 import { addQuest, tierLabel, TIER_COLORS, findQuest, getState } from '../store.js';
 import { parseQuest } from '../parse.js';
 import { fmtDate, fmtTime, fmtStamp } from '../dates.js';
-import { REPEATS, dayChips } from '../recur.js';
+import { REPEATS, dayChips, describe } from '../recur.js';
 import { timeWheelHTML, setTimeWheel } from '../timewheel.js';
 import { sheet, esc, toast, play, ICON } from '../ui.js';
 import { speechSupported, speechBroken, browserName, listen, speechError } from '../speech.js';
@@ -83,7 +83,10 @@ export function openAdd(prefill = {}) {
     $f('[name=due]').value = f.due || '';
     setTimeWheel($f('[data-tw]'), f.time || '', !f.due);
     $f('[name=repeat]').value = f.repeat?.freq || (f.goal ? 'goal' : '');
-    $f('[data-days]').innerHTML = f.repeat?.freq === 'custom' ? dayChips(f.repeat.days) : f.goal ? goalStepper(f.goal.target) : '';
+    // monthly and yearly repeats keep to the due date's day: say which, so the date is the one to pick
+    const onDate = (f.repeat?.freq === 'monthly' || f.repeat?.freq === 'yearly') && f.due;
+    $f('[data-days]').innerHTML = f.repeat?.freq === 'custom' ? dayChips(f.repeat.days) : f.goal ? goalStepper(f.goal.target)
+      : onDate ? `<div class="small" style="margin:6px 0 10px">${esc(describe({ freq: f.repeat.freq }, f.due))}. To repeat on another date, change the due date.</div>` : '';
     $f('[data-multi]').innerHTML = f.repeat && f.due ? multiBlock(f.multi) : '';
     $f('[data-subs]').innerHTML = f.subtasks.map((t, i) => `<span class="chip">${esc(t)} <button type="button" data-subdel="${i}" aria-label="Remove" style="border:none;background:none;font-weight:700">×</button></span>`).join('');
   }

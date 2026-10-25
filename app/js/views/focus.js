@@ -1,22 +1,33 @@
 // Focus timer (Pomodoro). Pick a quest, focus for N minutes, earn EXP (1 per 5 min), take a break.
+// Custom: run it for a chosen time (hours and minutes) or until a chosen time of day.
 // The timer runs off timestamps saved in the store, so it survives reloads and background tabs.
 import { getState, findQuest, startTimer, pauseTimer, resumeTimer, stopTimer, timerElapsed, logSession, sortQuests, tierLabel, TIER_COLORS, setSetting } from '../store.js';
 import { focusExp } from '../stats.js';
-import { toStr } from '../dates.js';
+import { toStr, minutesUntil } from '../dates.js';
 import { swap } from '../motion.js';
 import { esc, ICON, toast, play } from '../ui.js';
 import { show } from '../notify.js';
 import { mascot } from '../mascot.js';
+import { timeWheelHTML, fmtTime } from '../timewheel.js';
 
 let tick = null, pickQuest = '', pickMode = 'focus', lastRunning = null;
-const fmt = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+// the custom length, while picking: { kind: 'for' | 'until', min: minutes, until: 'HH:MM' }, or null for the chips
+let custom = null;
+const MAX_MIN = 12 * 60;
+const customMinutes = () => !custom ? 0 : custom.kind === 'until' ? minutesUntil(custom.until) : custom.min;
+const lenLabel = m => { m = Math.round(m); const h = Math.floor(m / 60); return h ? `${h} h${m % 60 ? ` ${m % 60} min` : ''}` : `${m} min`; };
+// mm:ss, or h:mm:ss for a custom timer of an hour or more
+const fmt = ms => {
+  const s = Math.max(0, Math.ceil(ms / 1000)), p = n => String(n).padStart(2, '0');
+  return s >= 3600 ? `${Math.floor(s / 3600)}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}` : `${p(Math.floor(s / 60))}:${p(s % 60)}`;
+};
 
 export function render(params) {
   const st = getState(), s = st.settings, t = st.timer;
   if (params.quest && !t) pickQuest = params.quest;
   const open = sortQuests(st.quests.filter(q => !q.done), 'smart');
   if (pickQuest && !findQuest(pickQuest)) pickQuest = '';
-  const mode = t ? t.mode : pickMode, minutes = t ? t.minutes : (mode === 'focus' ? s.focusMin : s.breakMin);
+  const mode = t ? t.mode : pickMode, minutes = t ? t.minutes : custom ? customMinutes() : (mode === 'focus' ? s.focusMin : s.breakMin);
   const total = minutes * 60000, left = t ? total - timerElapsed(t) : total;
   const q = t ? findQuest(t.questId) : findQuest(pickQuest);
   const today = toStr(new Date());
@@ -29,7 +40,16 @@ export function render(params) {
   const running = !!t, was = lastRunning ?? running;
   let i = 0;
   const zc = (whenRunning, html) => `<div class="zc${(whenRunning ? was : !was) ? '' : ' out'}" data-z="${whenRunning === running ? 1 : 0}" style="--i:${i++}"><div>${html}</div></div>`;
-  const chips = (mode === 'focus' ? [15, 25, 50] : [5, 10, 15]).map(m => `<button class="chip chip-btn${m === minutes ? ' on' : ''}" data-act="flen" data-m="${m}">${m} min</button>`).join('');
+  const chips = (mode === 'focus' ? [15, 25, 50] : [5, 10, 15]).map(m => `<button class="chip chip-btn${!custom && m === minutes ? ' on' : ''}" data-act="flen" data-m="${m}">${m} min</button>`).join('')
+    + `<button class="chip chip-btn${custom ? ' on' : ''}" data-act="fcustom" aria-expanded="${!!custom}">Custom</button>`;
+  const ch = custom ? Math.floor(custom.min / 60) : 0, cm = custom ? custom.min % 60 : 0;
+  const customBox = !custom ? '' : `<div class="fcustom">
+      <div class="seg"><button class="${custom.kind === 'for' ? 'on' : ''}" data-act="fckind" data-k="for" aria-pressed="${custom.kind === 'for'}">For</button><button class="${custom.kind === 'until' ? 'on' : ''}" data-act="fckind" data-k="until" aria-pressed="${custom.kind === 'until'}">Until</button></div>
+      ${custom.kind === 'for'
+        ? `<div class="fc-len"><label><input class="field" type="number" inputmode="numeric" min="0" max="12" value="${ch}" data-change="fch" aria-label="Hours"> h</label><label><input class="field" type="number" inputmode="numeric" min="0" max="59" step="5" value="${cm}" data-change="fcm" aria-label="Minutes"> min</label></div>`
+        : `<div class="fc-until">${timeWheelHTML(custom.until, { name: 'funtil', label: 'Ends at', attrs: 'data-change="funtil"' })}</div>`}
+      <div class="small">${custom.kind === 'for' ? `Ends at ${fmtTime(hhmm(endsAt(minutes)))}` : `${lenLabel(minutes)} from now`}</div>
+    </div>`;
   return `
     <div class="h-sub">${running ? (mode === 'focus' ? 'Breathe. One thing at a time.' : 'Rest your eyes.') : 'One thing at a time'}</div>
     <h1 class="h-title">Focus</h1>
@@ -38,11 +58,11 @@ export function render(params) {
       <div class="timer">
         <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}" fill="none" style="stroke:var(--paper)" stroke-width="7"/>
           <circle data-ring cx="50" cy="50" r="${R}" fill="none" stroke="${mode === 'focus' ? 'var(--p1)' : 'var(--sky)'}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - left / total)}"/></svg>
-        <div class="timer-in"><div class="t" data-left role="timer" aria-live="off">${fmt(left)}</div><div class="m">${t ? (t.pausedAt ? 'Paused' : mode === 'focus' ? 'Focusing' : 'Break') : mode === 'focus' ? `${minutes} min focus` : `${minutes} min break`}</div></div>
+        <div class="timer-in"><div class="t" data-left role="timer" aria-live="off">${fmt(left)}</div><div class="m">${t ? (t.pausedAt ? 'Paused' : mode === 'focus' ? 'Focusing' : 'Break') : `${lenLabel(minutes)} ${mode === 'focus' ? 'focus' : 'break'}`}</div></div>
       </div>
       ${zc(true, `<div class="small" style="padding-bottom:12px">${q ? `On: <b style="color:var(--ink)">${esc(q.title)}</b>` : mode === 'focus' ? 'Just focusing' : 'Stretch, drink water, look away from the screen.'}</div>`)}
       ${mode === 'focus' ? zc(false, `<div style="padding-bottom:12px"><select class="field" data-change="fquest" aria-label="Quest to focus on"><option value="">Just focus (no quest)</option>${open.map(o => `<option value="${esc(o.id)}" ${o.id === pickQuest ? 'selected' : ''}>${esc(o.title)}</option>`).join('')}</select></div>`) : ''}
-      ${zc(false, `<div class="chips" style="justify-content:center;padding-bottom:12px">${chips}</div>`)}
+      ${zc(false, `<div class="chips" style="justify-content:center;padding-bottom:12px">${chips}</div>${customBox}`)}
       <div class="row-btns fbtns">
         ${!t ? `<button class="btn dark" data-key="fb-start" data-act="fstart">${ICON.play} Start</button>`
           : `${t.pausedAt ? `<button class="btn dark" data-key="fb-resume" data-act="fresume">${ICON.play} Resume</button>` : `<button class="btn dark" data-key="fb-pause" data-act="fpause">${ICON.pause} Pause</button>`}<button class="btn white" data-key="fb-stop" data-act="fstop">${mode === 'focus' ? 'Stop' : 'Skip break'}</button>`}
@@ -60,7 +80,7 @@ export function render(params) {
 
 function finish(early) {
   const t = getState().timer; if (!t) return;
-  const minutes = early ? Math.floor(timerElapsed(t) / 60000) : t.minutes;
+  const minutes = early ? Math.floor(timerElapsed(t) / 60000) : Math.round(t.minutes);
   if (!early) pickMode = t.mode === 'focus' ? 'break' : 'focus';   // set before the re-render below
   else pickMode = t.mode;
   stopTimer();
@@ -113,12 +133,35 @@ setInterval(checkTimer, 5000);
 
 export const actions = {
   fmode: el => { pickMode = el.dataset.m; rerender(); },
-  flen: el => { setSetting(pickMode === 'focus' ? 'focusMin' : 'breakMin', +el.dataset.m); play('click', 0.4); },
-  fstart: () => { const s = getState().settings; startTimer(pickMode === 'focus' ? pickQuest || null : null, pickMode, pickMode === 'focus' ? s.focusMin : s.breakMin); play('click'); if (pickMode === 'focus') mascot.focusMode(true); },
+  flen: el => { custom = null; setSetting(pickMode === 'focus' ? 'focusMin' : 'breakMin', +el.dataset.m); play('click', 0.4); rerender(); },
+  // Custom opens with the length the chips had, and an end time that far from now
+  fcustom: () => {
+    const s = getState().settings, m = pickMode === 'focus' ? s.focusMin : s.breakMin;
+    custom = custom ? null : { kind: 'for', min: m, until: hhmm(endsAt(m)) };
+    play('click', 0.4); rerender();
+  },
+  fckind: el => { custom = { ...custom, kind: el.dataset.k }; play('click', 0.4); rerender(); },
+  fstart: () => {
+    const s = getState().settings, m = custom ? customMinutes() : pickMode === 'focus' ? s.focusMin : s.breakMin;
+    if (!(m >= 1)) { toast(custom?.kind === 'until' ? 'Pick a time at least a minute from now' : 'Set at least 1 minute'); return; }
+    startTimer(pickMode === 'focus' ? pickQuest || null : null, pickMode, Math.min(MAX_MIN, m)); play('click'); if (pickMode === 'focus') mascot.focusMode(true);
+  },
   fpause: () => pauseTimer(),
   fresume: () => resumeTimer(),
   fstop: () => finish(true),
 };
-export function onChange(el) { if (el.dataset.change === 'fquest') pickQuest = el.value; }
+export function onChange(el) {
+  const k = el.dataset.change;
+  if (k === 'fquest') pickQuest = el.value;
+  if (!custom) return;
+  if (k === 'fch' || k === 'fcm') {
+    const box = el.closest('.fc-len'), [h, m] = [...box.querySelectorAll('input')].map(i => Math.max(0, Math.floor(+i.value || 0)));
+    custom = { ...custom, min: Math.min(MAX_MIN, h * 60 + m) };
+    rerender();
+  }
+  if (k === 'funtil' && el.value) { custom = { ...custom, until: el.value }; rerender(); }
+}
+const endsAt = m => new Date(Date.now() + m * 60000);
+const hhmm = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 function rerender() { swap(render({})); settle(document.getElementById('view')); }
 export { tierLabel, TIER_COLORS };

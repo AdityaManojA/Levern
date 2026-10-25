@@ -68,7 +68,7 @@ export function questPanel(q, now = new Date()) {
   const info = [
     ['Priority', esc(tierLabel(q.tier))],
     q.due ? ['Due', esc(dueLabel(q, now))] : null,
-    q.repeat ? ['Repeats', esc(describe(q.repeat))] : null,
+    q.repeat ? ['Repeats', esc(describe(q.repeat, q.due))] : null,
     q.remind && !q.remind.dismissed && !q.done ? ['Reminder', esc(fmtStamp(q.remind.at))] : null,
     q.sketches?.length ? ['Sketches', `${q.sketches.length}`] : null,
   ].filter(Boolean);

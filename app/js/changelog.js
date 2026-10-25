@@ -2,6 +2,14 @@
 // the first one is the version shown at the bottom of Settings.
 export const CHANGELOG = [
   {
+    v: '1.02', date: '2026-10-25', title: 'Custom timers, yearly repeats and the back button',
+    items: [
+      'Focus: a Custom timer. Run it for a set time (hours and minutes) or until a time you pick. Long timers show hours.',
+      'Repeats: Every year, and monthly or yearly repeats keep to their date (the 31st stays the 31st, or the month’s last day).',
+      'Your phone’s back button or back swipe closes the New quest sheet, the reminders panel and dialogs instead of leaving the page.',
+    ],
+  },
+  {
     v: '1.01', date: '2026-10-25', title: 'Fixes: Cookie’s missing moves',
     items: [
       'Cookie has his own art for 28 more moves: the peek over the screen edge, tail chase, sneeze, boop, heart eyes, a dramatic cry, melting into a nap, the loaf, squish, sulk, cheer and more.',

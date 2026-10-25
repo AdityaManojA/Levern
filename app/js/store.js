@@ -2,7 +2,7 @@
 // functions below, which save through the storage adapter and notify subscribers.
 import { localAdapter } from './storage.js';
 import { todayStr, addDays, at, dueTimestamp, dueStatus, toStr } from './dates.js';
-import { rollForward } from './recur.js';
+import { rollForward, anchored } from './recur.js';
 import { nextMultiAt } from './multi.js';
 import { cleanSketches } from './ink.js';
 import { DEFAULT_ALERTS, cleanAlerts } from './alerts.js';
@@ -180,7 +180,7 @@ export const tierLabel = t => `P${t + 1} · ${state.settings.tierNames[t]}`;
 export function addQuest(data) {
   const q = { id: uid(), title: data.title, tier: data.tier ?? 3, due: data.due || null, time: data.time || null, notes: data.notes || '',
     subtasks: (data.subtasks || []).map(s => typeof s === 'string' ? { id: uid(), title: s, done: false, tier: data.tier ?? 3 } : s),
-    repeat: data.repeat || null, remind: null, done: false, doneAt: null, createdAt: Date.now(), sample: false };
+    repeat: anchored(data.repeat, data.due) || null, remind: null, done: false, doneAt: null, createdAt: Date.now(), sample: false };
   // a quest with a due date always reminds at its due time, unless its alerts say otherwise.
   // A reminder set for several times a day is kept as it is (the default alert used to replace it with one).
   if (q.due && !data.remind?.multi) q.alerts = cleanAlerts(data.alerts ?? DEFAULT_ALERTS);
@@ -219,6 +219,7 @@ export function updateQuest(id, patch, opts) {
     Object.assign(q, patch);
     state.seeded = false;
     if (q.repeat && !q.due) q.due = todayStr();
+    if ('due' in patch || 'repeat' in patch) q.repeat = anchored(q.repeat, q.due);   // a monthly/yearly repeat keeps to the new date
     // a reminder set relative to the due date moves with it
     if (dueChanged && q.remind && q.remind.offset != null) {
       if (q.due) q.remind = { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false };

@@ -43,6 +43,12 @@ import * as account from './account.js';
 import * as cloud from './cloud.js';
 import { initTimeWheels } from './timewheel.js';
 initTimeWheels();   // the iOS-style time pickers, app-wide
+import { startBack } from './back.js';
+// the phone's back button or gesture closes the sheet, the reminders panel or a dialog before leaving the page
+startBack([
+  { el: $('#sheet'), isOpen: el => el.classList.contains('open'), close: () => sheet.close() },
+  { el: $('#rpanel'), isOpen: el => el.classList.contains('open'), close: () => remindersPanel.close() },
+]);
 
 store.init();
 
