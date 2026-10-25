@@ -2,7 +2,7 @@
 // is someone else's, from their published profile when they made it public. A private one shows only their board
 // name and rank.
 import * as profile from '../profile.js';
-import { isOg, entries, topThreeFrom } from '../board.js';
+import { isOg, entries, topThreeFrom, OG_UNTIL } from '../board.js';
 import { rankChip, rankChipNamed, ogChip, auraOf, auraName, auraSpark } from './common.js';
 import { TIER_COLORS, getState } from '../store.js';
 import { addDays } from '../dates.js';
@@ -51,7 +51,7 @@ function full(p, me) {
   return `
     <div class="card pf-top${auraOf(place, seasonOf() - 1).cls}"${auraOf(place, seasonOf() - 1).title}>${auraSpark(place)}
       <div class="pf-cat ${p.cat === 'cookie' ? 'cookie' : ''}" aria-hidden="true"></div>
-      <div class="pf-id"><h2>${auraName(place, esc(p.name || 'No name'))}${ogChip((p.seasons || []).some(x => x.s === 1))}</h2>
+      <div class="pf-id"><h2>${auraName(place, esc(p.name || 'No name'))}${ogChip((p.seasons || []).some(x => x.s >= 1 && x.s <= OG_UNTIL))}</h2>
         <div class="small">Since ${esc(month(p.since))} · Season ${p.season}</div>
         <div class="pf-ranks">${rankChip(p.seasonExp)}<span class="small">best ever</span>${rankChipNamed(p.bestRank)}</div></div>
     </div>

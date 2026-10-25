@@ -185,8 +185,8 @@ export function rankChip(exp) {
 export const auraOf = (place, season) => place ? { cls: ` aura aura-${place}`, title: ` title="#${place} in Season ${season}"` } : { cls: '', title: '' };
 export const auraName = (place, html) => place ? `<span class="aura-name">${html}</span>` : html;
 export const auraSpark = place => place ? '<i class="aura-sp" aria-hidden="true"></i>' : '';
-// OG: there since Season 1. A tiny badge by the name (the day ones)
-export const ogChip = on => on ? '<span class="og" title="OG: here since Season 1" aria-label="OG, here since Season 1">OG</span>' : '';
+// OG: there from the start (on the board in Seasons 1 to 3). A tiny badge by the name (the day ones)
+export const ogChip = on => on ? '<span class="og" title="OG: here from the start" aria-label="OG, here from the start">OG</span>' : '';
 export function rankChipNamed(label) {
   const base = String(label).startsWith('Master') ? 'Master' : label, n = RANKS.findIndex(([name]) => name === base) + 1;
   if (!n) return '';

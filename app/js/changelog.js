@@ -12,7 +12,7 @@ export const CHANGELOG = [
   {
     v: '1.06', date: '2026-10-25', title: 'For the day ones',
     items: [
-      'An OG badge for everyone who was on the leaderboard in Season 1: by your name on the board and on your profile. Thank you for being here from the start.',
+      'An OG badge for everyone on the leaderboard in the first seasons (Seasons 1 to 3): by your name on the board and on your profile. Thank you for being here from the start.',
     ],
   },
   {

@@ -135,9 +135,11 @@ export function topThreeFrom(list, now = seasonOf()) {
   if (now < 2) return {};
   return Object.fromEntries(standings(list, now - 1, now).filter(r => r.exp > 0).slice(0, 3).map((r, i) => [r.id, i + 1]));
 }
-// OG: someone who was on the board in Season 1, the first season (its score is kept in past when the entry moves
-// on; an entry nobody has opened since still says season 1). Shown as a small badge by their name.
-export const isOg = e => !!e && (e.past?.[1] !== undefined || e.season === 1);
+// OG: someone who was on the board in the first seasons, while TaskFlow was still being tested (Seasons 1 to 3, OG_UNTIL):
+// a season's score is kept in past when the entry moves on, and an entry nobody has opened since still says its
+// season. People who join after that don't get it; the ones who have it keep it. Shown as a small badge by the name.
+export const OG_UNTIL = 3;
+export const isOg = e => !!e && ((e.season >= 1 && e.season <= OG_UNTIL) || Object.keys(e.past || {}).some(k => +k >= 1 && +k <= OG_UNTIL));
 // One board, best first: [{ id, name, exp, me }]. which: 'legacy' (all-time EXP), 'season' (this season) or a past
 // season's number (its final scores: kept in past, or still the season's score if the entry hasn't moved on).
 export function standings(list, which, now = seasonOf()) {
