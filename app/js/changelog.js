@@ -6,6 +6,8 @@ export const CHANGELOG = [
     items: [
       'Cookie has his own art for 28 more moves: the peek over the screen edge, tail chase, sneeze, boop, heart eyes, a dramatic cry, melting into a nap, the loaf, squish, sulk, cheer and more.',
       'Pull to refresh with Cookie: he stretches, hangs on and spins, like Mochi.',
+      'Fixed: a smudged, blurry pose Cookie sometimes made after a tap. He now jumps up surprised instead.',
+      'No more glow around the cats in dark mode.',
     ],
   },
   {

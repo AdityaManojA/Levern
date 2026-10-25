@@ -94,10 +94,7 @@
 :root[data-theme="dark"] input[type=checkbox]:checked { background: var(--a-mint); }
 /* switching theme: everything changes at once, instead of every control fading at its own speed (js/theme.js) */
 :root.theme-swap *, :root.theme-swap *::before, :root.theme-swap *::after { transition: none !important; }
-/* Mochi is a black cat: on the dark background he gets a soft light rim so he doesn't disappear */
-:root[data-theme="dark"] .mochi .act, :root[data-theme="dark"] [data-sprite], :root[data-theme="dark"] .empty-mochi { filter: drop-shadow(0 0 1px rgba(236,232,225,.7)) drop-shadow(0 0 4px rgba(236,232,225,.16)); }
-/* Cookie is orange: he stands out on the dark theme by himself, and the glow would only blur his outline */
-:root[data-theme="dark"][data-cat="cookie"] .mochi .act, :root[data-theme="dark"][data-cat="cookie"] [data-sprite], :root[data-theme="dark"][data-cat="cookie"] .empty-mochi { filter: none; }
+/* no glow around the cats on the dark theme: their own outlines carry them */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
 body { background: var(--cream); color: var(--ink); font: 15px/1.4 Inter, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; -webkit-tap-highlight-color: transparent;
