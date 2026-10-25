@@ -2,6 +2,14 @@
 // the first one is the version shown at the bottom of Settings.
 export const CHANGELOG = [
   {
+    v: '1.03', date: '2026-10-25', title: 'A monochrome theme',
+    items: [
+      'Mono: a new theme in greys only (Settings → Theme).',
+      'Home: when Up next can’t show all your quests, a small “+N more quests” link shows how many more there are.',
+      'Fixed: the reminder unit (minutes, hours, days) was cut off to “h..” on phones.',
+    ],
+  },
+  {
     v: '1.02', date: '2026-10-25', title: 'Custom timers, yearly repeats and the back button',
     items: [
       'Focus: a Custom timer. Run it for a set time (hours and minutes) or until a time you pick. Long timers show hours.',

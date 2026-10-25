@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS = {
   // sound effects start off when the device asks for reduced motion
   sound: !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches), volume: 0.6, notify: true, focusMin: 25, breakMin: 5, snoozeMin: 10,
   name: '', profile: '', voice: true,
-  // boardName: what the leaderboard shows (empty = name). theme: 'light', 'dark' or 'auto' (follow the device)
+  // boardName: what the leaderboard shows (empty = name). theme: 'light', 'dark', 'mono' or 'auto' (follow the device)
   boardName: '', theme: 'light',
   // mochiColor: his coat, one of mochi.js COATS
   mochi: true, roam: true, speed: 'slow', mochiSound: true, annoy: 5, mochiColor: 'black',

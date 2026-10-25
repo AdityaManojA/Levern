@@ -19,6 +19,20 @@
   --mint-dk: #8FC9A5; --mint-dk2: #84C09B; --ev: #9DB8F6;
   color-scheme: light;
 }
+/* Monochrome (Settings > Theme > Mono): the light theme in greys only. The pastels become greys of different
+   lightness, so blocks and priorities still read apart (P1 darkest, P6 lightest), with ink text on all of them. */
+:root[data-theme="mono"] {
+  --ink: #141414; --cream: #F5F5F4; --card: #FFFFFF; --muted: #666666; --paper: #E8E8E7;
+  --mint: #D9D9D9; --coral: #C9C9C9; --lav: #E0E0E0; --butter: #E6E6E6; --sky: #D1D1D1;
+  --p1: #8A8A8A; --p2: #A1A1A1; --p3: #B5B5B5; --p4: #C8C8C8; --p5: #D9D9D9; --p6: #EAEAEA;
+  --red: #141414; --on-ink: #FFFFFF; --ink-rgb: 20,20,20; --shade-rgb: 20,20,20;
+  --tint-paper: #DEDEDD; --tint-paper2: #D3D3D2; --tint-sky: #F0F0F0; --tint-cream: #FAFAFA; --tint-mint: #F2F2F2; --tint-rose: #ECECEC; --tint-butter: #F4F4F4;
+  --mint-dk: #A8A8A8; --mint-dk2: #9C9C9C; --ev: #B3B3B3;
+}
+/* the few colours written outside the tokens, and the pictures (the cats, the logo, rank badges), in grey too */
+:root[data-theme="mono"] :is(.mochi .act, [data-sprite], .empty-mochi, .pf-cat, img, .rank, .coat-dot, .gcal-logo) { filter: grayscale(1); }
+:root[data-theme="mono"] .btn.signout:hover { background: #000; }
+:root[data-theme="mono"] .tour-spot { box-shadow: 0 0 0 4px var(--butter), 0 0 0 9px rgba(20,20,20,.15), 0 0 0 200vmax rgba(var(--shade-rgb),.5); animation: none; }
 /* Dark: "Night" from the Figma file (page "11 Dark theme"): designed for dark, not inverted. Near-black blue-grey
    layers (page, surface, raised), thin soft borders instead of ink outlines, and the pastels turned into glowing
    accents for numbers, bars and highlights; anything that is a pastel block by day is a tint of its accent by
@@ -273,7 +287,8 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .alerts .chip-btn.on { background: var(--ink); color: var(--on-ink); }
 .alert-add { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
 .alert-add .field { width: 74px; flex: none; }
-.alert-add select.field { flex: 1; min-width: 0; }
+/* wide enough for "minutes" with the arrow (it was cut to "h.." on phones) */
+.alert-add select.field { flex: 1 1 auto; width: auto; min-width: 8.5em; max-width: 12em; }
 
 /* phones: bigger tap targets and easier-to-read small controls (the look stays the same on larger screens) */
 @media (max-width: 640px) {
@@ -1150,3 +1165,7 @@ a.lb-name:hover, a.lb-n:hover { text-decoration: underline; }
 .fc-len label { display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .fc-len .field { width: 72px; text-align: center; }
 .fc-until { display: flex; justify-content: center; }
+
+/* Home: "+3 more quests" under Up next (S-011), quiet so the list stays the focus */
+.more-q { display: block; width: fit-content; margin: 2px auto 0; padding: 4px 10px; border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 600; text-decoration: none; }
+.more-q:hover { background: var(--paper); color: var(--ink); }

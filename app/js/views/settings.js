@@ -61,7 +61,7 @@ export function render() {
 
     <div class="sec">Look</div>
     <div class="card">
-      <div class="srow"><div class="l"><b>Theme</b><small>Dark is easier on the eyes at night</small></div><div class="seg" style="margin:0;width:auto">${[['light', 'Light'], ['dark', 'Dark'], ['auto', 'Device']].map(([v, l]) => `<button class="${(s.theme || 'light') === v ? 'on' : ''}" data-act="theme" data-v="${v}" aria-pressed="${(s.theme || 'light') === v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
+      <div class="srow"><div class="l"><b>Theme</b><small>Dark is easier on the eyes at night; Mono is all greys</small></div><div class="seg" style="margin:0;width:auto">${[['light', 'Light'], ['dark', 'Dark'], ['mono', 'Mono'], ['auto', 'Device']].map(([v, l]) => `<button class="${(s.theme || 'light') === v ? 'on' : ''}" data-act="theme" data-v="${v}" aria-pressed="${(s.theme || 'light') === v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
     </div>
 
     <div class="sec">Goals</div>

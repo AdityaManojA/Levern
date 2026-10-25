@@ -7,6 +7,8 @@ import { greetName } from '../account.js';
 
 function greeting() { const h = new Date().getHours(); return h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; }
 
+// a quiet line under Up next when it doesn't show every open quest: how many more, linking to them all
+const moreLink = n => n > 0 ? `<a class="more-q" href="#/quests">+${n} more quest${n === 1 ? '' : 's'}</a>` : '';
 export function render() {
   const st = getState(), s = st.settings, sum = summary(st.history, st.sessions, s.target);
   const open = st.quests.filter(q => !q.done);
@@ -32,7 +34,7 @@ export function render() {
       ${rem ? '<button class="mini" data-act="bell" style="margin-top:8px">Show reminders</button>' : ''}
     </div>` : ''}
     <div class="sec">Up next <a href="#/quests">All quests</a></div>
-    ${next.length ? next.map(q => questRow(q)).join('') : `<div class="card empty"><span class="empty-mochi" data-sprite="box-peek" data-scale=".9"></span><b>All clear</b><span class="small">Add a quest with the + button.</span></div>`}
+    ${next.length ? next.map(q => questRow(q)).join('') + moreLink(open.length - next.length) : `<div class="card empty"><span class="empty-mochi" data-sprite="box-peek" data-scale=".9"></span><b>All clear</b><span class="small">Add a quest with the + button.</span></div>`}
     <div class="card" style="margin-top:12px">
       <h3>Daily target · this month</h3>
       <div class="small">You hit your ${s.target}-a-day target on ${sum.keptThisMonth} of ${sum.daysInMonthSoFar} days so far</div>
