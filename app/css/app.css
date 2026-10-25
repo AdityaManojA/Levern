@@ -1227,10 +1227,10 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
 .aura-3 { --au-a: #B59CF0; --au-b: #5EC7B3; --au-c: #F0A8D6; --au-d: #7A5BD6; --au-t1: #6A4FC9; --au-t2: #2E9C88; }
 .aura { position: relative; isolation: isolate; overflow: hidden; border-color: transparent !important; --au-bg: var(--card); }
 /* a square well past the corners (a stretched one leaves gaps on wide rows as it turns) */
-.aura::before { content: ""; position: absolute; left: 50%; top: 50%; width: 260%; aspect-ratio: 1; z-index: -2; background: conic-gradient(var(--au-a), var(--au-b), var(--au-c), var(--au-d), var(--au-a)); transform: translate(-50%, -50%); animation: aura-spin 4s linear infinite; }
+.aura::before { content: ""; position: absolute; left: 50%; top: 50%; width: 260%; aspect-ratio: 1; z-index: -2; background: conic-gradient(var(--au-a), var(--au-b) 20%, var(--au-d) 35%, var(--au-c) 46%, #fff 50%, var(--au-c) 54%, var(--au-b) 70%, var(--au-d) 85%, var(--au-a)); transform: translate(-50%, -50%); animation: aura-spin 1.8s linear infinite; }
 .aura::after { content: ""; position: absolute; inset: 2.5px; z-index: -1; border-radius: calc(var(--au-r, 12px) - 2.5px); background: var(--au-bg); }
-.aura-name { background: linear-gradient(90deg, var(--au-t1), var(--au-t2), var(--au-t1)); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: aura-shine 3s linear infinite; }
-.aura-sp { position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; z-index: 1; background: var(--au-b); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: aura-twinkle 1.4s ease-in-out infinite alternate; pointer-events: none; }
+.aura-name { background: linear-gradient(90deg, var(--au-t1), var(--au-t2), var(--au-t1)); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: aura-shine 1.5s linear infinite; }
+.aura-sp { position: absolute; top: 6px; right: 8px; width: 8px; height: 8px; z-index: 1; background: var(--au-b); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: aura-twinkle .8s ease-in-out infinite alternate; pointer-events: none; }
 .lb-row.aura { --au-r: 12px; border-radius: 12px; border-top: none; margin: 4px -8px; padding-left: 8px; padding-right: 8px; }
 .lb-row.aura + .lb-row { border-top: none; }
 .lb-row.me.aura { --au-bg: color-mix(in srgb, #FFF6CC 60%, var(--card)); background: none; box-shadow: none; }
@@ -1245,3 +1245,23 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
 :root[data-theme="mono"] .aura::before, :root[data-theme="mono"] .aura-sp { filter: grayscale(1); }
 :root[data-theme="mono"] .aura-name { background-image: linear-gradient(90deg, #141414, #8A8A8A, #141414); }
 @media (prefers-reduced-motion: reduce) { .aura::before, .aura-name, .aura-sp { animation: none; } }
+
+/* Leaderboard loading: a shimmering grey skeleton of the podium and rows the first time; on Refresh the board stays
+   put and only the button spins */
+.lb-skel .sk { display: block; border-radius: 8px; background: linear-gradient(90deg, var(--paper) 25%, var(--tint-paper) 45%, var(--paper) 65%); background-size: 300% 100%; animation: sk-shine 1.3s ease-in-out infinite; }
+.lb-skel .lb-slot { gap: 8px; }
+.lb-skel .lb-1 { background: var(--card); }
+.lb-skel .sk-dot { width: 26px; height: 26px; border-radius: 50%; }
+.lb-skel .sk-line { width: 70%; height: 12px; }
+.lb-skel .sk-line.short { width: 45%; }
+.lb-skel .lb-row .sk-line { flex: 1; width: auto; max-width: 160px; }
+.lb-skel .lb-row { gap: 14px; padding: 13px 0; }
+.lb-skel .sk-num { width: 14px; height: 14px; }
+.lb-skel .sk-chip { width: 90px; height: 18px; margin-left: auto; border-radius: 999px; }
+@keyframes sk-shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.lb-refresh { display: flex; width: fit-content; align-items: center; gap: 6px; }
+.lb-refresh .lb-spin { display: none; width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: lb-spin .7s linear infinite; }
+.lb-refresh.busy { opacity: .7; cursor: default; }
+.lb-refresh.busy .lb-spin { display: inline-block; }
+@keyframes lb-spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .lb-skel .sk, .lb-refresh .lb-spin { animation: none; } }

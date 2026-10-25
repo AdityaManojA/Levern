@@ -45,15 +45,22 @@ function announce() {
 // called by the app each time the board is opened
 export function mount() { visit += 1; announce(); }
 
+// a refresh keeps the board on screen (only the Refresh button shows it's working) and swaps the new numbers in
+// without the rise-in; the first load shows a skeleton of the board
 async function load() {
   if (loading) return;
+  const again = !!rows;
   loading = true; failed = false; swap(render());
-  try { if (board.isOn()) await board.publish().catch(() => {}); all = await board.entries(); rows = board.standings(all, mode); top3 = board.topThreeFrom(all); enter = true; }
+  try { if (board.isOn()) await board.publish().catch(() => {}); all = await board.entries(); rows = board.standings(all, mode); top3 = board.topThreeFrom(all); enter = !again; }
   catch (e) { failed = true; all = rows = null; }
   loading = false;
   swap(render());
   if (location.hash.startsWith('#/leaderboard')) announce();
 }
+
+// the board's shape in grey, shimmering, while it loads for the first time (no jump when it arrives)
+const skeleton = () => `<div class="lb-podium lb-skel" aria-hidden="true">${[2, 1, 3].map(n => `<div class="lb-slot lb-${n}"><i class="sk sk-dot"></i><i class="sk sk-line"></i><i class="sk sk-line short"></i></div>`).join('')}</div>
+  <div class="card lb-list lb-skel" role="status" aria-label="Loading the board">${Array.from({ length: 6 }, () => '<div class="lb-row"><i class="sk sk-num"></i><i class="sk sk-line"></i><i class="sk sk-chip"></i></div>').join('')}</div>`;
 
 function podium(list) {
   const slot = (r, n) => { if (!r) return '<div class="lb-slot lb-empty"></div>';
@@ -119,8 +126,8 @@ export function render() {
     : failed
       ? `<div class="card lb-note"><b>The board isn't open yet</b><p class="small">We couldn't load it just now. Try again in a moment.</p>
            <button class="btn white sm" data-act="lb-refresh">Try again</button></div>`
-      : rows === null || loading
-        ? `<div class="card lb-note small">Loading the board…</div>`
+      : rows === null
+        ? skeleton()
         : list.length ? `${podium(list)}${listCard(list, mode, mode === 'season')}` : emptySeason;
   const html = `
     <div class="h-sub">Who's on top</div>
@@ -142,7 +149,7 @@ export function render() {
     ${mode === 'season' ? seasonCard() : '<div class="small lb-legacy-note">All the EXP everyone has earned since they started. It never resets.</div>'}
     ${body}
     ${signed && all && !loading && !failed ? pastSeasons() : ''}
-    ${signed && !loading ? '<button class="link lb-refresh" data-act="lb-refresh">Refresh</button>' : ''}`;
+    ${signed && rows ? `<button class="link lb-refresh${loading ? ' busy' : ''}" data-act="lb-refresh" ${loading ? 'disabled aria-busy="true"' : ''}><span class="lb-spin" aria-hidden="true"></span>${loading ? 'Refreshing…' : 'Refresh'}</button>` : ''}`;
   if (rows) enter = false;
   return html;
 }

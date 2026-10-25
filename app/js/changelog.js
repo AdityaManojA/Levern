@@ -5,6 +5,8 @@ export const CHANGELOG = [
     v: '1.07', date: '2026-10-25', title: 'An aura for the top three',
     items: [
       'Finish a season in the top three and you wear an aura all next season: a turning gold, silver or aurora ring, a shimmering name and a sparkle, on the leaderboard and your profile. It passes to the new top three every season.',
+      'The aura turns faster, with a bright highlight racing round the ring.',
+      'Refreshing the leaderboard keeps it in place while it loads, and the first load shows the board’s outline instead of jumping.',
     ],
   },
   {
