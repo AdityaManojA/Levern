@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "levern-app",
+    "site": "getlevern",
     "public": "app",
     "ignore": [
       "firebase.json",

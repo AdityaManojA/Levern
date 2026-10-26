@@ -32,10 +32,10 @@ setGlobalOptions({ region: 'asia-south2', maxInstances: 10, memory: '256MiB' });
 initializeApp();
 const db = getFirestore();
 const CLIENT_ID = defineString('GOOGLE_CLIENT_ID', { description: 'OAuth web client ID (ends in .apps.googleusercontent.com)' });
-const PUBLIC_URL = defineString('PUBLIC_URL', { default: 'https://levern-app.web.app' });
+const PUBLIC_URL = defineString('PUBLIC_URL', { default: 'https://getlevern.web.app' });
 const CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET');
 // sites that share this server and sign-in (TaskFlow and Solodesk); Google sends people back to the one they came from
-const ORIGINS = defineString('ALLOWED_ORIGINS', { default: 'https://levern-app.web.app,https://taskflow-dailytracker.web.app,https://taskflow-solodesk.web.app' });
+const ORIGINS = defineString('ALLOWED_ORIGINS', { default: 'https://getlevern.web.app,https://taskflow-dailytracker.web.app,https://taskflow-solodesk.web.app' });
 function originOf(req) {
   const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
   const o = host ? `https://${host}` : '';
