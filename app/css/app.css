@@ -139,6 +139,8 @@ html, .sheet, .rpanel, .clist, .ctime-l, textarea { scrollbar-width: thin; scrol
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; text-decoration: none; }
 /* the logo is a squircle: a square with rounder corners, between a square and a circle */
 .brand img { border-radius: 30%; }
+/* the ink-tile logo on a dark page: a faint ring keeps its edge visible */
+:root[data-theme="dark"] .brand img { box-shadow: 0 0 0 1px rgba(255, 255, 255, .16); }
 /* the name with its pronunciation under it, written like a dictionary entry: /lev·earn/ */
 .brand-t { display: flex; flex-direction: column; line-height: 1.05; }
 /* in the app's own type: faint slashes, "lev" muted, "earn" in the accent (earning is the point of the app) */

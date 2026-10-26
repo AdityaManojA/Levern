@@ -34,7 +34,7 @@ export async function requestPermission() {
 // Done / Snooze buttons), else with the page's Notification constructor. Returns true when shown.
 export async function show(title, opts = {}) {
   if (permission() !== 'granted') return false;
-  const o = { icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', ...opts };
+  const o = { icon: 'icons/icon-v3-192.png', badge: 'icons/badge-v3-96.png', ...opts };
   try {
     if (reg && reg.showNotification) { await reg.showNotification(title, o); return true; }
     const { actions, ...rest } = o;   // actions are only allowed on service-worker notifications

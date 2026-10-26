@@ -228,7 +228,7 @@ export const actions = {
     if (p !== 'granted') { toast('Allow notifications first'); return; }
     try {
       const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification('Levern test', { body: 'If you can read this, notifications work on this device.', tag: 'taskflow-test', icon: 'icons/icon-192.png' });
+      await reg.showNotification('Levern test', { body: 'If you can read this, notifications work on this device.', tag: 'taskflow-test', icon: 'icons/icon-v3-192.png' });
       dlog('notify', 'test notification shown');
       toast('Test sent');
     } catch (e) { dlog('notify', 'test notification failed', { name: e?.name || null, message: String(e?.message || e) }); toast('Test failed. Turn on logging and copy the log.'); }
