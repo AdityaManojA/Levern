@@ -210,7 +210,7 @@ export const actions = {
   gsync: async () => { try { const c = await cal.syncGoogle(); if (c) toast(`Synced: ${c.inserted} added, ${c.updated} updated, ${c.deleted} removed`); } catch (e) { toast(e.message); } rerender(); },
   gdisconnect: async () => { if (await confirmBox('Stop syncing with Google Calendar? The Levern calendar stays in your Google account.', 'Disconnect')) { try { await cal.disconnectGoogle(); toast('Disconnected'); } catch (e) { toast(e.message); } rerender(); } },
   'copy-feed': async () => { try { await navigator.clipboard.writeText(cal.feedUrl()); toast('Link copied'); } catch (e) { toast(cal.feedUrl()); } },
-  'ics-download': () => { download('taskflow.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
+  'ics-download': () => { download('levern.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
   'dbg-toggle': () => { setDebug(!debugOn()); if (!debugOn()) { logShown = false; } rerender(); },
   'dbg-clear': () => { clearLog(); logShown = false; toast('Log cleared'); rerender(); },
   'dbg-show': async () => { logShown = !logShown; if (logShown) lastReport = await reportText({ signedIn: !!account.user() }); rerender(); },
@@ -254,7 +254,7 @@ export const actions = {
   speed: el => { setSetting('speed', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
   theme: el => { setSetting('theme', el.dataset.v); applyTheme(); play('click', 0.4); },
   coat: el => { setSetting('mochiColor', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
-  export: () => { download(`taskflow-backup-${todayStr()}.json`, exportData(), 'application/json'); toast('Backup saved'); },
+  export: () => { download(`levern-backup-${todayStr()}.json`, exportData(), 'application/json'); toast('Backup saved'); },
   'tidy-exp': async () => {
     const st = getState(), before = summary(st.history, st.sessions, st.settings.target).exp;
     if (!await confirmBox('Remove extra same-day completions? Each quest keeps one per day. Focus time is kept.', 'Remove')) return;
@@ -300,7 +300,7 @@ function deleteFlow() {
   </form>`;
   const f = d.querySelector('form'), go = f.go;
   f.sure.addEventListener('change', () => { go.disabled = !f.sure.checked; });
-  d.querySelector('[data-del="export"]').addEventListener('click', () => download(`taskflow-backup-${todayStr()}.json`, exportData(), 'application/json'));
+  d.querySelector('[data-del="export"]').addEventListener('click', () => download(`levern-backup-${todayStr()}.json`, exportData(), 'application/json'));
   d.onclose = async () => {
     if (d.returnValue !== 'yes' || !f.sure.checked) return;
     const feedback = { reason: f.reason?.value || '', note: f.note.value };

@@ -159,7 +159,7 @@ export const actions = {
   'cal-today': () => { cursor = selected = todayStr(); showAll = false; rerender(); },
   'cal-more': () => { showAll = true; play('click', 0.3); rerender(true); },
   'cal-move': el => moveBy(+el.dataset.n),
-  'ics-all': () => { download('taskflow.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
+  'ics-all': () => { download('levern.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
 };
 
 // swipe sideways across the month to go to the next or previous month

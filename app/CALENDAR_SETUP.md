@@ -26,7 +26,7 @@ You need an OAuth **client ID**. It isn't a secret. It only works from the web a
    - Scopes / Data access: add `https://www.googleapis.com/auth/calendar.app.created`, shown as "Make secondary Google calendars, and see, create, change and delete events on them". This lets Levern touch **only the calendar it creates**, never your other calendars.
 5. **APIs & Services → Credentials → Create credentials → OAuth client ID** (or **Google Auth Platform → Clients → Create client**):
    - Application type: **Web application**. Name: `Levern web`.
-   - **Authorized JavaScript origins**: add `https://taskflow-dailytracker.web.app` (the hosted app) and `http://localhost:5190` (for local testing).
+   - **Authorized JavaScript origins**: add `https://getlevern.web.app` (the hosted app) and `http://localhost:5190` (for local testing).
    - Using the Firebase project `taskflow-dailytracker` instead of a new one? Once Google sign-in is on in Firebase, it already has a client called "Web client (auto created by Google Service)". You can add the origins above to that one and use its ID.
    - Authorized redirect URIs: leave empty.
    - Click **Create** and copy the **Client ID** (it ends in `.apps.googleusercontent.com`).
