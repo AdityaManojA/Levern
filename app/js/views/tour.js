@@ -15,7 +15,7 @@ const STEPS = [
   { route: '#/home', target: '[data-tour="exp"]', title: 'Leaderboard', text: 'Tap EXP on Home to see who has the most. Turn on “Show me on the board” if you want to join.' },
   { route: '#/quests?filter=all', target: '#qlist', title: 'Six priority colours', text: 'Warmer means sooner. Tap a quest to change its priority, date or reminder.',
     extra: () => `<div class="tour-chips">${getState().settings.tierNames.map((n, i) => `<span style="--c:${TIER_COLORS[i]}">P${i + 1} ${esc(n)}</span>`).join('')}</div>` },
-  { route: '#/quests?filter=all', target: '#sheet [data-tour="voice"]', sheet: true, title: 'Just say it', text: 'Tap and speak, or type. TaskFlow picks out dates, times and keywords and suggests a priority.' },
+  { route: '#/quests?filter=all', target: '#sheet [data-tour="voice"]', sheet: true, title: 'Just say it', text: 'Tap and speak, or type. Levern picks out dates, times and keywords and suggests a priority.' },
   // with no quest to open, this step is skipped (an empty #/quest/ would land on "Quest not found")
   { route: () => (subtaskQuest() ? '#/quest/' + encodeURIComponent(subtaskQuest()) : '#/quests?filter=all'), target: '[data-tour="subtasks"]', title: 'Break it down', text: 'Split a quest into subtasks. Each subtask can have its own priority.' },
   { route: '#/calendar', target: '[data-tour="calendar"]', title: 'Plan your week', text: 'See what’s due each day, repeats included. Send everything to Google or Apple Calendar from Settings.' },

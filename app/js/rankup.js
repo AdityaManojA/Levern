@@ -1,5 +1,5 @@
 // Rank-ups: when this season's EXP lifts you to a new rank (or a new Master level), a pop-up says so, the cat
-// celebrates and, if TaskFlow is in the background, a system notification goes out. It also keeps your best rank
+// celebrates and, if Levern is in the background, a system notification goes out. It also keeps your best rank
 // for each season (settings.rankHistory) for your profile. A new season starts quietly from Iron.
 import { getState, setSetting, subscribe } from './store.js';
 import { seasonOf, seasonExp, rankLabel, rankStep } from './stats.js';

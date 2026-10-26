@@ -2,6 +2,12 @@
 // the first one is the version shown at the bottom of Settings.
 export const CHANGELOG = [
   {
+    v: '1.09', date: '2026-10-26', title: 'Meet Levern',
+    items: [
+      'TaskFlow is now called Levern (say it /lev·earn/). Same app, same quests, same cats; your data and progress are untouched.',
+    ],
+  },
+  {
     v: '1.08', date: '2026-10-26', title: 'On time pays more',
     items: [
       'A quest finished after it was due earns half the EXP. Finish on time to get it all (the daily target bonus still counts).',
@@ -89,7 +95,7 @@ export const CHANGELOG = [
       'Both cats redrawn from new high-quality art: sharper on phone screens, and Mochi has 23 new animations (melting into a nap, a double-tap squish, a loaf, pull-to-refresh poses and more).',
       'Dark mode redesigned: a calm night look with glowing accents. Switching themes is instant.',
       'Seasons now end every second Sunday at midnight (India time), and ranks are much easier to climb. Master has no top: Master 1, 2, 3 and up, a level every 50 EXP.',
-      'A pop-up (and a notification if TaskFlow is in the background) when you reach a new rank.',
+      'A pop-up (and a notification if Levern is in the background) when you reach a new rank.',
       'Profiles: tap a name on the leaderboard. Make yours public from the Leaderboard to show your ranks, past seasons, streaks, totals and a year of activity; it stays private until you do.',
       'Delete your account and all your data from Settings, any time.',
       'This page: every update, listed here.',
@@ -112,7 +118,7 @@ export const CHANGELOG = [
     items: [
       'Rank sounds and Mochi lines on the leaderboard, and a celebration when you hit your daily target.',
       'New app icons and a rounded logo on every page.',
-      'Install TaskFlow from Settings, with steps when your browser hasn’t offered it yet.',
+      'Install Levern from Settings, with steps when your browser hasn’t offered it yet.',
       'Returning people skip the welcome screens on any device.',
       'More words understood when you add quests by typing or by voice.',
     ],
@@ -131,7 +137,7 @@ export const CHANGELOG = [
     v: '0.6', date: '2026-10-19', title: 'Sign in, sync and sketches',
     items: [
       'Sign in with Google: your quests stay the same on every device.',
-      'Google Calendar: your dated quests in a TaskFlow calendar, and your events alongside them.',
+      'Google Calendar: your dated quests in a Levern calendar, and your events alongside them.',
       'Sketches and handwriting on quests.',
       'Sounds, and Mochi’s voice.',
       'Privacy policy and cookies pages.',

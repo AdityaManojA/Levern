@@ -1,10 +1,10 @@
-/* TaskFlow service worker: offline app shell, reminder notifications, notification buttons.
+/* Levern service worker: offline app shell, reminder notifications, notification buttons.
    Limits: a page-less service worker only runs when the browser wakes it. Reminders are shown
    on time while the app is open (even in a background tab). With the app closed they are shown
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v64';
+const VERSION = 'taskflow-v65';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
@@ -103,11 +103,11 @@ self.addEventListener('notificationclick', e => {
 // One handler only, so each push shows once. A payload with an `id` uses the local reminder options.
 self.addEventListener('push', e => {
   let d = {};
-  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'TaskFlow', body: e.data ? e.data.text() : '' }; }
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'Levern', body: e.data ? e.data.text() : '' }; }
   // Show the notification first, straight away: iOS expects every push to produce one, and nothing may stand
   // in front of it. The diagnostic log is written afterwards and can't stop or delay the notification.
-  const show = d.id ? self.registration.showNotification(d.title || 'TaskFlow', notifyOpts(d))
-    : self.registration.showNotification(d.title || 'TaskFlow', {
+  const show = d.id ? self.registration.showNotification(d.title || 'Levern', notifyOpts(d))
+    : self.registration.showNotification(d.title || 'Levern', {
       body: d.body || '', tag: d.tag || 'taskflow', renotify: true,
       icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: d.url || '#/home' },
     });

@@ -15,7 +15,7 @@ export async function registerSW() {
     await navigator.serviceWorker.ready;
     reg = await navigator.serviceWorker.getRegistration() || reg;
     tryPeriodicSync();
-  } catch (e) { console.warn('TaskFlow: service worker not registered', e); }
+  } catch (e) { console.warn('Levern: service worker not registered', e); }
   return reg;
 }
 export const onMessage = fn => listeners.add(fn);

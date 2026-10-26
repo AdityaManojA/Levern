@@ -105,8 +105,8 @@ export function commit(fn, opts = {}) {
 // the parts of the data that sync with the server
 export const SYNC_KEYS = ['quests', 'tombstones', 'history', 'historyUpdatedAt', 'sessions', 'sessionsUpdatedAt', 'settings', 'settingsUpdatedAt', 'settingsStamps', 'eventMeta'];
 
-// TaskFlow's own notes on the person's Google Calendar events (only a priority for now), by event id.
-// Google stays the owner of the event itself: TaskFlow never changes or deletes it there.
+// Levern's own notes on the person's Google Calendar events (only a priority for now), by event id.
+// Google stays the owner of the event itself: Levern never changes or deletes it there.
 export const eventTier = id => state.eventMeta?.[id]?.tier ?? null;
 export function setEventTier(id, tier) {
   commit(s => { s.eventMeta = { ...(s.eventMeta || {}), [id]: { tier, at: Date.now() } }; });
@@ -291,7 +291,7 @@ export function setSetting(k, v, opts) { commit(s => { s.settings[k] = v; }, opt
 export function exportData() { return JSON.stringify(state, null, 2); }
 export function importData(json) {
   const data = JSON.parse(json);
-  if (!data || !Array.isArray(data.quests)) throw new Error('Not a TaskFlow backup');
+  if (!data || !Array.isArray(data.quests)) throw new Error('Not a Levern backup');
   commit(s => { Object.keys(s).forEach(k => delete s[k]); Object.assign(s, migrate(data)); });
 }
 export function clearCompleted() { commit(s => { s.quests = s.quests.filter(q => !q.done); }); }

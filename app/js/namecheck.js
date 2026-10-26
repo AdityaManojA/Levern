@@ -1,5 +1,5 @@
 // A saved name that fails the swear filter (picked before the filter existed, or on an older version, or a
-// Google name that came in at sign-in) has to be replaced before TaskFlow can be used: a window that can't be
+// Google name that came in at sign-in) has to be replaced before Levern can be used: a window that can't be
 // closed asks for a new one. It covers the greeting name and the leaderboard name, and the new name goes up to
 // the leaderboard straight away. Checked at start-up and after every change (a sync can bring a name in).
 import { getState, setSetting, subscribe } from './store.js';
@@ -25,7 +25,7 @@ function show() {
   el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'namefix-t'); el.setAttribute('aria-describedby', 'namefix-d');
   el.innerHTML = `<form class="namefix-card" novalidate>
       <h2 id="namefix-t">Pick a new name</h2>
-      <p id="namefix-d" class="small">Your name has a word that isn't allowed in TaskFlow. Swear words and slurs can't be used in names, including on the leaderboard. Choose a new name to keep going.</p>
+      <p id="namefix-d" class="small">Your name has a word that isn't allowed in Levern. Swear words and slurs can't be used in names, including on the leaderboard. Choose a new name to keep going.</p>
       <input class="field" name="n" maxlength="${MAX_BOARD_NAME}" autocomplete="off" autocapitalize="words" enterkeyhint="done" aria-label="New name" placeholder="Your new name">
       <div class="namefix-err small" aria-live="polite"></div>
       <button class="btn block" type="submit">Save name</button>

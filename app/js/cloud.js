@@ -1,4 +1,4 @@
-// Keeps a signed-in person's TaskFlow data in their account (Firestore, straight from the browser; the
+// Keeps a signed-in person's Levern data in their account (Firestore, straight from the browser; the
 // database rules only let each person reach their own documents). The same on every device they sign in
 // on, and readable by Solodesk, which shares the account. Works like sync.js (the local server): merge
 // our copy with the account's copy (last write wins per quest, deletions win, syncmerge.js), save the
@@ -116,11 +116,11 @@ async function runSync() {
     dlog('sync', 'synced with account', { quests: merged.quests.length, hadData, rev: nextRev, localChanged: theirs !== now });
     queueShare();
   } catch (e) {
-    console.warn('TaskFlow: account sync failed', e);
+    console.warn('Levern: account sync failed', e);
     dlog('sync', 'account sync failed', { code: e?.code || null, message: String(e?.message || e), online: navigator.onLine });
     info = { ...info, error: !navigator.onLine ? 'Offline. Changes will be saved when you\'re back online.'
       : e.code === 'permission-denied' ? 'Your account storage isn\'t set up yet (database rules).'
-      : "Couldn't save to your account right now. TaskFlow will try again. If you use an ad blocker, allow TaskFlow in it." };
+      : "Couldn't save to your account right now. Levern will try again. If you use an ad blocker, allow Levern in it." };
   } finally {
     busy = false; becomeReady(); emit();
     if (again) { again = false; schedule(300); }
@@ -143,7 +143,7 @@ export async function signOutAndReset({ force = false } = {}) {
   info = { lastSync: null, error: null }; emit();
   return { ok: true };
 }
-// Delete account: everything TaskFlow keeps for this person on the backend, then this device.
+// Delete account: everything Levern keeps for this person on the backend, then this device.
 //  1. their feedback, if they gave any: anonymous (a reason and a note, no name, email or account id), and only
 //     readable in the Firebase console (taskflowFeedback);
 //  2. their data (taskflowUsers/{uid}, its chunks and the copy shared with Solodesk), their public profile and their leaderboard entry

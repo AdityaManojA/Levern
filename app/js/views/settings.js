@@ -45,16 +45,16 @@ const STEPS = { annoy: 1, target: 1, focusMin: 5, breakMin: 1, snoozeMin: 5 };
 
 export function render() {
   const s = getState().settings, p = permission();
-  const pText = { granted: 'Allowed. Reminders pop up even when TaskFlow is in the background.', denied: 'Blocked in your browser settings for this site. Reminders still show in the app.',
+  const pText = { granted: 'Allowed. Reminders pop up even when Levern is in the background.', denied: 'Blocked in your browser settings for this site. Reminders still show in the app.',
     default: 'Not asked yet.', unsupported: 'This browser has no system notifications. Reminders show in the app.' }[p];
   return `
-    <div class="h-sub">Make TaskFlow yours</div>
+    <div class="h-sub">Make Levern yours</div>
     <h1 class="h-title">Settings</h1>
 
     <div class="sec">You</div>
     <div class="card">
       ${accountRow()}
-      ${account.user() ? `<div class="srow"><div class="l"><b>Delete account</b><small>Removes your account and everything TaskFlow keeps for you</small></div><button class="mini danger-mini" data-act="acct-delete">Delete…</button></div>` : ''}
+      ${account.user() ? `<div class="srow"><div class="l"><b>Delete account</b><small>Removes your account and everything Levern keeps for you</small></div><button class="mini danger-mini" data-act="acct-delete">Delete…</button></div>` : ''}
       <div class="srow"><div class="l"><b>Welcome screens</b><small>See the introduction again</small></div><button class="mini" data-act="onboard">Show again</button></div>
       <div class="srow"><div class="l"><b>Quick tour</b><small>${catName(s)} shows you around (30 seconds)</small></div><button class="mini" data-act="tour">Start</button></div>
     </div>
@@ -75,7 +75,7 @@ export function render() {
       ${p === 'granted' ? '' : `<div class="srow" style="display:block"><div class="l"><b>Set up notifications</b><small>Steps for the device you're using</small></div><div style="margin-top:8px">${notifyCard()}</div></div>`}
       <div class="srow"><div class="l"><b>Snooze length</b></div>${step('snoozeMin', s.snoozeMin, ' min')}</div>
       <div class="srow"><div class="l"><b>Try it</b><small>Shows a sample notification in 10 seconds (nothing is added)</small></div><button class="mini" data-act="test-remind">Test</button></div>
-      <p class="small" style="margin-top:6px">Signed in with notifications on, reminders reach you even when TaskFlow is closed. A quest's own reminders are set on the quest (Reminders), the ones below are every day.</p>
+      <p class="small" style="margin-top:6px">Signed in with notifications on, reminders reach you even when Levern is closed. A quest's own reminders are set on the quest (Reminders), the ones below are every day.</p>
     </div>
     <div class="card nudges" data-tour="nudges">
       <div class="l" style="margin-bottom:6px"><b>Every day</b><small class="small" style="display:block">Today's quests, water, meals and walks. Add as many times as you like; tap × on a time to remove it.</small></div>
@@ -117,13 +117,13 @@ export function render() {
 
     <div class="sec">App</div>
     <div class="card">
-      <div class="srow" style="display:block"><div class="l"><b>Install TaskFlow</b>
+      <div class="srow" style="display:block"><div class="l"><b>Install Levern</b>
         <small>${isInstalled() ? 'Installed. Running as an app.'
           : canInstall() ? 'Adds it to your Start menu or home screen and works offline.'
-          : desktopView() ? 'Your browser hasn\'t offered the install yet. In Chrome or Edge, click the install icon at the right of the address bar, or open the menu and choose Install TaskFlow.'
+          : desktopView() ? 'Your browser hasn\'t offered the install yet. In Chrome or Edge, click the install icon at the right of the address bar, or open the menu and choose Install Levern.'
           : 'In Safari, tap Share, then Add to Home Screen. In Chrome, open the menu and choose Install app.'}</small></div>
-        ${canInstall() && !isInstalled() ? '<div style="margin-top:10px"><button class="btn sm dark" data-act="install">Install TaskFlow</button></div>' : ''}</div>
-      <div class="srow"><div class="l"><b>Offline</b><small>${'serviceWorker' in navigator && navigator.serviceWorker.controller ? 'Ready. TaskFlow works without internet.' : 'Getting ready (reload once to finish).'}</small></div></div>
+        ${canInstall() && !isInstalled() ? '<div style="margin-top:10px"><button class="btn sm dark" data-act="install">Install Levern</button></div>' : ''}</div>
+      <div class="srow"><div class="l"><b>Offline</b><small>${'serviceWorker' in navigator && navigator.serviceWorker.controller ? 'Ready. Levern works without internet.' : 'Getting ready (reload once to finish).'}</small></div></div>
     </div>
 
     <div class="sec">Your data</div>
@@ -136,7 +136,7 @@ export function render() {
 
     <div class="sec">Privacy</div>
     <div class="card">
-      <div class="srow"><div class="l"><b>Privacy policy</b><small>What TaskFlow stores and where it goes</small></div><a class="mini" href="privacy.html">Read</a></div>
+      <div class="srow"><div class="l"><b>Privacy policy</b><small>What Levern stores and where it goes</small></div><a class="mini" href="privacy.html">Read</a></div>
       <div class="srow"><div class="l"><b>Cookies</b><small>No tracking cookies. What's kept in your browser</small></div><a class="mini" href="cookies.html">Read</a></div>
     </div>
     ${debugRows()}
@@ -146,16 +146,16 @@ export function render() {
     <div class="card">
       <div class="srow"><div class="l"><b>Updates</b><small>Version ${esc(APP_VERSION)} · ${esc(CHANGELOG[0].title)}</small></div><a class="mini" href="#/whatsnew">See all</a></div>
     </div>
-    <p class="small" style="text-align:center;margin:16px 0">TaskFlow web ${esc(APP_VERSION)}</p>`;
+    <p class="small" style="text-align:center;margin:16px 0">Levern web ${esc(APP_VERSION)}</p>`;
 }
 
 function calendarRows() {
   const g = cal.googleState(), feed = cal.feedAvailable();
   let gRight, gText;
-  if (!cal.googleConfigured()) { gRight = '<button class="mini" data-act="acct-in">Sign in</button>'; gText = 'Sign in with Google first. Then your dated quests go into a "TaskFlow" calendar and your own Google events show up here.'; }
+  if (!cal.googleConfigured()) { gRight = '<button class="mini" data-act="acct-in">Sign in</button>'; gText = 'Sign in with Google first. Then your dated quests go into a "Levern" calendar and your own Google events show up here.'; }
   else if (!g.connected) {
     gRight = '<button class="mini" data-act="gconnect">Connect</button>';
-    gText = 'Adds your dated quests to a "TaskFlow" calendar, and shows your own Google events on the Calendar screen. '
+    gText = 'Adds your dated quests to a "Levern" calendar, and shows your own Google events on the Calendar screen. '
       + 'Note: Google sync needs approval from Google first, and some Google accounts (such as ones with Advanced Protection) block it. '
       + 'Until then, use the calendar link below: in Google Calendar, choose Other calendars, then From URL.';
   }
@@ -179,7 +179,7 @@ function calendarRows() {
       ${feed === false ? '' : '<button class="btn white sm" data-act="copy-feed">Copy feed link</button>'}
       <button class="btn white sm" data-act="ics-download">Download .ics</button>
     </div>
-    ${feed === false ? '' : `<p class="small" style="margin-top:8px">Feed: ${esc(cal.feedUrl())}. Only devices that can reach this computer can use it; for your phone, TaskFlow needs to be hosted online.</p>`}`;
+    ${feed === false ? '' : `<p class="small" style="margin-top:8px">Feed: ${esc(cal.feedUrl())}. Only devices that can reach this computer can use it; for your phone, Levern needs to be hosted online.</p>`}`;
 }
 
 function accountRow() {
@@ -198,7 +198,7 @@ export const actions = {
     rerender();
   },
   'acct-out': async () => {
-    if (!await confirmBox('Sign out of TaskFlow? Your quests stay safe in your account, and this device goes back to the start.', 'Sign out')) return;
+    if (!await confirmBox('Sign out of Levern? Your quests stay safe in your account, and this device goes back to the start.', 'Sign out')) return;
     let r = await cloud.signOutAndReset();
     if (r.unsaved) {
       if (!await confirmBox('Your latest changes haven\'t reached your account yet (you may be offline). Sign out anyway and lose them on this device?', 'Sign out anyway')) return;
@@ -208,7 +208,7 @@ export const actions = {
   },
   gconnect: async () => { try { await cal.connectGoogle(); toast('Google Calendar connected', 'good'); } catch (e) { toast(e.message); } rerender(); },
   gsync: async () => { try { const c = await cal.syncGoogle(); if (c) toast(`Synced: ${c.inserted} added, ${c.updated} updated, ${c.deleted} removed`); } catch (e) { toast(e.message); } rerender(); },
-  gdisconnect: async () => { if (await confirmBox('Stop syncing with Google Calendar? The TaskFlow calendar stays in your Google account.', 'Disconnect')) { try { await cal.disconnectGoogle(); toast('Disconnected'); } catch (e) { toast(e.message); } rerender(); } },
+  gdisconnect: async () => { if (await confirmBox('Stop syncing with Google Calendar? The Levern calendar stays in your Google account.', 'Disconnect')) { try { await cal.disconnectGoogle(); toast('Disconnected'); } catch (e) { toast(e.message); } rerender(); } },
   'copy-feed': async () => { try { await navigator.clipboard.writeText(cal.feedUrl()); toast('Link copied'); } catch (e) { toast(cal.feedUrl()); } },
   'ics-download': () => { download('taskflow.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
   'dbg-toggle': () => { setDebug(!debugOn()); if (!debugOn()) { logShown = false; } rerender(); },
@@ -228,7 +228,7 @@ export const actions = {
     if (p !== 'granted') { toast('Allow notifications first'); return; }
     try {
       const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification('TaskFlow test', { body: 'If you can read this, notifications work on this device.', tag: 'taskflow-test', icon: 'icons/icon-192.png' });
+      await reg.showNotification('Levern test', { body: 'If you can read this, notifications work on this device.', tag: 'taskflow-test', icon: 'icons/icon-192.png' });
       dlog('notify', 'test notification shown');
       toast('Test sent');
     } catch (e) { dlog('notify', 'test notification failed', { name: e?.name || null, message: String(e?.message || e) }); toast('Test failed. Turn on logging and copy the log.'); }
@@ -247,7 +247,7 @@ export const actions = {
   'test-remind': async () => {
     await requestPermission();
     play('click', 0.5); toast('A sample notification in 10 seconds. You can switch tabs.');
-    setTimeout(() => show('Reminder: this is how a reminder looks', { body: 'TaskFlow reminders show up like this, with Done and Snooze on quest reminders.', tag: 'test' }), 10000);
+    setTimeout(() => show('Reminder: this is how a reminder looks', { body: 'Levern reminders show up like this, with Done and Snooze on quest reminders.', tag: 'test' }), 10000);
   },
   install: () => install(),
   hear: el => play(el.dataset.s, 1, +el.dataset.rate || 1),
@@ -271,7 +271,7 @@ export function onChange(el) {
     const f = el.files[0]; if (!f) return;
     f.text().then(async txt => {
       if (!(await confirmBox('Replace everything on this device with this backup?', 'Import'))) return;
-      try { importData(txt); toast('Backup imported', 'good'); } catch (e) { toast("That file isn't a TaskFlow backup"); }
+      try { importData(txt); toast('Backup imported', 'good'); } catch (e) { toast("That file isn't a Levern backup"); }
     });
   }
 }
@@ -288,12 +288,12 @@ function deleteFlow() {
   const d = document.getElementById('dialog');
   d.innerHTML = `<form method="dialog" class="del-form">
     <h3>Delete your account?</h3>
-    <p class="small">This deletes everything TaskFlow keeps for you: your quests, history, focus sessions, sketches and settings, the copy Solodesk reads, and your place on the leaderboard. It also clears this device. <b>It can't be undone.</b></p>
+    <p class="small">This deletes everything Levern keeps for you: your quests, history, focus sessions, sketches and settings, the copy Solodesk reads, and your place on the leaderboard. It also clears this device. <b>It can't be undone.</b></p>
     <button type="button" class="mini" data-del="export">Download my data first</button>
     <fieldset class="del-why"><legend>Before you go, what made you leave? <span class="small">(optional)</span></legend>
       <div class="del-chips">${REASONS.map(r => `<label><input type="radio" name="reason" value="${esc(r)}"><span>${esc(r)}</span></label>`).join('')}</div>
       <textarea class="field" name="note" rows="3" maxlength="1000" placeholder="Anything else you'd like to tell us? (optional)"></textarea>
-      <p class="small">Your answer is anonymous: no name, email or account is attached, and only the TaskFlow team can read it.</p>
+      <p class="small">Your answer is anonymous: no name, email or account is attached, and only the Levern team can read it.</p>
     </fieldset>
     <label class="del-ok"><input type="checkbox" name="sure"> I understand this can't be undone</label>
     <div class="row-btns"><button value="no" class="btn ghost">Keep my account</button><button value="yes" class="btn danger" name="go" disabled>Delete everything</button></div>
@@ -307,7 +307,7 @@ function deleteFlow() {
     toast('Deleting your account…');
     try {
       const r = await deleteAccount(feedback);
-      toast(r.signInKept ? 'Your TaskFlow data is deleted. Your sign-in is kept for Solodesk.' : 'Your account and all your data are deleted.', 'good');
+      toast(r.signInKept ? 'Your Levern data is deleted. Your sign-in is kept for Solodesk.' : 'Your account and all your data are deleted.', 'good');
       location.hash = '#/home';
     } catch (e) { toast("Couldn't delete everything: " + (e.message || 'please try again.')); }
   };

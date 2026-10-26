@@ -36,12 +36,13 @@ function screen(name) {
       return `
       <div class="ob-center ob-hello">
         <div class="ob-circle ob-circle-sm" style="background:var(--lav)"><span class="ob-mochi" data-anim="happy-wiggle" data-scale="1.1" data-pause="1400"></span></div>
-        <h1 class="ob-h" style="text-align:center">Welcome to TaskFlow</h1>
+        <h1 class="ob-h" style="text-align:center">Welcome to Levern</h1>
+        <div class="ob-ph" aria-hidden="true">/lev·earn/</div>
         <p class="ob-p muted" style="text-align:center">A calm to-do list that feels like a game. Finish quests, build a streak and earn points. Sign in with Google to keep them safe and the same on all your devices.</p>
       </div>
       ${u ? `<div class="ob-row ob-me">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="40" height="40" referrerpolicy="no-referrer">` : ''}<span><b>${esc(u.name || 'Signed in')}</b><small>${esc(u.email)}</small></span><button type="button" class="link" data-ob-signout>Sign out</button></div>`
         : `<button type="button" class="ob-google" data-ob-google${busy ? ' disabled' : ''}>${G_LOGO}<span>${busy ? 'Signing in…' : 'Continue with Google'}</span></button>`}
-      <p class="ob-p muted small" style="margin-top:14px">Already use TaskFlow? Sign in with the same Google account and your quests come back.</p>
+      <p class="ob-p muted small" style="margin-top:14px">Already use Levern? Sign in with the same Google account and your quests come back.</p>
       <p class="ob-p muted small">See what we keep in the <a href="privacy.html" target="_blank" rel="noopener">privacy policy</a> and <a href="cookies.html" target="_blank" rel="noopener">cookies</a> pages.</p>`;
     }
     case 'target': {
@@ -63,7 +64,7 @@ function screen(name) {
       <p class="ob-p muted">Pick a time for a look at today's quests, and turn on any nudges you'd like. Add as many times a day as you want. You can change all of this later in Settings.</p>
       <div class="ob-card nudges" style="background:var(--card)">${nudges.editor()}</div>
       <div class="ob-label" style="margin-top:16px">Notifications</div>
-      <p class="ob-p muted small">So reminders reach you on time, even when TaskFlow is in the background.</p>
+      <p class="ob-p muted small">So reminders reach you on time, even when Levern is in the background.</p>
       ${notifyCard()}`;
     case 'tour': return `
       <div class="ob-center">
@@ -124,7 +125,7 @@ export function close(then) {
 }
 
 // startTour: called when "Show me around" is chosen
-// startAt: a step to begin on (the sign-in step for someone who has used TaskFlow on this device before)
+// startAt: a step to begin on (the sign-in step for someone who has used Levern on this device before)
 export function open(startTour, { startAt = null } = {}) {
   if (startTour) onFinish = startTour;
   root = document.getElementById('onboard');

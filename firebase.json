@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "taskflow-dailytracker",
+    "site": "levern-app",
     "public": "app",
     "ignore": [
       "firebase.json",

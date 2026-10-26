@@ -1,4 +1,4 @@
-// Quest → Google Calendar event, and the plan of API calls that brings the "TaskFlow" calendar in
+// Quest → Google Calendar event, and the plan of API calls that brings the "Levern" calendar in
 // line with the quests. Pure functions (no network), covered by tests/calendar.test.js.
 import { addDays, at } from './dates.js';
 import { rrule } from './ics.js';
@@ -32,7 +32,7 @@ export function questToEvent(q, tz = 'UTC') {
   if (notes) ev.description = notes;
   const rr = rrule(q.repeat);
   if (rr) ev.recurrence = ['RRULE:' + rr];
-  // reminders: a relative one ("1 hour before") becomes a popup alert; absolute ones stay in TaskFlow
+  // reminders: a relative one ("1 hour before") becomes a popup alert; absolute ones stay in Levern
   if (q.remind && !q.remind.dismissed && q.remind.offset != null) {
     ev.reminders = { useDefault: false, overrides: [{ method: 'popup', minutes: Math.max(0, Math.round(q.remind.offset / 60000)) }] };
   } else ev.reminders = { useDefault: false, overrides: [] };

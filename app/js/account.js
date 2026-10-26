@@ -121,7 +121,7 @@ export async function googleAccess(scopes) {
   catch (e) {
     if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') throw new Error('Google Calendar access was not given.');
     if (e.code === 'auth/user-mismatch') throw new Error('Pick the same Google account you signed in with.');
-    if (e.code === 'auth/popup-blocked') throw new Error('Allow pop-ups for TaskFlow, then try again.');
+    if (e.code === 'auth/popup-blocked') throw new Error('Allow pop-ups for Levern, then try again.');
     throw friendly(e);
   }
   const cred = f.A.GoogleAuthProvider.credentialFromResult(r);

@@ -9,7 +9,7 @@
 export function localAdapter(key) {
   return {
     load() { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } },
-    save(state) { try { localStorage.setItem(key, JSON.stringify(state)); } catch (e) { console.warn('TaskFlow: could not save', e); } },
+    save(state) { try { localStorage.setItem(key, JSON.stringify(state)); } catch (e) { console.warn('Levern: could not save', e); } },
     clear() { try { localStorage.removeItem(key); } catch (e) {} },
   };
 }

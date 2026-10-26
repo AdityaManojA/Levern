@@ -14,7 +14,7 @@ let lastSchedule = '';
 export function body(q, count) {
   const parts = [tierLabel(q.tier)];
   if (q.due) parts.push(dueLabel(q));
-  return parts.join(' · ') + (count > 1 ? `\n${count} reminders due in TaskFlow` : '');
+  return parts.join(' · ') + (count > 1 ? `\n${count} reminders due in Levern` : '');
 }
 
 export async function check() {

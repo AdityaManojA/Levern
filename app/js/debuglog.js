@@ -70,7 +70,7 @@ export async function reportText(extra = {}) {
   const pageLines = readLog();
   const all = [...pageLines, ...swLines].sort((a, b) => (a.t || '').localeCompare(b.t || ''));
   return [
-    'TaskFlow diagnostic log',
+    'Levern diagnostic log',
     JSON.stringify(info, null, 2),
     '',
     ...all.map(l => `${l.t} [${l.area}] ${l.msg}${l.data !== undefined ? ' ' + JSON.stringify(l.data) : ''}`),

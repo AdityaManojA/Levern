@@ -1,6 +1,6 @@
-// Calendar connections, all from the browser (no TaskFlow server needed).
-//  Google: dated quests sync into a calendar called "TaskFlow" that the app creates and owns
-//    (scope calendar.app.created: TaskFlow can only see and change calendars it made), and the person's
+// Calendar connections, all from the browser (no Levern server needed).
+//  Google: dated quests sync into a calendar called "Levern" that the app creates and owns
+//    (scope calendar.app.created: Levern can only see and change calendars it made), and the person's
 //    own upcoming events are read (calendar.events.readonly, primary calendar) to show on the Calendar
 //    screen and to share with Solodesk. Signed in, Google access comes through the person's Google
 //    sign-in (Firebase); otherwise through Google Identity Services with the client ID in config.js.
@@ -70,10 +70,10 @@ async function api(method, path, body) {
 // Google's 403s in words a person can act on
 function friendlyGoogle(status, err = {}) {
   const msg = String(err.message || ''), reason = err.errors?.[0]?.reason || '';
-  if (/has not been used|is disabled|accessNotConfigured/i.test(msg + reason)) return 'Google Calendar isn\'t switched on for TaskFlow yet. The Google Calendar API needs enabling in Google Cloud (project taskflow-dailytracker).';
-  if (/insufficient/i.test(msg + reason) || err.status === 'PERMISSION_DENIED' && /scope/i.test(msg)) return 'TaskFlow didn\'t get calendar access. Tap Connect again and tick the calendar boxes when Google asks.';
+  if (/has not been used|is disabled|accessNotConfigured/i.test(msg + reason)) return 'Google Calendar isn\'t switched on for Levern yet. The Google Calendar API needs enabling in Google Cloud (project taskflow-dailytracker).';
+  if (/insufficient/i.test(msg + reason) || err.status === 'PERMISSION_DENIED' && /scope/i.test(msg)) return 'Levern didn\'t get calendar access. Tap Connect again and tick the calendar boxes when Google asks.';
   if (status === 401) return 'Google Calendar access ran out. Tap Sync now to continue.';
-  if (status === 429 || /rate|quota/i.test(reason)) return 'Google Calendar is busy. TaskFlow will try again in a moment.';
+  if (status === 429 || /rate|quota/i.test(reason)) return 'Google Calendar is busy. Levern will try again in a moment.';
   return msg || `Google Calendar error ${status}`;
 }
 async function ensureCalendar() {
@@ -82,7 +82,7 @@ async function ensureCalendar() {
     try { await api('GET', `/calendars/${encodeURIComponent(g.calendarId)}`); return g.calendarId; }
     catch (e) { if (e.status !== 404) throw e; }   // deleted in Google Calendar: make a new one
   }
-  const cal = await api('POST', '/calendars', { summary: 'TaskFlow', description: 'Quests from TaskFlow. Edit them in TaskFlow; changes here are overwritten.', timeZone: TZ });
+  const cal = await api('POST', '/calendars', { summary: 'Levern', description: 'Quests from Levern. Edit them in Levern; changes here are overwritten.', timeZone: TZ });
   commit(s => { s.gcal = { ...googleState(), calendarId: cal.id, map: {} }; }, { quiet: true });
   return cal.id;
 }
@@ -123,7 +123,7 @@ export function disconnectGoogle() {
   token = null; tokenExp = 0; events = [];
   try { localStorage.removeItem(EVENTS_KEY); } catch (e) {}
   cloud.setSharedEvents([]);
-  // the TaskFlow calendar is left in place in Google; reconnecting re-uses it
+  // the Levern calendar is left in place in Google; reconnecting re-uses it
   commit(s => { s.gcal = { connected: false, calendarId: googleState().calendarId, map: {} }; }, { quiet: true });
   emit();
 }

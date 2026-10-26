@@ -1,4 +1,4 @@
-// TaskFlow web app: boot, routing and shared actions.
+// Levern web app: boot, routing and shared actions.
 import * as store from './store.js';
 import { registerSW } from './notify.js';
 import { startReminders, paintBadges } from './reminders.js';
@@ -203,7 +203,7 @@ document.addEventListener('keydown', e => {
 /* ---------- install prompt ---------- */
 // the install offer lives in Settings; when it changes, redraw Settings
 watchInstall(() => { if (route.name === 'settings') render({ keepScroll: true }); });
-addEventListener('appinstalled', () => toast('TaskFlow installed'));
+addEventListener('appinstalled', () => toast('Levern installed'));
 addEventListener('online', () => toast('Back online')); addEventListener('offline', () => toast("You're offline. Everything still works."));
 
 /* ---------- start ---------- */
@@ -258,7 +258,7 @@ vv?.addEventListener('resize', fitViewport); vv?.addEventListener('scroll', fitV
 // a field focused in a sheet scrolls into the visible part once the keyboard is up
 $('#sheet').addEventListener('focusin', e => { if (e.target.matches('input, textarea')) setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320); });
 
-// TaskFlow needs a signed-in account: signed out, you're back at the start of the welcome screens
+// Levern needs a signed-in account: signed out, you're back at the start of the welcome screens
 // signed out on a device that has been set up: go straight to the sign-in step, not the welcome screens again
 const signInStep = () => (onboarding.deviceSetupDone() ? { startAt: 'account' } : {});
 const toStart = () => { if (!onboarding.isOpen()) { sheet.close(); location.hash = '#/home'; onboarding.open(() => tour.start(), signInStep()); } };
@@ -271,8 +271,8 @@ registerSW().finally(() => { startReminders(); if ('Notification' in window && N
 // a friendly nudge to check the leaderboard (at most twice a day), once the app has settled
 setTimeout(() => { if (account.user() && !onboarding.isOpen()) maybeLeaderboardNudge(); }, 4000);
 startCalendars();
-// share data with the local TaskFlow server when there is one (npm start); the app works the same without it
+// share data with the local Levern server when there is one (npm start); the app works the same without it
 startSync();
 onCalendarChange(() => { if (route.name === 'settings' || route.name === 'calendar') render({ keepScroll: true }); });
 if (new URLSearchParams(location.search).get('add') === '1') openAdd();
-window.TaskFlow = { store, go: h => { location.hash = h; }, mochi, tour, sfxLog, soundsLoaded };   // handy in the console
+window.TaskFlow = window.Levern = { store, go: h => { location.hash = h; }, mochi, tour, sfxLog, soundsLoaded };   // handy in the console

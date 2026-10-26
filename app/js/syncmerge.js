@@ -1,4 +1,4 @@
-// Merging two copies of the TaskFlow data (the app's and the server's). Pure, used on both sides.
+// Merging two copies of the Levern data (the app's and the server's). Pure, used on both sides.
 //  - Quests: last write wins per quest, by updatedAt. Deletions are tombstones { id, deletedAt } that win
 //    over any older copy of the quest, so a delete on one side isn't undone by the other.
 //  - History and focus sessions: last write wins for the whole list, by their *UpdatedAt stamp.

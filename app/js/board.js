@@ -144,7 +144,7 @@ export function topThreeFrom(list, now = seasonOf()) {
   if (now < 2) return {};
   return Object.fromEntries(standings(list, now - 1, now).filter(r => r.exp > 0).slice(0, 3).map((r, i) => [r.id, i + 1]));
 }
-// OG: someone who was on the board in the first seasons, while TaskFlow was still being tested (Seasons 1 to 3, OG_UNTIL):
+// OG: someone who was on the board in the first seasons, while Levern was still being tested (Seasons 1 to 3, OG_UNTIL):
 // a season's score is kept in past when the entry moves on, and an entry nobody has opened since still says its
 // season. People who join after that don't get it; the ones who have it keep it. Shown as a small badge by the name.
 export const OG_UNTIL = 3;

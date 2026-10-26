@@ -1,6 +1,6 @@
 {
-  "name": "TaskFlow",
-  "short_name": "TaskFlow",
+  "name": "Levern",
+  "short_name": "Levern",
   "description": "A calm to-do list that feels like a game.",
   "id": "./",
   "start_url": "./#/home",
