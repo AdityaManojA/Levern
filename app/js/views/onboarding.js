@@ -3,6 +3,7 @@
 // Shown once (state.onboarded); Settings → You → Welcome screens reopens it.
 // Copy rule from the design brief: every game word gets a plain meaning the first time it appears.
 import { getState, setSetting, finishOnboarding } from '../store.js';
+import { markCurrentSeen } from '../updatepop.js';
 import { dayExp } from '../stats.js';
 import { esc, play, toast, confirmBox } from '../ui.js';
 import { EASE, EASE_IN, reduced } from '../motion.js';
@@ -116,7 +117,10 @@ export const isOpen = () => !!root && root.classList.contains('open');
 
 export function close(then) {
   if (!root) return;
+  // a brand-new person starts up to date: no What's new pop-up for an app they've only just opened
+  const fresh = !getState().history.length && !getState().quests.length;
   finishOnboarding();
+  if (fresh) markCurrentSeen();
   markDeviceSetup();
   root.classList.remove('open');
   document.body.classList.remove('ob-lock');

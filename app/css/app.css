@@ -1299,3 +1299,20 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
 :root[data-theme="dark"] .late-bang span { color: var(--a-coral); }
 :root[data-theme="dark"] .late-half { background: color-mix(in srgb, var(--a-butter) 18%, var(--card)); border-color: var(--a-butter); color: var(--a-butter); }
 @media (prefers-reduced-motion: reduce) { .late-bang { animation: none; } }
+
+/* What's new pop-up (js/updatepop.js): the rank-up card, wider, with the release notes and a link to the full list */
+.updatepop .up-card { width: min(440px, 100%); text-align: left; align-items: stretch; max-height: min(86vh, 720px); }
+.updatepop .rankup-k, .updatepop h3 { text-align: center; }
+.updatepop h3 { margin: 0; font-size: 20px; }
+.up-note { margin: 0; font-size: 14.5px; line-height: 1.5; padding: 12px 14px; border-radius: 16px; background: var(--tint-butter); border: 2px solid var(--edge); }
+.up-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.up-v { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; font-size: 13px; }
+.up-rel ul, .wn ul { margin: 0; padding-left: 18px; }
+.up-rel ul { display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; line-height: 1.45; color: var(--ink); }
+.up-tip, .wn-tip { margin: 0; font-size: 13px; color: var(--muted); }
+.up-tip b, .wn-tip b { color: var(--ink); }
+.up-btns { margin-top: 2px; }
+.up-btns > * { flex: 1; text-align: center; justify-content: center; }
+.wn-note { margin: 0 0 10px; font-size: 14px; line-height: 1.5; }
+.wn-tip { margin-top: 10px; }
+:root[data-theme="dark"] .up-note { background: color-mix(in srgb, var(--a-butter) 12%, var(--card)); border-color: color-mix(in srgb, var(--a-butter) 40%, transparent); }

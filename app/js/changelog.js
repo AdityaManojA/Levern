@@ -1,10 +1,12 @@
 // What's new: one entry per release, newest first (Settings → What's new). Add an entry here with every update;
-// the first one is the version shown at the bottom of Settings.
+// the first one is the version shown at the bottom of Settings. A new first entry is also shown once to every person
+// as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
-    v: '1.09', date: '2026-10-26', title: 'Meet Levern',
+    v: '1.09', date: '2026-10-26', title: 'TaskFlow is now Levern',
+    note: 'Other apps were already established under names like ours, so we rebranded to a name that’s only ours: Levern, said /lev·earn/ (level up, earn). Same app, same quests, same cats. Your data, streaks and leaderboard progress are untouched, and the new address is getlevern.web.app.',
+    tip: 'Reinstalling the app makes sure the full update is done: the new name and icon on your home screen, and the latest version everywhere.',
     items: [
-      'TaskFlow is now called Levern (say it /lev·earn/). Same app, same quests, same cats; your data and progress are untouched.',
       'Fixed: the leaderboard could show less EXP than your own card. A failed upload now retries on its own, and coming back to the app sends your latest score.',
       'The /lev·earn/ under the name now matches the app, with earn in the accent colour.',
       'Home greets you by your leaderboard name, or by the name in your email if you haven’t set one.',

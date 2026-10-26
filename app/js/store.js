@@ -24,6 +24,9 @@ const DEFAULT_SETTINGS = {
   // rankSeen: the season rank you were last told about ({ season, step }); rankHistory: your best rank per season
   // ({ [season]: { rank, exp } }); both keep the rank-up pop-up and the profile's season history.
   profilePublic: false, rankSeen: null, rankHistory: {},
+  // updateSeen: the newest version whose What's new pop-up this person has seen (updatepop.js), synced so every
+  // device knows
+  updateSeen: '',
 };
 
 let adapter = localAdapter('taskflow.v1');

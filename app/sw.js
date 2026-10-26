@@ -4,7 +4,7 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v70';
+const VERSION = 'taskflow-v71';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
@@ -14,7 +14,7 @@ const SHELL = [
   'icons/icon-v4-192.png', 'icons/icon-v4-512.png', 'icons/favicon-v4.png', 'icons/favicon-v4-32.png', 'icons/maskable-v4-512.png', 'icons/badge-v4-96.png', 'icons/apple-touch-icon-v4.png',
   'sounds/tap-1.mp3', 'sounds/tap-2.mp3', 'sounds/tap-3.mp3', 'sounds/tab-1.mp3', 'sounds/tab-2.mp3', 'sounds/tick-1.mp3', 'sounds/tick-2.mp3', 'sounds/tick-3.mp3', 'sounds/coin.mp3', 'sounds/chime-1.mp3', 'sounds/chime-2.mp3', 'sounds/mrrp-1.mp3', 'sounds/mrrp-2.mp3', 'sounds/mrrp-3.mp3', 'sounds/meow-sweet-1.mp3', 'sounds/meow-sweet-2.mp3', 'sounds/meow-hey-1.mp3', 'sounds/meow-hey-2.mp3', 'sounds/meow-grumpy-1.mp3', 'sounds/meow-grumpy-2.mp3', 'sounds/step-1.mp3', 'sounds/step-2.mp3', 'sounds/step-3.mp3', 'sounds/land.mp3', 'sounds/meow-1.mp3', 'sounds/meow-2.mp3', 'sounds/meow-3.mp3', 'sounds/pickup-1.mp3', 'sounds/pickup-2.mp3', 'sounds/angry-1.mp3', 'sounds/angry-2.mp3',
   'js/sound.js', 'js/ink.js', 'js/inkpad.js', 'js/handwriting.js', 'js/views/ink.js',
-  'js/controls.js', 'js/menu.js', 'js/account.js', 'js/cloud.js', 'js/nudges.js', 'js/theme.js', 'js/theme-boot.js', 'js/namefilter.js', 'js/namecheck.js', 'js/board.js', 'js/views/leaderboard.js', 'js/views/whatsnew.js', 'js/changelog.js', 'js/views/profile.js', 'js/profile.js', 'js/rankup.js', 'js/back.js', 'js/latepop.js', 'privacy.html', 'cookies.html','mochi/strips/happy-wiggle.webp', 'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
+  'js/controls.js', 'js/menu.js', 'js/account.js', 'js/cloud.js', 'js/nudges.js', 'js/theme.js', 'js/theme-boot.js', 'js/namefilter.js', 'js/namecheck.js', 'js/board.js', 'js/views/leaderboard.js', 'js/views/whatsnew.js', 'js/changelog.js', 'js/views/profile.js', 'js/profile.js', 'js/rankup.js', 'js/back.js', 'js/latepop.js', 'js/updatepop.js', 'privacy.html', 'cookies.html','mochi/strips/happy-wiggle.webp', 'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
 ];
 
 self.addEventListener('install', e => {
