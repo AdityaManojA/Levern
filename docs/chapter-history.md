@@ -191,6 +191,13 @@ Pipeline: `D:\Projects\TaskFlow\design\mochi\v3` builds 3x WebP strips, using on
   - Now it's the leaderboard name, else the first word of the email (`aditya.dev.org@…` → "Aditya"), else the old saved name.
   - The helpers are `displayName()` and `emailName()` in `account.js`.
 
+- **What's new pop-up** (`updatepop.js`, commit 648ce7d):
+  - Every new release (a new first entry in `changelog.js`) pops up once per person, on whichever device opens first, with a link to the full changelog.
+  - "Seen" is stored in synced settings (`updateSeen`) and on the device, and it's marked before the pop-up opens. The check waits for a real account sync, so a second device never repeats it; offline, it waits.
+  - Brand-new people start up to date.
+  - It uses the rank-up card, checked in light, dark and Mono.
+  - 1.09 carries the rebrand note (similar names were already established) and the reinstall tip.
+
 ### 7.3 Terracove (SoloDesk) requests passed on
 Three requests the owner sent here belonged to Terracove (`D:\Projects\Solodesk-MVP`), so they were forwarded word for word to its own session ("TC"):
 - deleting approval requests,

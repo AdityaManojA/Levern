@@ -83,7 +83,9 @@ firebase deploy --only hosting:getlevern --project taskflow-dailytracker   # the
 firebase deploy --only hosting --project taskflow-dailytracker             # all three sites
 ```
 
-Before every app deploy, bump `VERSION` in `app/sw.js` so installed copies update. Also add a line to `app/js/changelog.js`.
+Before every app deploy:
+- Bump `VERSION` in `app/sw.js` so installed copies update.
+- Add the release to `app/js/changelog.js`. A **new first entry, with a new `v`**, is shown to every person once as a "What's new" pop-up (`app/js/updatepop.js`), on whichever of their devices opens first, and never again. Optional `note` (an intro paragraph) and `tip` (a closing line) appear in the pop-up and on the What's new page. Adding lines to the existing first entry won't pop up again for people who've already seen it.
 
 **Firestore rules** are shared with Terracove (formerly SoloDesk), which lives in the same project, so they're deployed from that repository (`D:\Projects\Solodesk-MVP`). Keep `firestore.rules` here in step with that copy. The leaderboard's growth rule must keep its refill of **60 EXP an hour**: `let room = o.get('bank', 0) + 60 * …`. If it drops back to 15, the board starts refusing uploads.
 
