@@ -160,7 +160,7 @@ Pipeline: `D:\Projects\TaskFlow\design\mochi\v3` builds 3x WebP strips, using on
 - **Uncommitted portal change:** `TaskFlow-controls/firestore.rules` also has SoloDesk's uncommitted portal (`wsStamp`) change. It stays uncommitted and undeployed from here.
 - **OG badge:** to be removed after Season 3.
 - **Premium (S-002):** on hold.
-- **Logo:** chosen and live (round 8, option 3, Ink tile). Not done yet: the Figma round-8 presentation board (blocked by the View seat's Figma call limit) and a wordmark lockup file for marketing.
+- **Logo:** the black-and-white cat is the app icon on every device (v70). The logo rounds in Figma are reference only. The round-8 Figma board was never built (the View seat's call limit was hit).
 - **Installed copies and notifications:** people who installed TaskFlow must reinstall from getlevern.web.app and turn notifications on again, because browsers tie both to the address. Old push subscriptions stop once the old site's service worker retires itself.
 - **Google sign-in screen:** it may still show "taskflow-dailytracker.firebaseapp.com" and the old app name. That name lives in Google Cloud → APIs & Services → Branding, and the owner changes it there.
 - **Unused Hosting site:** `levern-app` only redirects now. It can be deleted later if wanted (never deleted without asking).
@@ -215,7 +215,7 @@ TC shipped all of it in Terracove 1.17 (commit b4fbcaf, tag v1.17) and left the 
 | 7 (app palette) | In Figma | Pinwheel and Split sun, each in three versions using Levern's own colours |
 | 8 (combined) | Components in Figma; the board is local only (`design/logo-levern/round-8-combined.html`), because Figma's tool-call limit for the View seat was hit | Split sun "Ginger & ink" × "Cream tile": 1 Tile + ginger & ink (pick), 2 Outlined ginger & cream, 3 Ink tile, 4 Glow & ink |
 
-**Chosen (27 Oct): round 8, option 3 "Ink tile"**: ginger over cream, split and sliding, on an ink tile (#1E1B18 / #FF9A3D / #FFF8EE). It's live from v69 (commit dbdbf9b). Icons are in `app/icons/*-v3*`: 192/512, maskable 512, iPhone 180, SVG + PNG favicon, white badge 96. The old icons were removed. A faint ring keeps the tile visible in the dark header. Installed copies show the new home-screen icon only after a reinstall.
+**Logo decision (27 Oct):** round 8 option 3 "Ink tile" went live in v69, then the owner went back to the **black-and-white cat** (a white cat on black) for every device in v70. Icons are `app/icons/*-v4*`: 192/512, iPhone 180 (no longer yellow), maskable 512 with the cat in the safe zone on one exact black #191613, 32/64 favicons, and the white cat badge. The split-sun designs stay in Figma for reference.
 
 The owner's favourites so far are round 2's **Split sun** and round 6's **Pinwheel**.
 
