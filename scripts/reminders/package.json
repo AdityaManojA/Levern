@@ -2,7 +2,7 @@
   "name": "taskflow-reminders",
   "private": true,
   "type": "module",
-  "description": "Sends TaskFlow reminders as web push notifications. Run by .github/workflows/reminders.yml.",
+  "description": "Sends Levern reminders as web push notifications. Run by .github/workflows/reminders.yml.",
   "dependencies": {
     "firebase-admin": "^12.7.0",
     "web-push": "^3.6.7"

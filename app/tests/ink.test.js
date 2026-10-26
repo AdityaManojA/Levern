@@ -62,7 +62,7 @@ test('ink: a busy page of handwriting stays under the per-sketch limit', () => {
 
 test('store: sketches are added, edited, removed, and saved with new quests', () => {
   store.init(memoryAdapter());
-  const q = store.getState().quests[0];
+  const q = store.addQuest({ title: 'Sketch here' });
   const k = store.addSketch(q.id, { kind: 'sketch', w: 600, h: 400, strokes: [makeStroke(line(5))] });
   assert.equal(store.findQuest(q.id).sketches.length, 1);
   store.updateSketch(q.id, k.id, { text: 'hello' });

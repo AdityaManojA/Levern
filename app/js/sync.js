@@ -1,9 +1,10 @@
-// Keeps the app's data in step with the TaskFlow server (server.mjs), which is what the REST API and
-// webhooks read and change. The server is the shared copy: the app sends its data, the server merges
-// (last write wins per quest, deletions win over older copies) and sends back the result, which the app
-// adopts. Changes made through the API arrive as server-sent events. Offline, nothing is lost: the app
+// Keeps the app's data in step with the local Levern server (server.mjs, on this computer only). The server
+// is the shared copy: the app sends its data, the server merges (last write wins per quest, deletions win over
+// older copies) and sends back the result, which the app adopts. Changes from another tab arrive as
+// server-sent events. Offline, nothing is lost: the app
 // keeps working on its own copy and sends it again when the server is back.
 import { getState, onSave, syncDoc, adoptSynced } from './store.js';
+import { canon } from './syncmerge.js';
 
 let enabled = false, timer = null, busy = false, again = false, dirty = false, lastSent = '', es = null;
 const listeners = new Set();
@@ -23,14 +24,14 @@ async function syncNow() {
     const merged = await res.json();
     delete merged.rev;
     // adopt the server's result only if it differs from what we have now
-    const now = JSON.stringify(syncDoc());
-    const theirs = JSON.stringify(Object.fromEntries(Object.keys(mine).map(k => [k, merged[k]])));
+    const now = canon(syncDoc());
+    const theirs = canon(Object.fromEntries(Object.keys(mine).map(k => [k, merged[k]])));
     if (theirs !== now) adoptSynced(merged);
     lastSent = body; dirty = false;
     setStatus({ online: true, lastSync: Date.now(), error: null });
   } catch (e) {
     dirty = true;
-    setStatus({ online: false, error: navigator.onLine ? "Can't reach the TaskFlow server" : 'Offline' });
+    setStatus({ online: false, error: navigator.onLine ? "Can't reach the Levern server" : 'Offline' });
   } finally {
     busy = false;
     if (again) { again = false; schedule(50); }
@@ -48,14 +49,14 @@ function listen() {
 }
 
 export async function startSync() {
-  // the TaskFlow server runs on this computer (npm start); a hosted copy syncs through the account instead (cloud.js)
+  // the Levern server runs on this computer (npm start); a hosted copy syncs through the account instead (cloud.js)
   const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || /^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(location.hostname);
-  if (!local) { enabled = false; setStatus({ online: false, error: 'Not connected to a TaskFlow server' }); return false; }
+  if (!local) { enabled = false; setStatus({ online: false, error: 'Not connected to a Levern server' }); return false; }
   try {
     const r = await fetch('sync/ping', { cache: 'no-store' });
     enabled = r.ok;
   } catch (e) { enabled = false; }
-  if (!enabled) { setStatus({ online: false, error: 'Not connected to a TaskFlow server' }); return false; }
+  if (!enabled) { setStatus({ online: false, error: 'Not connected to a Levern server' }); return false; }
   onSave((s, opts) => { if (!opts.fromSync) { dirty = true; schedule(); } });
   listen();
   addEventListener('online', () => { listen(); schedule(50); });

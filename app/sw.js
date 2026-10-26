@@ -1,20 +1,20 @@
-/* TaskFlow service worker: offline app shell, reminder notifications, notification buttons.
+/* Levern service worker: offline app shell, reminder notifications, notification buttons.
    Limits: a page-less service worker only runs when the browser wakes it. Reminders are shown
    on time while the app is open (even in a background tab). With the app closed they are shown
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v33';
+const VERSION = 'taskflow-v72';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
-  'js/notify.js', 'js/reminders.js', 'js/speech.js', 'js/ui.js', 'js/complete.js', 'js/motion.js', 'js/mochi.js', 'js/mascot.js', 'js/sync.js', 'js/syncmerge.js', 'js/questops.js', 'js/views/developer.js', 'js/ptr.js', 'mochi/strips/stretch.png', 'mochi/strips/wave.png', 'mochi/strips/happy-spin.png', 'js/views/tour.js', 'mochi/manifest.js', 'mochi/strips/rest.png', 'mochi/strips/blink.png', 'js/calendars.js', 'js/gcalmap.js', 'config.js', 'js/install.js', 'js/views/common.js',
+  'js/notify.js', 'js/reminders.js', 'js/speech.js', 'js/ui.js', 'js/complete.js', 'js/motion.js', 'js/mochi.js', 'js/mascot.js', 'js/sync.js', 'js/syncmerge.js', 'js/ptr.js', 'mochi/strips/stretch.webp', 'mochi/strips/wave.webp', 'mochi/strips/happy-spin.webp', 'js/views/tour.js', 'mochi/manifest.js', 'cookie/manifest.js', 'mochi/strips/rest.webp', 'mochi/strips/blink.webp', 'js/calendars.js', 'js/gcalmap.js', 'config.js', 'js/install.js', 'js/views/common.js',
   'js/views/home.js', 'js/views/quests.js', 'js/views/detail.js', 'js/views/add.js', 'js/views/calendar.js',
   'js/views/focus.js', 'js/views/stats.js', 'js/views/settings.js', 'js/views/reminders.js', 'js/views/onboarding.js',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-squircle.png', 'icons/maskable-512.png', 'icons/badge-96.png', 'icons/apple-touch-icon-v2.png',
+  'icons/icon-v4-192.png', 'icons/icon-v4-512.png', 'icons/favicon-v4.png', 'icons/favicon-v4-32.png', 'icons/maskable-v4-512.png', 'icons/badge-v4-96.png', 'icons/apple-touch-icon-v4.png',
   'sounds/tap-1.mp3', 'sounds/tap-2.mp3', 'sounds/tap-3.mp3', 'sounds/tab-1.mp3', 'sounds/tab-2.mp3', 'sounds/tick-1.mp3', 'sounds/tick-2.mp3', 'sounds/tick-3.mp3', 'sounds/coin.mp3', 'sounds/chime-1.mp3', 'sounds/chime-2.mp3', 'sounds/mrrp-1.mp3', 'sounds/mrrp-2.mp3', 'sounds/mrrp-3.mp3', 'sounds/meow-sweet-1.mp3', 'sounds/meow-sweet-2.mp3', 'sounds/meow-hey-1.mp3', 'sounds/meow-hey-2.mp3', 'sounds/meow-grumpy-1.mp3', 'sounds/meow-grumpy-2.mp3', 'sounds/step-1.mp3', 'sounds/step-2.mp3', 'sounds/step-3.mp3', 'sounds/land.mp3', 'sounds/meow-1.mp3', 'sounds/meow-2.mp3', 'sounds/meow-3.mp3', 'sounds/pickup-1.mp3', 'sounds/pickup-2.mp3', 'sounds/angry-1.mp3', 'sounds/angry-2.mp3',
   'js/sound.js', 'js/ink.js', 'js/inkpad.js', 'js/handwriting.js', 'js/views/ink.js',
-  'js/controls.js', 'js/menu.js', 'js/account.js', 'js/cloud.js', 'js/nudges.js', 'privacy.html', 'cookies.html','mochi/strips/happy-wiggle.png', 'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
+  'js/controls.js', 'js/menu.js', 'js/account.js', 'js/cloud.js', 'js/nudges.js', 'js/theme.js', 'js/theme-boot.js', 'js/namefilter.js', 'js/namecheck.js', 'js/board.js', 'js/views/leaderboard.js', 'js/views/whatsnew.js', 'js/changelog.js', 'js/views/profile.js', 'js/profile.js', 'js/rankup.js', 'js/back.js', 'js/latepop.js', 'js/updatepop.js', 'privacy.html', 'cookies.html','mochi/strips/happy-wiggle.webp', 'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
 ];
 
 self.addEventListener('install', e => {
@@ -48,9 +48,9 @@ const kvSet = async (k, v) => { const d = await db(); return new Promise(res => 
 const key = it => `${it.id}@${it.at}`;
 // daily nudges (kind 'nudge': water, meals, a walk, today's quests) have no Done/Snooze and open Home
 const notifyOpts = it => it.kind === 'nudge'
-  ? { body: it.body, tag: 'nudge-' + it.id, renotify: true, icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: '#/home' } }
+  ? { body: it.body, tag: 'nudge-' + it.id, renotify: true, icon: 'icons/icon-v4-192.png', badge: 'icons/badge-v4-96.png', data: { url: '#/home' } }
   : {
-    body: it.body, tag: 'quest-' + it.id, renotify: true, icon: 'icons/icon-192.png', badge: 'icons/badge-96.png',
+    body: it.body, tag: 'quest-' + it.id, renotify: true, icon: 'icons/icon-v4-192.png', badge: 'icons/badge-v4-96.png',
     data: { id: it.id, url: '#/quest/' + it.id },
     actions: [{ action: 'done', title: 'Done' }, { action: 'snooze', title: 'Snooze 10 min' }],
   };
@@ -103,13 +103,13 @@ self.addEventListener('notificationclick', e => {
 // One handler only, so each push shows once. A payload with an `id` uses the local reminder options.
 self.addEventListener('push', e => {
   let d = {};
-  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'TaskFlow', body: e.data ? e.data.text() : '' }; }
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'Levern', body: e.data ? e.data.text() : '' }; }
   // Show the notification first, straight away: iOS expects every push to produce one, and nothing may stand
   // in front of it. The diagnostic log is written afterwards and can't stop or delay the notification.
-  const show = d.id ? self.registration.showNotification(d.title || 'TaskFlow', notifyOpts(d))
-    : self.registration.showNotification(d.title || 'TaskFlow', {
+  const show = d.id ? self.registration.showNotification(d.title || 'Levern', notifyOpts(d))
+    : self.registration.showNotification(d.title || 'Levern', {
       body: d.body || '', tag: d.tag || 'taskflow', renotify: true,
-      icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: d.url || '#/home' },
+      icon: 'icons/icon-v4-192.png', badge: 'icons/badge-v4-96.png', data: { url: d.url || '#/home' },
     });
   // the log keeps the kind of reminder, not its title (titles name the person's quests)
   e.waitUntil(show.then(

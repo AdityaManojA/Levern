@@ -3,23 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>TaskFlow</title>
+<title>Levern</title>
 <meta name="description" content="A calm to-do list that feels like a game.">
 <meta name="theme-color" content="#FFF8EE">
+<link rel="canonical" href="https://getlevern.web.app/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Levern">
+<meta property="og:title" content="Levern: a calm to-do list that feels like a game">
+<meta property="og:description" content="Finish quests, build a streak, earn EXP and climb the season leaderboard, with Mochi the cat for company.">
+<meta property="og:url" content="https://getlevern.web.app/">
+<meta property="og:image" content="https://getlevern.web.app/icons/icon-v4-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="Levern's icon: a white cat on black">
+<meta name="twitter:card" content="summary">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/favicon-squircle.png" type="image/png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png">
+<link rel="icon" href="icons/favicon-v4-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-v4.png" sizes="64x64" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon-v4.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="TaskFlow">
+<meta name="apple-mobile-web-app-title" content="Levern">
 <link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/app.css">
+<script src="js/theme-boot.js"></script>
 </head>
 <body>
 <div class="app">
   <header class="top">
-    <a class="brand" href="#/home"><img src="icons/icon-192.png" alt="" width="28" height="28"><span>TaskFlow</span></a>
+    <a class="brand" href="#/home"><img src="icons/icon-v4-192.png" alt="" width="28" height="28"><span class="brand-t"><span class="brand-n">Levern</span><span class="brand-ph" aria-hidden="true"><i>/</i>lev<b>·</b><em>earn</em><i>/</i></span></span></a>
     <div class="top-actions" id="top-actions"></div>
   </header>
   <main id="view" class="view" tabindex="-1"></main>
@@ -29,11 +42,11 @@
 <div class="scrim" id="scrim"></div>
 <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Quest"></section>
 <section class="rpanel" id="rpanel" role="dialog" aria-label="Reminders"></section>
-<section id="onboard" class="onboard" role="dialog" aria-modal="true" aria-label="Welcome to TaskFlow" hidden></section>
+<section id="onboard" class="onboard" role="dialog" aria-modal="true" aria-label="Welcome to Levern" hidden></section>
 <section id="tour" class="tour" hidden></section>
 <dialog id="dialog" class="dialog"></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<noscript>TaskFlow needs JavaScript.</noscript>
+<noscript>Levern needs JavaScript.</noscript>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

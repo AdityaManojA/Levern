@@ -1,11 +1,18 @@
 // Calendar export: an .ics file (Apple Calendar, Outlook, Google import) and Google Calendar "add event" links.
 import { addDays, at } from './dates.js';
 
-const RRULE = { daily: 'FREQ=DAILY', alternate: 'FREQ=DAILY;INTERVAL=2', weekdays: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', weekly: 'FREQ=WEEKLY', monthly: 'FREQ=MONTHLY' };
+const RRULE = { daily: 'FREQ=DAILY', alternate: 'FREQ=DAILY;INTERVAL=2', weekdays: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR', weekly: 'FREQ=WEEKLY', monthly: 'FREQ=MONTHLY', yearly: 'FREQ=YEARLY' };
 const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 // the chosen weekdays, weekly
 const customRule = r => r.days?.length ? `FREQ=WEEKLY;BYDAY=${[...r.days].sort().map(d => BYDAY[d]).join(',')}` : '';
-export const rrule = r => r && r.freq === 'custom' ? customRule(r) : r && RRULE[r.freq] ? RRULE[r.freq] + (r.interval > 1 ? `;INTERVAL=${r.interval}` : '') : '';
+// a monthly repeat on the 29th-31st falls on the month's last day in shorter months (as in the app), and a yearly
+// one on 29 Feb on the 28th in other years: "the last of these days that the month has"
+const monthEnd = r => {
+  if (r.freq === 'monthly' && r.day > 28) return `;BYMONTHDAY=${Array.from({ length: r.day - 27 }, (_, i) => 28 + i).join(',')};BYSETPOS=-1`;
+  if (r.freq === 'yearly' && r.month === 2 && r.day === 29) return ';BYMONTH=2;BYMONTHDAY=28,29;BYSETPOS=-1';
+  return '';
+};
+export const rrule = r => r && r.freq === 'custom' ? customRule(r) : r && RRULE[r.freq] ? RRULE[r.freq] + (r.interval > 1 ? `;INTERVAL=${r.interval}` : '') + monthEnd(r) : '';
 
 const esc = s => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 const pad = n => String(n).padStart(2, '0');
@@ -47,9 +54,9 @@ function eventLines(q, stamp) {
 }
 
 export function buildICS(quests, now = Date.now()) {
-  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//TaskFlow//Quests//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:TaskFlow'];
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Levern//Quests//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:Levern'];
   // example quests stay out of whole-calendar exports and feeds (a single quest asked for by name is still included)
-  for (const q of quests) if (q.due && !q.done && (!q.sample || quests.length === 1)) L.push(...eventLines(q, now));
+  for (const q of quests) if (q.due && !q.done) L.push(...eventLines(q, now));
   L.push('END:VCALENDAR');
   return L.map(fold).join('\r\n') + '\r\n';
 }

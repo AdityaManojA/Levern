@@ -17,6 +17,13 @@ export function addMonths(s, n) {
   d.setDate(Math.min(day, last));
   return toStr(d);
 }
+// minutes from now until HH:MM (today, or tomorrow when that time has passed): the Focus timer's "until"
+export function minutesUntil(hhmm, now = new Date()) {
+  const [h, m] = hhmm.split(':').map(Number), end = new Date(now);
+  end.setHours(h, m, 0, 0);
+  if (end <= now) end.setDate(end.getDate() + 1);
+  return (end - now) / 60000;
+}
 // whole days from a to b (b - a)
 export const diffDays = (a, b) => Math.round((fromStr(b) - fromStr(a)) / DAY_MS);
 export const weekday = s => fromStr(s).getDay();

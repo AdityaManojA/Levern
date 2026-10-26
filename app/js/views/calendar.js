@@ -25,7 +25,7 @@ function byDay(from, to) {
   return map;
 }
 
-// the person's own Google Calendar events (from the TaskFlow server), { 'YYYY-MM-DD': [event, ...] }
+// the person's own Google Calendar events (from the Levern server), { 'YYYY-MM-DD': [event, ...] }
 const pad = n => String(n).padStart(2, '0');
 const hhmm = iso => { const d = new Date(iso); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 function eventsByDay(from, to) {
@@ -41,7 +41,7 @@ function eventsByDay(from, to) {
 }
 const evTime = (e, d) => e.allDay ? 'All day' : toStr(new Date(e.start)) === d ? fmtTime(hhmm(e.start)) : 'cont.';
 // a Google event looks like a quest: its priority colour once you give it one, Google blue until then
-const EV_COLOR = '#9DB8F6';
+const EV_COLOR = 'var(--ev)';   // Google Calendar events (app.css --ev)
 const evColor = e => { const t = eventTier(e.id); return t == null ? EV_COLOR : TIER_COLORS[t]; };
 const G_TAG = '<span class="gtag" aria-label="Google Calendar">G</span>';
 const evRow = (e, d, cls) => `<button type="button" class="${cls} ev" data-act="ev-open" data-ev="${esc(e.id)}" aria-label="${esc(e.title)}, Google Calendar event, ${esc(evTime(e, d))}${eventTier(e.id) != null ? `, ${esc(tierLabel(eventTier(e.id)))}` : ''}">
@@ -117,7 +117,7 @@ export function render() {
 }
 
 // a Google event's sheet: when and where, a priority to pick, and a link to change it in Google.
-// No delete: the event belongs to Google Calendar, and TaskFlow never changes it there.
+// No delete: the event belongs to Google Calendar, and Levern never changes it there.
 function openEvent(id) {
   const e = externalEvents().find(x => x.id === id);
   if (!e) return;
@@ -126,10 +126,10 @@ function openEvent(id) {
     const when = e.allDay ? `${fmtDate(e.start)} · all day` : `${fmtDate(d)} · ${fmtTime(hhmm(e.start))}${e.end ? `–${fmtTime(hhmm(e.end))}` : ''}`;
     return `<div class="sheet-h"><b>${esc(e.title)}</b><button class="btn white sm" data-ev-close>Close</button></div>
       <div class="ev-when">${G_TAG}<span>${esc(when)}${e.where ? ` · ${esc(e.where)}` : ''}</span></div>
-      <label class="lbl" id="ev-pri">Priority in TaskFlow</label>
+      <label class="lbl" id="ev-pri">Priority in Levern</label>
       <div class="pick" role="radiogroup" aria-labelledby="ev-pri">${TIER_COLORS.map((c, i) => `<button type="button" role="radio" aria-checked="${i === t}" data-ev-tier="${i}" class="${i === t ? 'on' : ''}" style="--c:${c}" title="${esc(tierLabel(i))}">P${i + 1}</button>`).join('')}</div>
       <div class="small" style="margin-top:6px">${t == null ? 'No priority yet. It shows in Google blue until you pick one.' : esc(tierLabel(t))}${t != null ? ' · <button type="button" class="link" data-ev-tier="none">Clear</button>' : ''}</div>
-      <p class="small" style="margin:16px 0 10px">This event lives in your Google Calendar. Change its time or delete it there, and TaskFlow follows.</p>
+      <p class="small" style="margin:16px 0 10px">This event lives in your Google Calendar. Change its time or delete it there, and Levern follows.</p>
       ${e.url ? `<a class="btn white block" href="${esc(e.url)}" target="_blank" rel="noopener">Open in Google Calendar</a>` : ''}`;
   };
   const s = sheet.open(draw(), 'evsheet');
@@ -159,7 +159,7 @@ export const actions = {
   'cal-today': () => { cursor = selected = todayStr(); showAll = false; rerender(); },
   'cal-more': () => { showAll = true; play('click', 0.3); rerender(true); },
   'cal-move': el => moveBy(+el.dataset.n),
-  'ics-all': () => { download('taskflow.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
+  'ics-all': () => { download('levern.ics', buildICS(getState().quests), 'text/calendar'); toast('Calendar file saved'); },
 };
 
 // swipe sideways across the month to go to the next or previous month

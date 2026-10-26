@@ -1,4 +1,4 @@
-name: TaskFlow reminders
+name: Levern reminders
 
 # Sends due reminders, priority lead-up reminders and daily nudges as web push notifications. Runs every 5 minutes
 # (re-saved so GitHub picks up the schedule again).

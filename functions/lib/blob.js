@@ -1,4 +1,4 @@
-// A person's TaskFlow data is one JSON document (the same shape the app syncs). Sketches can make it
+// A person's Levern data is one JSON document (the same shape the app syncs). Sketches can make it
 // big, and a Firestore document holds at most 1 MiB, so it is stored deflated and split into chunks.
 import { deflateRawSync, inflateRawSync } from 'node:zlib';
 

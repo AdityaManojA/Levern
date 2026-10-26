@@ -7,7 +7,7 @@ const MAX_PER_DAY = 2, GAP_MS = 4 * 60 * 60 * 1000;
 const LINES = [
   'See who\'s on top today',
   'Check the leaderboard. Where do you stand?',
-  'The board resets every day. Can you climb?',
+  'A new season starts every two weeks. Can you climb?',
   'Earn EXP today and move up the leaderboard',
   'Someone is ahead of you. Check the leaderboard',
   'Quick look: who\'s leading today?',

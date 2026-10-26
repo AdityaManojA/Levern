@@ -1,7 +1,8 @@
 // Quest detail: edit everything about one quest. Fields save as you go.
 import { findQuest, updateQuest, deleteQuest, addSubtask, updateSubtask, removeSubtask, setReminder, setAlerts, tierLabel, TIER_COLORS, getState } from '../store.js';
 import { dueLabel, dueStatus, fmtStamp, todayStr } from '../dates.js';
-import { REPEATS, describe } from '../recur.js';
+import { REPEATS, describe, oftenOf, oftenSeg } from '../recur.js';
+import { multiLabel } from '../multi.js';
 import { googleLink, buildICS } from '../ics.js';
 import { esc, ICON, toast, play, confirmBox, download } from '../ui.js';
 import { tierPicker, reminderPicker, bindPicker, bindAlerts, goalBlock } from './common.js';
@@ -10,12 +11,21 @@ import { undoGoal } from '../store.js';
 import { requestPermission } from '../notify.js';
 import { sketchThumbs, openInk, openSketch } from './ink.js';
 import { timeWheelHTML } from '../timewheel.js';
+import { cloudOn, cloudReady, syncNow } from '../cloud.js';
 
 let current = null;
 
 export function render(params) {
   const q = current = findQuest(params.id);
-  if (!q) return `<a class="back" href="#/quests">${ICON.back} Quests</a><div class="card empty"><b>Quest not found</b><span class="small">It may have been deleted.</span></div>`;
+  if (!q) {
+    // opened from a notification or link before this device has the quest: wait for the account's copy
+    // (the page redraws when it arrives) instead of saying it's gone
+    const waiting = params.id && cloudOn() && !cloudReady();
+    if (waiting) return `<a class="back" href="#/quests">${ICON.back} Quests</a><div class="card empty"><b>Loading your quest…</b><span class="small">Getting the latest from your account.</span></div>`;
+    if (params.id && cloudOn()) syncNow();   // one more look at the account; it redraws if the quest turns up
+    return `<a class="back" href="#/quests">${ICON.back} Quests</a><div class="card empty"><b>Quest not found</b><span class="small">${params.id ? 'It may have been deleted, or it was made on another device that hasn’t synced yet.' : 'This link doesn’t point to a quest.'}</span>
+      <a class="btn white sm" href="#/quests" style="margin-top:10px">See all quests</a></div>`;
+  }
   const st = dueStatus(q), done = q.subtasks.filter(s => s.done).length;
   const history = getState().history.filter(h => h.questId === q.id).length;
   return `<div class="detail">
@@ -24,7 +34,7 @@ export function render(params) {
       <button class="chk${q.done ? ' on' : ''}" data-act="toggle" data-id="${q.id}" aria-label="${q.done ? 'Mark not done' : 'Complete'}"></button>
       <div style="flex:1;min-width:0">
         <input class="title-in" value="${esc(q.title)}" data-input="title" aria-label="Title" maxlength="140">
-        <div class="small" style="color:var(--ink)">${esc(tierLabel(q.tier))}${q.due ? ` · <span style="${st === 'overdue' ? 'color:var(--red);font-weight:700' : ''}">${esc(dueLabel(q))}</span>` : ''}${q.repeat ? ' · ' + esc(describe(q.repeat)) : ''}${q.done ? ' · done' : ''}</div>
+        <div class="small" style="color:var(--ink)">${esc(tierLabel(q.tier))}${q.due ? ` · <span style="${st === 'overdue' ? 'color:var(--red);font-weight:700' : ''}">${esc(dueLabel(q))}</span>` : ''}${q.repeat ? ' · ' + esc(describe(q.repeat, q.due)) : ''}${q.done ? ' · done' : ''}</div>
       </div>
     </div>
     ${q.repeat && history ? `<div class="small" style="margin:6px 2px 0">Completed ${history} time${history === 1 ? '' : 's'}. Ticking it moves it to the next date.</div>` : ''}
@@ -42,12 +52,15 @@ export function render(params) {
       <button class="chip chip-btn" data-act="due-quick" data-d="7">In a week</button>${q.due ? '<button class="chip chip-btn" data-act="due-quick" data-d="">No date</button>' : ''}
     </div>
 
-    <label class="lbl" for="repeat">Repeat</label>
-    <select class="field" id="repeat" data-change="repeat">${REPEATS.map(([k, l]) => `<option value="${k}" ${(q.repeat?.freq || (q.goal ? 'goal' : '')) === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <label class="lbl">How often</label>
+    ${oftenSeg(oftenOf(q), 'data-act="often" data-k')}
+    ${q.repeat ? `<select class="field" id="repeat" data-change="repeat" aria-label="Repeats">${REPEATS.map(([k, l]) => `<option value="${k}" ${q.repeat.freq === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : ''}
+    ${q.repeat && q.due && (q.repeat.freq === 'monthly' || q.repeat.freq === 'yearly') ? `<div class="small" style="margin:6px 0 10px">${esc(describe(q.repeat, q.due))}. To repeat on another date, change the due date.</div>` : ''}
     ${q.goal ? goalBlock(q) : ''}
 
-    <label class="lbl">Reminder</label>
+    <label class="lbl">Reminders</label>
     <div data-picker>${reminderPicker(q)}</div>
+    ${q.remind?.multi && !q.done ? `<div class="srow multi-on"><div class="l"><b>Also through the day</b><small>${esc(multiLabel(q.remind.multi))}</small></div><button class="mini" data-act="multi-off">Stop</button></div>` : ''}
 
     <label class="lbl">Subtasks ${q.subtasks.length ? `<span class="small">${done}/${q.subtasks.length}</span>` : ''}</label>
     <div class="card" data-tour="subtasks" style="padding:6px 12px">
@@ -114,6 +127,17 @@ export const actions = {
   'sub-del': el => removeSubtask(current.id, el.dataset.sid),
   'ink-new': el => openInk(current.id, { kind: el.dataset.kind }),
   'sketch-view': el => openSketch(current.id, el.dataset.kid),
+  // the several-times-a-day reminder stops; the quest's own alerts stay
+  'multi-off': () => { const q = current; setReminder(q.id, null); if (q.due) setAlerts(q.id, [0]); play('click', 0.4); toast(q.due ? 'Back to one reminder, at its due time' : 'No more reminders through the day'); },
+  // How often: once, a repeat (every day to start with) or a number of times a week (no date)
+  often: el => {
+    const q = current, k = el.dataset.k;
+    if (k === oftenOf(q)) return;
+    play('click', 0.4);
+    if (k === 'once') updateQuest(q.id, { repeat: null, goal: null });
+    if (k === 'repeat') { updateQuest(q.id, { repeat: { freq: 'daily' }, goal: null }); toast('Repeats every day. Pick another repeat below.'); }
+    if (k === 'week') { updateQuest(q.id, { goal: q.goal || { target: GOAL_DEFAULT, log: [] }, repeat: null, due: null, time: null, alerts: undefined }); toast('Weekly goal set. Tick it each time you do it.'); }
+  },
   'goal-step': el => { const q = current; updateQuest(q.id, { goal: { ...q.goal, target: clampGoal(q.goal.target + +el.dataset.d) } }); play('click', 0.4); },
   'goal-undo': el => { undoGoal(el.dataset.id); play('click', 0.4); toast('Took back the last time'); },
   'due-quick': el => { const d = el.dataset.d; updateQuest(current.id, d === '' ? { due: null, time: null, repeat: null } : { due: addDaysFromToday(+d) }); play('click', 0.5); },
@@ -129,8 +153,7 @@ export function onChange(el) {
   const k = el.dataset.change, q = current;
   if (k === 'due') updateQuest(q.id, el.value ? { due: el.value } : { due: null, time: null, repeat: null });
   if (k === 'time') updateQuest(q.id, { time: el.value || null });
-  if (k === 'repeat' && el.value === 'goal') { updateQuest(q.id, { goal: q.goal || { target: GOAL_DEFAULT, log: [] }, repeat: null, due: null, time: null, alerts: undefined }); toast('Weekly goal set. Tick it each time you do it.'); }
-  else if (k === 'repeat') { updateQuest(q.id, { repeat: el.value ? { freq: el.value } : null, goal: null }); if (el.value) toast(`Repeats ${describe({ freq: el.value }).toLowerCase()}`); }
+  if (k === 'repeat') { updateQuest(q.id, { repeat: el.value ? { freq: el.value } : null, goal: null }); if (el.value) { const d = describe({ freq: el.value }, q.due); toast(`Repeats ${d[0].toLowerCase() + d.slice(1)}`); } }
   if (k === 'sub-tier') updateSubtask(q.id, el.dataset.sid, { tier: +el.value });
 }
 // typing saves quietly (no re-render, so the cursor stays put)

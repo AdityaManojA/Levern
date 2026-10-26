@@ -14,7 +14,7 @@ let lastSchedule = '';
 export function body(q, count) {
   const parts = [tierLabel(q.tier)];
   if (q.due) parts.push(dueLabel(q));
-  return parts.join(' · ') + (count > 1 ? `\n${count} reminders due in TaskFlow` : '');
+  return parts.join(' · ') + (count > 1 ? `\n${count} reminders due in Levern` : '');
 }
 
 export async function check() {
@@ -27,6 +27,7 @@ export async function check() {
   const shownSet = new Set(shown);
   if (st.settings.notify) {
     for (const q of fresh) {
+      if (!q.remind) continue;   // cleared while the service worker was asked (ticked, edited or deleted meanwhile)
       if (shownSet.has(`${q.id}@${q.remind.at}`)) continue;   // the service worker already showed it
       N.show(`Reminder: ${q.title}`, {
         body: body(q, count), tag: 'quest-' + q.id, renotify: true, data: { id: q.id, url: '#/quest/' + q.id },

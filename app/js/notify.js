@@ -15,7 +15,7 @@ export async function registerSW() {
     await navigator.serviceWorker.ready;
     reg = await navigator.serviceWorker.getRegistration() || reg;
     tryPeriodicSync();
-  } catch (e) { console.warn('TaskFlow: service worker not registered', e); }
+  } catch (e) { console.warn('Levern: service worker not registered', e); }
   return reg;
 }
 export const onMessage = fn => listeners.add(fn);
@@ -34,7 +34,7 @@ export async function requestPermission() {
 // Done / Snooze buttons), else with the page's Notification constructor. Returns true when shown.
 export async function show(title, opts = {}) {
   if (permission() !== 'granted') return false;
-  const o = { icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', ...opts };
+  const o = { icon: 'icons/icon-v4-192.png', badge: 'icons/badge-v4-96.png', ...opts };
   try {
     if (reg && reg.showNotification) { await reg.showNotification(title, o); return true; }
     const { actions, ...rest } = o;   // actions are only allowed on service-worker notifications

@@ -10,7 +10,7 @@ let range = 30, showAll = false;
 export function render() {
   const st = getState(), s = st.settings, sum = summary(st.history, st.sessions, s.target);
   const days = lastDays(st.history, st.sessions, s.target, range);
-  const max = Math.max(s.target, ...days.map(d => d.count), 1);
+  const max = Math.max(s.target * 1.25, ...days.map(d => d.count), 1);
   const tierMax = Math.max(1, ...sum.tiers);
   const focus7 = lastDays(st.history, st.sessions, s.target, 7);
   const fmax = Math.max(25, ...focus7.map(d => d.focus));

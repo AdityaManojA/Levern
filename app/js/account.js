@@ -4,6 +4,7 @@
 // signed-in user), so the app still starts offline. The signed-in profile is remembered on the device,
 // so it shows straight away on the next start.
 import { FIREBASE } from '../config.js';
+import { isClean } from './namefilter.js';
 
 const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const KEY = 'taskflow-account';
@@ -38,6 +39,29 @@ async function load() {
 }
 
 export const user = () => current;
+
+// The name to greet someone by, from a Google display name. Words that aren't a person's name
+// ("Free Fire", "Test User", "Mr Smith") are skipped, so the greeting never reads "Good morning, Free".
+const NOT_A_NAME = new Set(['free', 'test', 'tester', 'user', 'admin', 'guest', 'demo', 'the', 'mr', 'mrs', 'ms', 'miss', 'dr', 'sir', 'official',
+  'real', 'its', 'im', 'iam', 'pro', 'gamer', 'gaming', 'channel', 'account', 'new', 'old', 'my', 'unknown', 'anonymous']);
+export function greetName(full) {
+  for (const raw of String(full || '').trim().split(/\s+/)) {
+    const w = raw.replace(/[.'’]+$/, '');
+    if (/^\p{L}[\p{L}'’-]*$/u.test(w) && w.length > 1 && !NOT_A_NAME.has(w.toLowerCase().replace(/['’]/g, '')) && isClean(w)) return w;
+  }
+  return '';
+}
+// A name from an email address when nothing better is set: the first word of the part before the @
+// ("aditya.dev.org@gmail.com" → "Aditya", "mochi_queen99@…" → "Mochi").
+export function emailName(email) {
+  const w = String(email || '').split('@')[0].split(/[._+\-\d]+/).find(x => /^\p{L}{2,}$/u.test(x));
+  return w && isClean(w) ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
+}
+// Who the greeting is for: the leaderboard name they chose, else a name from their email.
+export function displayName(settings) {
+  const board = String(settings?.boardName || '').trim();
+  return (board && isClean(board) ? board : '') || emailName(current?.email) || greetName(settings?.name);
+}
 export const onAccount = fn => { listeners.add(fn); return () => listeners.delete(fn); };
 // the signed-in Firebase user once the session is restored (null when signed out)
 export async function firebaseUser() {
@@ -108,7 +132,7 @@ export async function googleAccess(scopes) {
   catch (e) {
     if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') throw new Error('Google Calendar access was not given.');
     if (e.code === 'auth/user-mismatch') throw new Error('Pick the same Google account you signed in with.');
-    if (e.code === 'auth/popup-blocked') throw new Error('Allow pop-ups for TaskFlow, then try again.');
+    if (e.code === 'auth/popup-blocked') throw new Error('Allow pop-ups for Levern, then try again.');
     throw friendly(e);
   }
   const cred = f.A.GoogleAuthProvider.credentialFromResult(r);
@@ -124,6 +148,23 @@ function friendly(e) {
     'auth/network-request-failed': "Couldn't reach Google. Check your connection and try again.",
   }[e.code];
   return new Error(m || 'Sign-in didn\'t work. Please try again.');
+}
+
+// Delete the Google sign-in itself. Firebase only allows it soon after signing in, so it may ask the person to
+// confirm with Google once more first. (Used by Delete account, only when no Solodesk workspace shares the sign-in.)
+export async function deleteSignIn() {
+  const u = await firebaseUser();
+  if (!u) return;
+  const f = await load();
+  try { await f.A.deleteUser(u); }
+  catch (e) {
+    if (e.code !== 'auth/requires-recent-login') throw friendly(e);
+    const p = new f.A.GoogleAuthProvider();
+    if (current?.email) p.setCustomParameters({ login_hint: current.email });
+    await f.A.reauthenticateWithPopup(u, p);
+    await f.A.deleteUser(u);
+  }
+  save(null);
 }
 
 export async function signOut() {

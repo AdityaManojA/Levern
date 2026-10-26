@@ -3,7 +3,7 @@
 import { addQuest, tierLabel, TIER_COLORS, findQuest, getState } from '../store.js';
 import { parseQuest } from '../parse.js';
 import { fmtDate, fmtTime, fmtStamp } from '../dates.js';
-import { REPEATS, dayChips } from '../recur.js';
+import { REPEATS, dayChips, describe, oftenOf, oftenSeg } from '../recur.js';
 import { timeWheelHTML, setTimeWheel } from '../timewheel.js';
 import { sheet, esc, toast, play, ICON } from '../ui.js';
 import { speechSupported, speechBroken, browserName, listen, speechError } from '../speech.js';
@@ -18,7 +18,8 @@ import { handwritingLanguage, HANDWRITING_HELP } from '../handwriting.js';
 import { inkToolbar, wireToolbar, reader } from './ink.js';
 import { nextMultiAt } from '../multi.js';
 // "Remind me several times a day": a checkbox, then every few hours in a window, or at set times
-const multiBlock = m => `<label class="check-row"><input type="checkbox" name="multi" ${m ? 'checked' : ''}> Remind me several times a day</label>
+// a repeating quest's reminders can also come back through the day (multi.js), next to its alerts
+const multiBlock = m => `<label class="check-row" style="margin-top:8px"><input type="checkbox" name="multi" ${m ? 'checked' : ''}> Also remind me several times a day</label>
   ${m ? `<div class="multi">
     <div class="seg"><button type="button" class="${m.times ? '' : 'on'}" data-mmode="every">Every few hours</button><button type="button" class="${m.times ? 'on' : ''}" data-mmode="times">At set times</button></div>
     ${m.times ? `<div class="mtimes">${m.times.map(t => `<span class="chip">${esc(t)} <button type="button" data-mdel="${esc(t)}" aria-label="Remove ${esc(t)}">×</button></span>`).join('')}
@@ -60,12 +61,13 @@ export function openAdd(prefill = {}) {
     <div data-pick></div>
     <label class="lbl">Due</label>
     <div class="two"><input class="field" type="date" name="due" aria-label="Due date">${timeWheelHTML('', { name: 'time', label: 'Due time', disabled: true })}</div>
-    <label class="lbl">Repeat</label>
-    <select class="field" name="repeat">${REPEATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
+    <label class="lbl">How often</label>
+    <div data-often></div>
+    <select class="field" name="repeat" aria-label="Repeats">${REPEATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
     <div data-days></div>
-    <div data-multi></div>
-    <label class="lbl">Reminder</label>
+    <label class="lbl">Reminders</label>
     <div data-picker></div>
+    <div data-multi></div>
     <label class="lbl">Subtasks</label>
     <div class="addsub" style="margin-top:0"><input class="field" name="sub" placeholder="Add a subtask" style="padding:8px 12px"><button type="button" class="mini" data-subadd>Add</button></div>
     <div class="chips" data-subs style="margin-top:8px"></div>
@@ -82,8 +84,13 @@ export function openAdd(prefill = {}) {
     $f('[data-pick]').innerHTML = `<div class="pick">${TIER_COLORS.map((c, i) => `<button type="button" data-tier="${i}" class="${i === f.tier ? 'on' : ''}" style="--c:${c}">P${i + 1}</button>`).join('')}</div><div class="small" style="margin-top:6px">${esc(tierLabel(f.tier))}</div>`;
     $f('[name=due]').value = f.due || '';
     setTimeWheel($f('[data-tw]'), f.time || '', !f.due);
-    $f('[name=repeat]').value = f.repeat?.freq || (f.goal ? 'goal' : '');
-    $f('[data-days]').innerHTML = f.repeat?.freq === 'custom' ? dayChips(f.repeat.days) : f.goal ? goalStepper(f.goal.target) : '';
+    $f('[data-often]').innerHTML = oftenSeg(oftenOf(f), 'data-often-k');
+    $f('[name=repeat]').hidden = !f.repeat;
+    if (f.repeat) $f('[name=repeat]').value = f.repeat.freq;
+    // monthly and yearly repeats keep to the due date's day: say which, so the date is the one to pick
+    const onDate = (f.repeat?.freq === 'monthly' || f.repeat?.freq === 'yearly') && f.due;
+    $f('[data-days]').innerHTML = f.repeat?.freq === 'custom' ? dayChips(f.repeat.days) : f.goal ? goalStepper(f.goal.target)
+      : onDate ? `<div class="small" style="margin:6px 0 10px">${esc(describe({ freq: f.repeat.freq }, f.due))}. To repeat on another date, change the due date.</div>` : '';
     $f('[data-multi]').innerHTML = f.repeat && f.due ? multiBlock(f.multi) : '';
     $f('[data-subs]').innerHTML = f.subtasks.map((t, i) => `<span class="chip">${esc(t)} <button type="button" data-subdel="${i}" aria-label="Remove" style="border:none;background:none;font-weight:700">×</button></span>`).join('');
   }
@@ -116,11 +123,6 @@ export function openAdd(prefill = {}) {
     }
     if (n === 'repeat') {
       manual.add('repeat');
-      if (e.target.value === 'goal') {
-        // a weekly goal has no day: the date and time go, and the times-a-week stepper comes up
-        f.goal = f.goal || { target: GOAL_DEFAULT }; f.repeat = null; f.due = null; f.time = null; f.multi = null;
-        paint(); paintPicker(); return;
-      }
       f.goal = null;
       if (e.target.value === 'custom') {
         // "on the days I choose" starts on the due day, so the person only has to add or remove days
@@ -132,6 +134,17 @@ export function openAdd(prefill = {}) {
     }
   });
   form.addEventListener('click', e => {
+    // How often: once, a repeat (every day to start with) or a number of times a week
+    const of = e.target.closest('[data-often-k]');
+    if (of) {
+      manual.add('repeat');
+      const k = of.dataset.oftenK;
+      if (k === 'once') { f.repeat = null; f.goal = null; f.multi = null; }
+      if (k === 'repeat' && !f.repeat) { f.goal = null; f.repeat = { freq: 'daily' }; if (!f.due) { f.due = todayLocal(); manual.add('due'); } }
+      // a weekly goal has no day: the date and time go, and the times-a-week stepper comes up
+      if (k === 'week') { f.goal = f.goal || { target: GOAL_DEFAULT }; f.repeat = null; f.due = null; f.time = null; f.multi = null; }
+      play('click', 0.4); paint(); paintPicker(); return;
+    }
     const gs = e.target.closest('[data-goal-step]');
     if (gs && f.goal) { f.goal = { target: clampGoal(f.goal.target + +gs.dataset.goalStep) }; paint(); return; }
     const mm = e.target.closest('[data-mmode]');

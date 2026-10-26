@@ -6,6 +6,10 @@ service cloud.firestore {
     // Solodesk: each signed-in user can read/write only their own workspace document.
     match /solodeskWorkspaces/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
+      // Large lists (notes, docs, activity, focus history, trash) are stored in parts; owner only.
+      match /parts/{part} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
     // Client portal snapshots are separate from private owner workspaces.
     match /solodeskPortals/{owner}/shares/{client} {
@@ -15,10 +19,105 @@ service cloud.firestore {
             (request.auth.token.get('email_verified', false) == true &&
              resource.data.recipientEmail == request.auth.token.get('email', '').lower()))));
       allow create, update: if request.auth != null && request.auth.uid == owner &&
-        request.resource.data.keys().hasOnly(['ownerUid','clientId','recipientUid','recipientEmail','projectIds','invoiceIds','data']) &&
+        request.resource.data.keys().hasOnly(['ownerUid','clientId','recipientUid','recipientEmail','projectIds','invoiceIds','docIds','data']) &&
         request.resource.data.ownerUid == owner && request.resource.data.clientId == client &&
         request.resource.data.recipientUid is string && request.resource.data.recipientEmail is string;
       allow delete: if request.auth != null && request.auth.uid == owner;
+      function share() { return get(/databases/$(database)/documents/solodeskPortals/$(owner)/shares/$(client)).data; }
+      function isClient() {
+        return request.auth != null && (share().recipientUid == request.auth.uid ||
+          (request.auth.token.get('email_verified', false) == true && share().recipientEmail == request.auth.token.get('email', '').lower()));
+      }
+      function isOwner() { return request.auth != null && request.auth.uid == owner; }
+      // Client approvals: the signed-in client answers an item the owner sent them (one document per item).
+      // Only items listed as waiting in the published share can be answered; the owner reads and clears them.
+      match /responses/{task} {
+        allow read: if isOwner() || isClient();
+        allow create, update: if isClient() &&
+          request.resource.data.keys().hasOnly(['taskId','decision','comment','at','email']) &&
+          request.resource.data.taskId == task && task in share().data.get('approvalIds', []) &&
+          request.resource.data.decision in ['approved','changes'] &&
+          request.resource.data.comment is string && request.resource.data.comment.size() <= 1000 &&
+          request.resource.data.email is string && request.resource.data.at == request.time;
+        allow delete: if isOwner();
+      }
+      // Comments on shared tasks, from the client (comment, cheer, change request) or the owner (replies).
+      match /comments/{comment} {
+        allow read: if isOwner() || isClient();
+        allow create: if (isOwner() || isClient()) &&
+          request.resource.data.keys().hasOnly(['itemId','kind','text','at','email','from']) &&
+          request.resource.data.itemId is string && request.resource.data.itemId.size() <= 100 &&
+          request.resource.data.kind in ['comment','cheer','change'] &&
+          request.resource.data.text is string && request.resource.data.text.size() <= 1000 &&
+          request.resource.data.email is string && request.resource.data.at == request.time &&
+          request.resource.data.from == (isOwner() ? 'owner' : 'client');
+        allow delete: if isOwner();
+      }
+      // Requests and questions from the client ("Can you add a blog?"). The owner answers with a label.
+      // (Named requestId: a wildcard called `request` would hide Firestore's built-in request object.)
+      match /requests/{requestId} {
+        allow read: if isOwner() || isClient();
+        allow create: if isClient() &&
+          request.resource.data.keys().hasOnly(['title','details','projectId','at','email']) &&
+          request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 200 &&
+          request.resource.data.details is string && request.resource.data.details.size() <= 2000 &&
+          request.resource.data.projectId is string && request.resource.data.projectId.size() <= 100 &&
+          request.resource.data.email is string && request.resource.data.at == request.time;
+        allow update: if isOwner() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply','replyText','repliedAt','taskId']) &&
+          request.resource.data.reply in ['scope','now','can','progress','custom'] &&
+          request.resource.data.replyText is string && request.resource.data.replyText.size() <= 200 &&
+          request.resource.data.repliedAt == request.time &&
+          request.resource.data.get('taskId', '') is string;
+        allow delete: if isOwner();
+      }
+      // Link and file updates from the client; SoloDesk applies them to the workspace and removes them.
+      match /updates/{update} {
+        allow read, delete: if isOwner();
+        allow create: if isClient() &&
+          request.resource.data.keys().hasOnly(['kind','docId','label','url','replaceUrl','at','email']) &&
+          request.resource.data.kind in ['link','file'] &&
+          request.resource.data.url is string && request.resource.data.url.size() <= 300 &&
+          request.resource.data.label is string && request.resource.data.label.size() <= 60 &&
+          request.resource.data.docId is string && request.resource.data.docId.size() <= 100 &&
+          request.resource.data.replaceUrl is string && request.resource.data.replaceUrl.size() <= 300 &&
+          request.resource.data.email is string && request.resource.data.at == request.time;
+      }
+    }
+    // Solodesk public profiles (Profile → Public profile), one document per username. Anyone with the link can
+    // open a single profile, signed in or not, but nobody can list them. Only the owner writes or deletes theirs.
+    // While private the document holds only the name, so the page can say the profile is private.
+    function sdProfileShape(d, username) {
+      return d.username == username && username.matches('^[a-z0-9][a-z0-9_-]{2,29}$')
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && d.updatedAt == request.time
+        && ((d.public == false && d.keys().hasOnly(['uid', 'username', 'name', 'public', 'updatedAt']))
+          || (d.public == true
+            && d.keys().hasOnly(['uid', 'username', 'name', 'public', 'headline', 'bio', 'location', 'available', 'links', 'clients', 'updatedAt'])
+            && d.headline is string && d.headline.size() <= 120 && d.bio is string && d.bio.size() <= 600
+            && d.location is string && d.location.size() <= 60 && d.available is bool
+            && d.links is list && d.links.size() <= 10 && d.clients is list && d.clients.size() <= 20));
+    }
+    match /solodeskProfiles/{username} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid
+        && sdProfileShape(request.resource.data, username);
+      allow update: if request.auth != null && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid && sdProfileShape(request.resource.data, username);
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    // Solodesk live Excel sync. Only the server (Admin SDK) writes these. The owner can read their connection
+    // status and linked sheets, and clears inbox entries after applying them. Microsoft tokens, OAuth states,
+    // subscriptions, locks and queues (solodeskPrivate, solodeskSync*) have no rule, so browsers cannot reach them.
+    match /solodeskSync/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+    }
+    match /solodeskSync/{uid}/links/{link} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+    }
+    match /solodeskSync/{uid}/inbox/{item} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
     }
     // TaskFlow: each signed-in user can read/write only their own TaskFlow data (sync chunks and the
     // share/open summary Solodesk reads). Same uid, so Solodesk can read it for the same person.
@@ -28,14 +127,83 @@ service cloud.firestore {
     match /taskflowUsers/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
-    // TaskFlow leaderboard: a name and EXP for people who chose to show on the board (off by default).
-    // Anyone signed in can read the board; only the owner writes their own entry, and only these fields.
+    // TaskFlow leaderboard: a name, all-time EXP and this season's EXP for people who chose to show on the
+    // board (off by default). Anyone signed in can read it; only the owner writes their own entry.
+    // EXP is worked out in the app (no server code on the free plan), so these rules cap how fast it can grow:
+    // a bucket of at most 60 EXP that refills 60 an hour. Real use earns less (30 a day from quests, 12 an hour
+    // from nonstop focus). A new entry starts at most at 3000 EXP. Leaving the board hides the entry (name
+    // cleared, hidden: true) rather than deleting it, so the cap can't be reset by leaving and rejoining.
+    // Seasons are two weeks, ending every second Sunday at midnight India time (18:30 UTC), counted from
+    // 11 Oct 2026 18:30 UTC (1791743400000 ms) as in TaskFlow's stats.js: season 2 starts 25 Oct 18:30 UTC.
+    function tfSeasonNow() {
+      return int((request.time.toMillis() - 1791743400000) / 1209600000) + 1;
+    }
+    function tfBoardShape(d) {
+      return d.keys().hasOnly(['name', 'exp', 'season', 'seasonExp', 'bank', 'hidden', 'updated', 'past'])
+        && (!('past' in d) || (d.past is map && d.past.size() <= 60))
+        && d.name is string && d.name.size() <= 30
+        && !d.name.lower().matches('.*(fuck|cunt|nigg|fagg|whore|bitch|motherf|asshole|dickhead|cocksuck|retard|tranny|chutiya|madarchod|bhenchod|behenchod|bhosdi|thayoli|thaayoli|thallipoli|pundachi|kandaroli|poorimon|pulayadi|thevidiya).*')
+        && d.exp is int && d.exp >= 0
+        && d.season is int && (d.season == tfSeasonNow() || d.season == tfSeasonNow() - 1)
+        && d.seasonExp is int && d.seasonExp >= 0 && d.seasonExp <= d.exp
+        && d.bank is number && d.bank >= 0 && d.bank <= 60
+        && d.hidden is bool
+        && d.updated == request.time;
+    }
+    // n: the new entry, o: the entry as it was
+    function tfBoardGrowth(n, o) {
+      let room = o.get('bank', 0) + 60 * (request.time.toMillis() - o.updated.toMillis()) / 3600000;
+      let delta = n.exp - o.exp;
+      let sameSeason = n.season == o.get('season', 0);
+      // past (each finished season's final score): unchanged, or, on moving to a new season, the season left
+      // added with exactly the score it had
+      let pastDiff = n.get('past', {}).diff(o.get('past', {})).affectedKeys();
+      let pastOk = pastDiff.size() == 0
+        || (!sameSeason && pastDiff.hasOnly([string(o.get('season', 0))])
+            && n.past[string(o.get('season', 0))] == o.get('seasonExp', 0));
+      // season EXP grows from where it was this season (or from 0 in a new one); EXP and season EXP draw on the same
+      // bucket, and whichever grows more uses it up (season EXP can catch up on its own when it's worked out again)
+      let sGain = sameSeason ? n.seasonExp - o.get('seasonExp', 0) : n.seasonExp;
+      let more = delta > sGain ? delta : sGain;
+      let used = more > 0 ? more : 0;
+      return pastOk && n.season >= o.get('season', 0) && n.bank <= room - used;
+    }
+    // Feedback left when someone deletes their TaskFlow account: anonymous (no name, email or account id), write
+    // once, and never readable from the app (only in the Firebase console).
+    match /taskflowFeedback/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['kind', 'reason', 'note', 'app', 'at'])
+        && request.resource.data.kind == 'account-deleted' && request.resource.data.app == 'taskflow'
+        && request.resource.data.reason is string && request.resource.data.reason.size() <= 60
+        && request.resource.data.note is string && request.resource.data.note.size() <= 1000
+        && request.resource.data.at == request.time;
+      allow read, update, delete: if false;
+    }
+
+    // Public profiles (TaskFlow Leaderboard → Make my profile public): readable by anyone signed in only while
+    // public; written and deleted only by their owner. A summary only: no quest titles, notes, email or photo.
+    match /taskflowProfiles/{uid} {
+      allow read: if request.auth != null && (resource.data.public == true || request.auth.uid == uid);
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'cat', 'since', 'season', 'seasonRank', 'seasonExp', 'bestRank', 'bestSeason',
+             'seasons', 'totalExp', 'streak', 'bestStreak', 'quests', 'focusMin', 'activity', 'activityEnd', 'public', 'updated'])
+        && request.resource.data.public == true
+        && request.resource.data.name is string && request.resource.data.name.size() <= 30
+        && request.resource.data.seasons is list && request.resource.data.seasons.size() <= 52
+        && request.resource.data.activity is list && request.resource.data.activity.size() <= 400
+        && request.resource.data.updated == request.time;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
     match /taskflowBoard/{uid} {
       allow read: if request.auth != null;
-      allow create, update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['name', 'exp', 'updated'])
-        && request.resource.data.exp is int && request.resource.data.exp >= 0
-        && request.resource.data.name is string && request.resource.data.name.size() <= 30;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && tfBoardShape(request.resource.data)
+        && request.resource.data.exp <= 3000 && request.resource.data.seasonExp <= 420 && request.resource.data.bank == 0
+        && !('past' in request.resource.data);
+      allow update: if request.auth != null && request.auth.uid == uid
+        && tfBoardShape(request.resource.data) && tfBoardGrowth(request.resource.data, resource.data);
+      // Delete account (Settings) removes the person's own entry
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
   }

@@ -1,4 +1,4 @@
-// TaskFlow settings that differ per install. Not secret: a Google OAuth *client ID* is public by design
+// Levern settings that differ per install. Not secret: a Google OAuth *client ID* is public by design
 // (it only works from the origins you list in Google Cloud).
 //
 // Google Calendar sync: paste your OAuth Web client ID below. Steps in app/CALENDAR_SETUP.md.

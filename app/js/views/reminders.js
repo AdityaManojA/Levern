@@ -19,8 +19,8 @@ export function permNote() {
   const s = getState().settings, p = permission();
   if (!s.notify) return '<p class="small" style="margin-top:10px">System notifications are off in Settings. Reminders still show here and in the badge.</p>';
   if (p === 'granted') return '';
-  if (p === 'denied') return '<p class="small" style="margin-top:10px">Notifications are blocked for this site in your browser, so reminders only show inside TaskFlow.</p>';
-  if (!supported) return '<p class="small" style="margin-top:10px">This browser has no system notifications. Reminders show inside TaskFlow.</p>';
+  if (p === 'denied') return '<p class="small" style="margin-top:10px">Notifications are blocked for this site in your browser, so reminders only show inside Levern.</p>';
+  if (!supported) return '<p class="small" style="margin-top:10px">This browser has no system notifications. Reminders show inside Levern.</p>';
   return '<p class="small" style="margin-top:10px">Get reminders outside the app too. <button class="mini" data-act="allow-notify">Allow notifications</button></p>';
 }
 

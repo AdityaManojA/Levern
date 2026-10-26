@@ -100,7 +100,7 @@ export function sfx(name, { vol = 1, rate = 1 } = {}) {
   src.start();
   sfxLog.push({ name, file, at: Math.round(now) }); if (sfxLog.length > 60) sfxLog.shift();
 }
-// the last few sounds played (for debugging: TaskFlow.sfxLog in the console)
+// the last few sounds played (for debugging: Levern.sfxLog in the console)
 export const sfxLog = [];
 export const soundsLoaded = () => buffers.size;
 export const SOUND_GROUPS = GROUPS;

@@ -24,18 +24,18 @@ const SECTIONS = {
   ios: {
     title: 'On iPhone or iPad',
     steps: [
-      'Open TaskFlow in Safari. Tap the Share button (the square with an arrow).',
+      'Open Levern in Safari. Tap the Share button (the square with an arrow).',
       'Tap "Add to Home Screen", then "Add".',
-      'Open TaskFlow from its Home Screen icon. On iPhone, notifications only work from there.',
+      'Open Levern from its Home Screen icon. On iPhone, notifications only work from there.',
       'Tap "Turn on notifications" below and choose Allow.',
     ],
     note: 'Needs iOS 16.4 or later.',
-    fix: 'Turned off by mistake? Open Settings, then Notifications, then TaskFlow, and turn on Allow Notifications.',
+    fix: 'Turned off by mistake? Open Settings, then Notifications, then Levern, and turn on Allow Notifications.',
   },
   android: {
     title: 'On Android',
     steps: [
-      'Open TaskFlow in Chrome. Tap the ⋮ menu at the top right.',
+      'Open Levern in Chrome. Tap the ⋮ menu at the top right.',
       'Tap "Install app" or "Add to Home screen".',
       'Tap "Turn on notifications" below and choose Allow.',
     ],
@@ -44,7 +44,7 @@ const SECTIONS = {
   desktop: {
     title: 'On a computer',
     steps: [
-      'In Chrome or Edge, click the install icon at the right of the address bar (or open the menu and choose Install TaskFlow). It opens in its own window.',
+      'In Chrome or Edge, click the install icon at the right of the address bar (or open the menu and choose Install Levern). It opens in its own window.',
       'Tap "Turn on notifications" below and choose Allow.',
     ],
     fix: 'Turned off by mistake? Click the lock icon in the address bar, then Notifications, then Allow.',
@@ -67,11 +67,11 @@ export function notifyCard() {
   const kinds = kind === 'all' ? ['ios', 'android', 'desktop'] : [kind];
   const needsHomeScreen = iOS() && !standalone();
   const action = p === 'granted' ? '<span class="ob-pill done">Notifications are on</span>'
-    : needsHomeScreen ? '<p class="small">On iPhone, add TaskFlow to your Home Screen first, then open it from there and tap "Turn on notifications".</p>'
-    : p === 'denied' ? '<p class="small">Notifications are blocked for TaskFlow. Use the steps above to allow them again.</p>'
+    : needsHomeScreen ? '<p class="small">On iPhone, add Levern to your Home Screen first, then open it from there and tap "Turn on notifications".</p>'
+    : p === 'denied' ? '<p class="small">Notifications are blocked for Levern. Use the steps above to allow them again.</p>'
     : '<button type="button" class="btn block" data-notify-on>Turn on notifications</button>';
   return `<div class="notify-card" data-notify-card>
-    <p class="small">Reminders for due quests arrive as notifications, even when TaskFlow is closed.</p>
+    <p class="small">Reminders for due quests arrive as notifications, even when Levern is closed.</p>
     ${kinds.map(k => section(k, kind === 'all')).join('')}
     <div class="notify-act">${action}</div>
   </div>`;
@@ -80,7 +80,7 @@ export function notifyCard() {
 // one listener for every notification card in the app: asks for permission, then redraws the cards
 document.addEventListener('click', async e => {
   if (!e.target.closest('[data-notify-on]')) return;
-  if (!('Notification' in window)) { toast('Add TaskFlow to your Home Screen first, then open it from there.'); return; }
+  if (!('Notification' in window)) { toast('Add Levern to your Home Screen first, then open it from there.'); return; }
   await requestPermission();
   document.querySelectorAll('[data-notify-card]').forEach(el => { el.outerHTML = notifyCard(); });
   if (permission() === 'granted') toast('Notifications are on', 'good');

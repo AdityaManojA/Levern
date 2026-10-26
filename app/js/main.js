@@ -1,9 +1,10 @@
-// TaskFlow web app: boot, routing and shared actions.
+// Levern web app: boot, routing and shared actions.
 import * as store from './store.js';
 import { registerSW } from './notify.js';
 import { startReminders, paintBadges } from './reminders.js';
 import { watchInstall } from './install.js';
 import { maybeLeaderboardNudge } from './leaderboardnudge.js';
+import { startUpdatePop, isShowing as updateShowing } from './updatepop.js';
 import { $, toast, play, sheet, ICON } from './ui.js';
 import { completeQuest } from './complete.js';
 import { pageTransition, morph, reduced, EASE } from './motion.js';
@@ -15,10 +16,15 @@ import * as calendar from './views/calendar.js';
 import * as focus from './views/focus.js';
 import * as stats from './views/stats.js';
 import * as settings from './views/settings.js';
-import * as developer from './views/developer.js';
 import * as leaderboard from './views/leaderboard.js';
+import * as whatsnew from './views/whatsnew.js';
+import * as profileView from './views/profile.js';
+import { startProfile } from './profile.js';
+import { startRankups } from './rankup.js';
 import { startBoard } from './board.js';
-import { startSync, onSyncStatus } from './sync.js';
+import { startTheme } from './theme.js';
+import { startNameCheck } from './namecheck.js';
+import { startSync } from './sync.js';
 import { openAdd } from './views/add.js';
 import * as remindersPanel from './views/reminders.js';
 import * as onboarding from './views/onboarding.js';
@@ -37,10 +43,16 @@ import * as account from './account.js';
 import * as cloud from './cloud.js';
 import { initTimeWheels } from './timewheel.js';
 initTimeWheels();   // the iOS-style time pickers, app-wide
+import { startBack } from './back.js';
+// the phone's back button or gesture closes the sheet, the reminders panel or a dialog before leaving the page
+startBack([
+  { el: $('#sheet'), isOpen: el => el.classList.contains('open'), close: () => sheet.close() },
+  { el: $('#rpanel'), isOpen: el => el.classList.contains('open'), close: () => remindersPanel.close() },
+]);
 
 store.init();
 
-const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, developer, leaderboard };
+const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, leaderboard, whatsnew, profile: profileView };
 const NAV = [['home', 'Home'], ['quests', 'Quests'], ['add'], ['calendar', 'Calendar'], ['focus', 'Focus']];
 let route = { name: 'home', params: {} };
 
@@ -53,6 +65,7 @@ function parseHash() {
 }
 
 function renderNav() {
+  document.querySelectorAll('[data-top]').forEach(b => { const on = b.dataset.top === route.name || (route.name === 'profile' && b.dataset.top === 'leaderboard'); b.classList.toggle('on', on); on ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'); });
   const active = route.name === 'quest' ? 'quests' : route.name, nav = $('#nav');
   if (nav.dataset.active === active) return;   // unchanged: keep it (and its animations) as is
   nav.dataset.active = active;
@@ -68,7 +81,7 @@ function draw(keep) {
   spriteStops.forEach(s => s());
   if (v.unmount) v.unmount();
   if (!cloud.cloudReady()) {
-    // signed in: wait for the account's quests rather than show this device's sample ones for a moment
+    // signed in: wait for the account's quests rather than show this device's old copy for a moment
     main.innerHTML = '<p class="sync-wait" role="status">Loading your quests…</p>';
     main.dataset.view = route.name;
     renderNav();
@@ -91,7 +104,7 @@ function render(opts = {}) {
 }
 
 // which way a screen change should drift: deeper (detail) slides forward, tabs slide by their order
-const ORDER = ['home', 'quests', 'calendar', 'focus', 'stats', 'settings', 'developer'];
+const ORDER = ['home', 'quests', 'calendar', 'focus', 'stats', 'settings'];
 function direction(from, to) {
   if (to.name === 'quest') return 'forward';
   if (from.name === 'quest') return 'back';
@@ -191,18 +204,21 @@ document.addEventListener('keydown', e => {
 /* ---------- install prompt ---------- */
 // the install offer lives in Settings; when it changes, redraw Settings
 watchInstall(() => { if (route.name === 'settings') render({ keepScroll: true }); });
-addEventListener('appinstalled', () => toast('TaskFlow installed'));
+addEventListener('appinstalled', () => toast('Levern installed'));
 addEventListener('online', () => toast('Back online')); addEventListener('offline', () => toast("You're offline. Everything still works."));
 
 /* ---------- start ---------- */
 $('#top-actions').innerHTML = `<button class="iconbtn bell" data-act="bell" aria-label="Reminders">${ICON.bell}<b class="rcount" data-rcount hidden></b></button>
-  <a class="iconbtn" href="#/leaderboard" aria-label="Leaderboard">${ICON.trophy}</a><a class="iconbtn" href="#/settings" aria-label="Settings">${ICON.settings}</a>`;
+  <a class="iconbtn" href="#/stats" aria-label="Stats" data-top="stats">${ICON.stats}</a><a class="iconbtn" href="#/leaderboard" aria-label="Leaderboard" data-top="leaderboard">${ICON.trophy}</a><a class="iconbtn" href="#/settings" aria-label="Settings" data-top="settings">${ICON.settings}</a>`;
 unlockOnGesture();
 preloadSounds();
 startControls();
 startMenu();
 startAccount();
 startBoard();
+startProfile();
+startRankups();
+startTheme();
 go();
 // Mochi lives on the nav bar
 const mochi = createMochi({
@@ -216,6 +232,8 @@ const mochi = createMochi({
 setMascot(mochi);
 mochi.start();
 mascot.setVisible(store.getState().settings.mochi !== false);
+// a saved name with a swear word or slur must be replaced (after the welcome screens and the account's copy loading)
+startNameCheck(() => onboarding.isOpen() || !cloud.cloudReady());
 setupPullToRefresh({
   current: () => route.name,
   refresh: async () => {
@@ -241,7 +259,7 @@ vv?.addEventListener('resize', fitViewport); vv?.addEventListener('scroll', fitV
 // a field focused in a sheet scrolls into the visible part once the keyboard is up
 $('#sheet').addEventListener('focusin', e => { if (e.target.matches('input, textarea')) setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320); });
 
-// TaskFlow needs a signed-in account: signed out, you're back at the start of the welcome screens
+// Levern needs a signed-in account: signed out, you're back at the start of the welcome screens
 // signed out on a device that has been set up: go straight to the sign-in step, not the welcome screens again
 const signInStep = () => (onboarding.deviceSetupDone() ? { startAt: 'account' } : {});
 const toStart = () => { if (!onboarding.isOpen()) { sheet.close(); location.hash = '#/home'; onboarding.open(() => tour.start(), signInStep()); } };
@@ -252,11 +270,12 @@ if (!account.user()) account.preload();   // ready before the sign-in tap, so Go
 account.onAccount(u => { if (!u) setTimeout(toStart, 0); });   // after sign-out has cleared the device
 registerSW().finally(() => { startReminders(); if ('Notification' in window && Notification.permission === 'granted') import('./push.js').then(m => m.enablePush()); });
 // a friendly nudge to check the leaderboard (at most twice a day), once the app has settled
-setTimeout(() => { if (account.user() && !onboarding.isOpen()) maybeLeaderboardNudge(); }, 4000);
+setTimeout(() => { if (account.user() && !onboarding.isOpen() && !updateShowing()) maybeLeaderboardNudge(); }, 4000);
+// What's new: once per person per update, on whichever device opens first
+startUpdatePop(onboarding.isOpen);
 startCalendars();
-// share data with the TaskFlow server (API, webhooks); the app works the same without it
+// share data with the local Levern server when there is one (npm start); the app works the same without it
 startSync();
-onSyncStatus(() => { if (route.name === 'developer') render({ keepScroll: true }); });
 onCalendarChange(() => { if (route.name === 'settings' || route.name === 'calendar') render({ keepScroll: true }); });
 if (new URLSearchParams(location.search).get('add') === '1') openAdd();
-window.TaskFlow = { store, go: h => { location.hash = h; }, mochi, tour, sfxLog, soundsLoaded };   // handy in the console
+window.TaskFlow = window.Levern = { store, go: h => { location.hash = h; }, mochi, tour, sfxLog, soundsLoaded };   // handy in the console

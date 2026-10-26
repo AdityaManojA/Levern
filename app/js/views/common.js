@@ -5,6 +5,7 @@ import { esc, ICON, toast } from '../ui.js';
 import { describe, repeatShort } from '../recur.js';
 import { PRESETS, MAX_ALERT, cleanAlerts, alertLabel, alertShort } from '../alerts.js';
 import { goalProgress } from '../goals.js';
+import { rankOf, rankLabel, masterLevel, RANKS } from '../stats.js';
 
 // a weekly goal's progress for this week, e.g. "Goal 2/3 this week" (or "Goal met · +1 extra")
 export function goalChip(q) {
@@ -40,12 +41,12 @@ export function questRow(q, now = new Date()) {
   const meta = [
     `<span>${esc(tierLabel(q.tier))}</span>`,
     q.due ? `<span class="${st === 'overdue' ? 'od' : ''}">${esc(dueLabel(q, now))}</span>` : '',
+    // right after the date, so it sits in the same place on every card
+    reminderChip(q),
     q.repeat ? `<span class="tag">${ICON.repeat}${repeatShort(q.repeat)}</span>` : '',
     q.goal ? goalChip(q) : '',
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',
     q.sketches?.length ? `<span class="tag" title="Sketches">${ICON.sketch}${q.sketches.length}</span>` : '',
-    reminderChip(q),
-    q.sample ? '<span class="exchip" title="An example to show how TaskFlow works. It stays out of your calendar. Edit it to make it yours.">Example</span>' : '',
   ].join('');
   const open = expanded.has(q.id);
   // tap the quest to open it in place (subtasks, or its details); tap again to close; long-press or Edit to edit
@@ -64,16 +65,16 @@ export const expanded = new Set();
 export function questPanel(q, now = new Date()) {
   const subs = q.subtasks || [];
   const info = [
-    ['Priority', esc(tierLabel(q.tier))],
+    // (no priority row: the card already shows it under the title)
     q.due ? ['Due', esc(dueLabel(q, now))] : null,
-    q.repeat ? ['Repeats', esc(describe(q.repeat))] : null,
+    q.repeat ? ['Repeats', esc(describe(q.repeat, q.due))] : null,
     q.remind && !q.remind.dismissed && !q.done ? ['Reminder', esc(fmtStamp(q.remind.at))] : null,
     q.sketches?.length ? ['Sketches', `${q.sketches.length}`] : null,
   ].filter(Boolean);
   const notes = (q.notes || '').trim();
   return `<div class="qx" id="qx-${q.id}">
     ${subs.length ? `<div class="qx-subs" role="group" aria-label="Subtasks">${subs.map(s => `<button type="button" class="qx-sub${s.done ? ' done' : ''}" role="checkbox" aria-checked="${!!s.done}" data-act="sub-toggle" data-id="${q.id}" data-sid="${s.id}"><span class="qx-box" aria-hidden="true"></span><span>${esc(s.title)}</span></button>`).join('')}</div>` : ''}
-    ${!subs.length || notes ? `<dl class="qx-info">${subs.length ? '' : info.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}${notes ? `<div class="qx-notes"><dt>Notes</dt><dd>${esc(notes.length > 280 ? notes.slice(0, 280) + '…' : notes)}</dd></div>` : ''}</dl>` : ''}
+    ${(!subs.length && info.length) || notes ? `<dl class="qx-info">${subs.length ? '' : info.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}${notes ? `<div class="qx-notes"><dt>Notes</dt><dd>${esc(notes.length > 280 ? notes.slice(0, 280) + '…' : notes)}</dd></div>` : ''}</dl>` : ''}
     <div class="qx-acts"><button type="button" class="mini" data-act="open" data-id="${q.id}">${ICON.pen} Edit</button>${subs.length ? `<span class="small">${subs.filter(s => s.done).length} of ${subs.length} done</span>` : ''}</div>
   </div>`;
 }
@@ -171,3 +172,24 @@ export function bindPicker(root, onPick) {
 }
 export const pickerKey = root => root.querySelector('[data-ropts] .on')?.dataset.r || 'none';
 export { getState };
+
+// A season rank as a soft pill: a dot in the rank colour, the name, and 8 bars that fill up to the rank.
+export function rankChip(exp) {
+  const r = rankOf(exp), n = RANKS.findIndex(([name]) => name === r) + 1, label = rankLabel(exp);
+  const bars = RANKS.map((_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('');
+  return `<span class="rank rank-${r.toLowerCase()}" title="${label}${masterLevel(exp) ? '' : `, rank ${n} of ${RANKS.length}`}"><i class="rank-dot"></i>${label}<span class="rank-bars" aria-hidden="true">${bars}</span></span>`;
+}
+// a chip for a rank saved by name ('Gold', 'Master 3'), e.g. a past season's best
+// Aura: last season's top three (1 gold, 2 silver, 3 aurora). auraOf gives the class and hover text for the card or
+// row, auraName wraps the name so it shimmers, auraSpark is the twinkle in the corner.
+export const auraOf = (place, season) => place ? { cls: ` aura aura-${place}`, title: ` title="#${place} in Season ${season}"` } : { cls: '', title: '' };
+export const auraName = (place, html) => place ? `<span class="aura-name">${html}</span>` : html;
+export const auraSpark = place => place ? '<i class="aura-sp" aria-hidden="true"></i>' : '';
+// OG: there from the start (on the board in Seasons 1 to 3). A tiny badge by the name (the day ones)
+export const ogChip = on => on ? '<span class="og" title="OG: here from the start" aria-label="OG, here from the start">OG</span>' : '';
+export function rankChipNamed(label) {
+  const base = String(label).startsWith('Master') ? 'Master' : label, n = RANKS.findIndex(([name]) => name === base) + 1;
+  if (!n) return '';
+  const bars = RANKS.map((_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('');
+  return `<span class="rank rank-${base.toLowerCase()}"><i class="rank-dot"></i>${esc(label)}<span class="rank-bars" aria-hidden="true">${bars}</span></span>`;
+}
