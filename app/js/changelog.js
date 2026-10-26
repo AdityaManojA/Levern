@@ -8,7 +8,7 @@ export const CHANGELOG = [
       'Fixed: the leaderboard could show less EXP than your own card. A failed upload now retries on its own, and coming back to the app sends your latest score.',
       'The /lev·earn/ under the name now matches the app, with earn in the accent colour.',
       'Home greets you by your leaderboard name, or by the name in your email if you haven’t set one.',
-      'A new logo: a sun split in two, ginger over cream, on an ink tile. Reinstall the app to see it on your home screen.',
+      'The app icon is the black-and-white cat on every device, iPhone included. Reinstall the app to see it on your home screen.',
     ],
   },
   {
