@@ -4,9 +4,10 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v72';
+const VERSION = 'taskflow-v77';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
+  'js/alerts.js', 'js/debuglog.js', 'js/goals.js', 'js/leaderboardnudge.js', 'js/multi.js', 'js/notifyhelp.js', 'js/push.js', 'js/signinlog.js', 'js/timewheel.js',
   'js/main.js', 'js/store.js', 'js/storage.js', 'js/dates.js', 'js/parse.js', 'js/recur.js', 'js/ics.js', 'js/stats.js',
   'js/notify.js', 'js/reminders.js', 'js/speech.js', 'js/ui.js', 'js/complete.js', 'js/motion.js', 'js/mochi.js', 'js/mascot.js', 'js/sync.js', 'js/syncmerge.js', 'js/ptr.js', 'mochi/strips/stretch.webp', 'mochi/strips/wave.webp', 'mochi/strips/happy-spin.webp', 'js/views/tour.js', 'mochi/manifest.js', 'cookie/manifest.js', 'mochi/strips/rest.webp', 'mochi/strips/blink.webp', 'js/calendars.js', 'js/gcalmap.js', 'config.js', 'js/install.js', 'js/views/common.js',
   'js/views/home.js', 'js/views/quests.js', 'js/views/detail.js', 'js/views/add.js', 'js/views/calendar.js',
@@ -23,11 +24,23 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
-// network first for the app's own files (so updates show up straight away), cache when offline
+// Serve the versioned shell immediately. A newly installed worker brings the next
+// complete shell; live data and files outside the shell still use the network first.
+const SHELL_URLS = new Set(SHELL.map(path => new URL(path, self.location.href).href));
 self.addEventListener('fetch', e => {
   const req = e.request;
   const u = new URL(req.url);
   if (req.method !== 'GET' || u.origin !== location.origin || u.pathname.endsWith('/calendar.ics') || /\/(sync|api|feed)\//.test(u.pathname)) return;   // live data is never cached
+  if (SHELL_URLS.has(u.href)) {
+    e.respondWith(caches.open(VERSION).then(async cache => {
+      const cached = await cache.match(req);
+      if (cached) return cached;
+      const response = await fetch(req);
+      if (response.ok) await cache.put(req, response.clone());
+      return response;
+    }));
+    return;
+  }
   e.respondWith(
     fetch(req).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }

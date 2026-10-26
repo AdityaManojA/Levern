@@ -52,7 +52,7 @@ export function render() {
     <h1 class="h-title">Settings</h1>
 
     <div class="sec">You</div>
-    <div class="card">
+    <div class="card settings-account">
       ${accountRow()}
       ${account.user() ? `<div class="srow"><div class="l"><b>Delete account</b><small>Removes your account and everything Levern keeps for you</small></div><button class="mini danger-mini" data-act="acct-delete">Delete…</button></div>` : ''}
       <div class="srow"><div class="l"><b>Welcome screens</b><small>See the introduction again</small></div><button class="mini" data-act="onboard">Show again</button></div>
@@ -187,7 +187,7 @@ function accountRow() {
   if (!u) return '<div class="srow"><div class="l"><b>Account</b><small>Sign in with Google to keep your quests safe and the same on all your devices.</small></div><button class="mini" data-act="acct-in">Sign in</button></div>';
   const ci = cloud.cloudInfo();
   const sync = ci.error ? esc(ci.error) : ci.lastSync ? `Saved to your account ${esc(fmtStamp(ci.lastSync))}` : 'Saving to your account…';
-  return `<div class="srow acct">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="36" height="36" referrerpolicy="no-referrer">` : ''}<div class="l"><b>${esc(u.name || 'Signed in')}</b><small>${esc(u.email)}<br>${sync}</small><a href="#/leaderboard" aria-label="Your season rank. Open the leaderboard">${rankChip(mySeasonExp())}</a></div><button class="mini" data-act="acct-out">Sign out</button></div>`;
+  return `<div class="srow acct">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="36" height="36" referrerpolicy="no-referrer">` : ''}<div class="l acct-details"><b>${esc(u.name || 'Signed in')}</b><small class="acct-email">${esc(u.email)}</small><div class="acct-meta"><small class="acct-sync" role="status">${sync}</small><a class="acct-rank" href="#/leaderboard" aria-label="Your season rank. Open the leaderboard">${rankChip(mySeasonExp())}</a></div></div><button class="mini" data-act="acct-out">Sign out</button></div>`;
 }
 
 export const actions = {

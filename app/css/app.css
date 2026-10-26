@@ -1316,3 +1316,30 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
 .wn-note { margin: 0 0 10px; font-size: 14px; line-height: 1.5; }
 .wn-tip { margin-top: 10px; }
 :root[data-theme="dark"] .up-note { background: color-mix(in srgb, var(--a-butter) 12%, var(--card)); border-color: color-mix(in srgb, var(--a-butter) 40%, transparent); }
+
+/* Account settings: consistent action column, readable profile metadata. */
+.settings-account { padding: 8px 20px; }
+.settings-account > .srow { display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: 20px; padding: 18px 0; }
+.settings-account .l b { line-height: 1.4; }
+.settings-account .l small { display: block; margin-top: 4px; line-height: 1.5; overflow-wrap: anywhere; }
+.settings-account > .srow > .mini { white-space: nowrap; width: 112px; min-height: 40px; justify-content: center; text-align: center; padding: 8px 12px; }
+.settings-account > .acct { grid-template-columns: 40px minmax(0, 1fr) 112px; gap: 16px; padding: 20px 0; }
+.settings-account > .acct > img { width: 40px; height: 40px; align-self: start; margin-top: 2px; }
+.settings-account > .acct:not(:has(> img)) { grid-template-columns: minmax(0, 1fr) 112px; }
+.settings-account .acct-details { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.settings-account .acct-details > b { font-size: 16px; }
+.settings-account .acct-details .acct-email { margin: 0; }
+.settings-account .acct-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 5px; }
+.settings-account .acct-meta .acct-sync { margin: 0; }
+.settings-account .acct-rank { display: inline-flex; text-decoration: none; }
+.settings-account .acct-rank .rank { margin: 0; }
+@media (max-width: 480px) {
+  .settings-account { padding: 4px 16px; }
+  .settings-account > .srow { grid-template-columns: minmax(0, 1fr) 100px; gap: 12px; padding: 16px 0; }
+  .settings-account > .srow > .mini { width: 100px; padding-inline: 8px; }
+  .settings-account > .acct { grid-template-columns: 36px minmax(0, 1fr); gap: 12px; }
+  .settings-account > .acct > img { width: 36px; height: 36px; }
+  .settings-account > .acct > .mini { grid-column: 2; justify-self: start; margin-top: 2px; }
+  .settings-account > .acct:not(:has(> img)) { grid-template-columns: minmax(0, 1fr); }
+  .settings-account > .acct:not(:has(> img)) > .mini { grid-column: 1; }
+}

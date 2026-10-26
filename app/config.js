@@ -9,8 +9,8 @@ export const GOOGLE_CLIENT_ID = '';
 // Also public by design; access is limited by the authorised domains in Firebase Authentication.
 export const FIREBASE = {
   apiKey: 'AIzaSyD7EE6-jpfNsSaMF1jVTYl19-5JCSR62bo',
-  // Google's sign-in only returns to addresses it has on its list; this is the one it knows (see the web.app note in account.js)
-  authDomain: 'taskflow-dailytracker.firebaseapp.com',
+  // Keep the sign-in helper on the app's domain so redirect sign-in works with storage partitioning.
+  authDomain: 'getlevern.web.app',
   projectId: 'taskflow-dailytracker',
   storageBucket: 'taskflow-dailytracker.firebasestorage.app',
   messagingSenderId: '1033081200615',
