@@ -1164,7 +1164,16 @@ a.lb-name:hover, a.lb-n:hover { text-decoration: underline; }
 .fc-len { display: flex; gap: 12px; justify-content: center; }
 .fc-len label { display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .fc-len .field { width: 72px; text-align: center; }
-.fc-until { display: flex; justify-content: center; }
+.fcustom .seg button { flex: 1 1 0; }   /* For and Until the same width */
+.fc-until { display: flex; justify-content: center; width: min(240px, 100%); }
+.fc-until .tw { width: 100%; }
+.fc-until .tw-btn { text-align: center; }
+.fc-until .tw-panel { left: 0; right: 0; width: auto; }
+/* the open picker spills out of its slide-in wrapper (which clips) and sits above the Start button */
+.zc:has(.tw-panel:not([hidden])) { position: relative; z-index: 40; }
+.zc:has(.tw-panel:not([hidden])) > div { overflow: visible; }
+/* the open time picker: the same butter ring as the other pickers, not the focus outline on top of the border */
+.tw-btn[aria-expanded="true"] { outline: none; box-shadow: 0 0 0 3px var(--butter); }
 
 /* Home: "+3 more quests" under Up next (S-011), quiet so the list stays the focus */
 .more-q { display: block; width: fit-content; margin: 2px auto 0; padding: 4px 10px; border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 600; text-decoration: none; }

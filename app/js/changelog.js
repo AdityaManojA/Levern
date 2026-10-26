@@ -8,6 +8,7 @@ export const CHANGELOG = [
       'Tick an overdue quest and a pop-up tells you so, with a wink.',
       'Fixed: the leaderboard could take a long time to show EXP you’d just earned. It now catches up within minutes.',
       'Fixed: the reminder unit picker (minutes, hours, days) was cut off to "h.." on phones.',
+      'Fixed: the focus timer’s custom length. For and Until are the same size, and the Until time picker opens over the Start button instead of behind it.',
     ],
   },
   {
