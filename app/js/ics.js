@@ -36,7 +36,8 @@ function eventLines(q, stamp) {
   const L = ['BEGIN:VEVENT', `UID:taskflow-${q.id}@taskflow.app`, `DTSTAMP:${utc(stamp)}`, `SUMMARY:${esc(q.title)}`];
   if (q.time) {
     const start = at(q.due, q.time);
-    L.push(`DTSTART:${local(start)}`, `DTEND:${local(start + EVENT_MIN * 60000)}`);
+    const dur = q.duration && q.duration > 0 ? q.duration : EVENT_MIN;
+    L.push(`DTSTART:${local(start)}`, `DTEND:${local(start + dur * 60000)}`);
   } else {
     L.push(`DTSTART;VALUE=DATE:${ymd(q.due)}`, `DTEND;VALUE=DATE:${ymd(addDays(q.due, 1))}`);
   }
@@ -63,7 +64,11 @@ export function buildICS(quests, now = Date.now()) {
 
 export function googleLink(q) {
   let dates;
-  if (q.time) { const s = at(q.due, q.time); dates = `${local(s)}/${local(s + EVENT_MIN * 60000)}`; }
+  if (q.time) {
+    const s = at(q.due, q.time);
+    const dur = q.duration && q.duration > 0 ? q.duration : EVENT_MIN;
+    dates = `${local(s)}/${local(s + dur * 60000)}`;
+  }
   else dates = `${ymd(q.due)}/${ymd(addDays(q.due, 1))}`;
   const p = new URLSearchParams({ action: 'TEMPLATE', text: q.title, dates });
   if (q.notes) p.set('details', q.notes);

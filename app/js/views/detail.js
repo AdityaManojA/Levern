@@ -1,6 +1,6 @@
 // Quest detail: edit everything about one quest. Fields save as you go.
 import { findQuest, updateQuest, deleteQuest, addSubtask, updateSubtask, removeSubtask, setReminder, setAlerts, tierLabel, TIER_COLORS, getState } from '../store.js';
-import { dueLabel, dueStatus, fmtStamp, todayStr } from '../dates.js';
+import { dueLabel, dueStatus, fmtStamp, todayStr, fmtDuration } from '../dates.js';
 import { REPEATS, describe, oftenOf, oftenSeg } from '../recur.js';
 import { multiLabel } from '../multi.js';
 import { googleLink, buildICS } from '../ics.js';
@@ -34,7 +34,7 @@ export function render(params) {
       <button class="chk${q.done ? ' on' : ''}" data-act="toggle" data-id="${q.id}" aria-label="${q.done ? 'Mark not done' : 'Complete'}"></button>
       <div style="flex:1;min-width:0">
         <input class="title-in" value="${esc(q.title)}" data-input="title" aria-label="Title" maxlength="140">
-        <div class="small" style="color:var(--ink)">${esc(tierLabel(q.tier))}${q.due ? ` · <span style="${st === 'overdue' ? 'color:var(--red);font-weight:700' : ''}">${esc(dueLabel(q))}</span>` : ''}${q.repeat ? ' · ' + esc(describe(q.repeat, q.due)) : ''}${q.done ? ' · done' : ''}</div>
+        <div class="small" style="color:var(--ink)">${esc(tierLabel(q.tier))}${q.due ? ` · <span style="${st === 'overdue' ? 'color:var(--red);font-weight:700' : ''}">${esc(dueLabel(q))}</span>` : ''}${q.duration ? ` · ⏱ ${esc(fmtDuration(q.duration))}` : ''}${q.repeat ? ' · ' + esc(describe(q.repeat, q.due)) : ''}${q.done ? ' · done' : ''}</div>
       </div>
     </div>
     ${q.repeat && history ? `<div class="small" style="margin:6px 2px 0">Completed ${history} time${history === 1 ? '' : 's'}. Ticking it moves it to the next date.</div>` : ''}
@@ -50,6 +50,14 @@ export function render(params) {
     <div class="chips" style="margin-top:8px">
       <button class="chip chip-btn" data-act="due-quick" data-d="0">Today</button><button class="chip chip-btn" data-act="due-quick" data-d="1">Tomorrow</button>
       <button class="chip chip-btn" data-act="due-quick" data-d="7">In a week</button>${q.due ? '<button class="chip chip-btn" data-act="due-quick" data-d="">No date</button>' : ''}
+    </div>
+
+    <label class="lbl">Duration</label>
+    <div class="chips" style="margin-bottom:8px">
+      ${[[30, '30m'], [45, '45m'], [60, '1h'], [90, '1.5h'], [120, '2h'], [0, 'None']].map(([min, lbl]) =>
+        `<button type="button" class="chip chip-btn${(q.duration || 0) === min ? ' on' : ''}" data-act="dur-set" data-dur="${min}">${lbl}</button>`
+      ).join('')}
+      ${q.duration && ![30, 45, 60, 90, 120].includes(q.duration) ? `<button type="button" class="chip chip-btn on" data-act="dur-set" data-dur="${q.duration}">${esc(fmtDuration(q.duration))}</button>` : ''}
     </div>
 
     <label class="lbl">How often</label>
@@ -141,6 +149,12 @@ export const actions = {
   'goal-step': el => { const q = current; updateQuest(q.id, { goal: { ...q.goal, target: clampGoal(q.goal.target + +el.dataset.d) } }); play('click', 0.4); },
   'goal-undo': el => { undoGoal(el.dataset.id); play('click', 0.4); toast('Took back the last time'); },
   'due-quick': el => { const d = el.dataset.d; updateQuest(current.id, d === '' ? { due: null, time: null, repeat: null } : { due: addDaysFromToday(+d) }); play('click', 0.5); },
+  'dur-set': el => {
+    const d = +el.dataset.dur;
+    updateQuest(current.id, { duration: d > 0 ? d : null });
+    play('click', 0.4);
+    toast(d > 0 ? `Duration set to ${fmtDuration(d)}` : 'Duration removed');
+  },
   ics: () => { download(`${current.title.replace(/[^\w\- ]+/g, '').trim() || 'quest'}.ics`, buildICS([current]), 'text/calendar'); toast('Calendar file saved. Open it to add the event.'); },
   delete: async () => {
     if (!(await confirmBox(`Delete "${current.title}"?`))) return;

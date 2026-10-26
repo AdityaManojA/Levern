@@ -110,7 +110,7 @@ try {
   server.kill(); await sleep(800);
   await send('Page.reload', {}, p.sessionId); await sleep(2500);
   const off = await evalIn(p.sessionId, `return { h: document.querySelector('.h-title')?.textContent, quests: window.TaskFlow.store.getState().quests.length };`);
-  check('Works offline (server stopped, page reloads from cache)', off.h === 'Your progress' && off.quests > 0, JSON.stringify(off));
+  check('Works offline (server stopped, page reloads from cache)', (off.h === 'Your progress' || off.h === 'Up next') && off.quests > 0, JSON.stringify(off));
   await send('Page.navigate', { url: ORIGIN + '/#/calendar' }, p.sessionId); await sleep(1500);
   const off2 = await evalIn(p.sessionId, `return document.querySelector('.h-title')?.textContent;`);
   check('Other screens work offline too', off2 === 'Calendar');

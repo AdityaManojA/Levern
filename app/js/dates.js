@@ -40,8 +40,22 @@ export function at(s, time) {
   if (time) { const [h, m] = time.split(':').map(Number); d.setHours(h, m, 0, 0); }
   return d.getTime();
 }
-// the moment a quest becomes overdue: its time, or the end of its day
-export const dueTimestamp = q => q.due ? (q.time ? at(q.due, q.time) : at(q.due) + DAY_MS - 1) : null;
+// the moment a quest becomes overdue: its time plus any duration, or the end of its day
+export const dueTimestamp = q => {
+  if (!q.due) return null;
+  const durMs = (q.duration && q.duration > 0) ? q.duration * 60000 : 0;
+  return q.time ? at(q.due, q.time) + durMs : at(q.due) + DAY_MS - 1;
+};
+
+// formats minutes to friendly duration: 120 -> "2h", 90 -> "1h 30m", 45 -> "45m"
+export function fmtDuration(mins) {
+  const m = Math.round(Number(mins) || 0);
+  if (m <= 0) return '';
+  const h = Math.floor(m / 60), rem = m % 60;
+  if (h && rem) return `${h}h ${rem}m`;
+  if (h) return `${h}h`;
+  return `${rem}m`;
+}
 
 // typed times for the time picker: "9", "930", "9:30", "9.30pm", "21:05", "9 pm" → 'HH:MM' (null if not a time)
 export function parseTime(s) {

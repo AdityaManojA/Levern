@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.10', date: '2026-10-27', title: 'Quest durations & grace windows',
+    note: 'Quests now support durations (e.g. 2 hours at the gym). A quest is only flagged as overdue and penalized after its full duration has elapsed, giving you time to complete your activity.',
+    tip: 'Add "for 2 hours" or "for 45 mins" in words when creating a quest, or pick a duration from the sheet.',
+    items: [
+      'Quest durations: Add durations like "for 2 hours", "for 45 mins", or "for 1h" directly when typing or speaking a quest.',
+      'Fair late penalty: Quests with a duration stay active without penalty until the full duration ends. Finish within your window to earn full EXP.',
+      'Duration pickers: Easily select or adjust durations in the New Quest and Quest Detail screens.',
+      'Calendar export: Calendar export (.ics) and Google Calendar links accurately reflect your quest duration.',
+    ],
+  },
+  {
     v: '1.09', date: '2026-10-26', title: 'TaskFlow is now Levern',
     note: 'Other apps were already established under names like ours, so we rebranded to a name that’s only ours: Levern, said /lev·earn/ (level up, earn). Same app, same quests, same cats. Your data, streaks and leaderboard progress are untouched, and the new address is getlevern.web.app.',
     tip: 'Reinstalling the app makes sure the full update is done: the new name and icon on your home screen, and the latest version everywhere.',

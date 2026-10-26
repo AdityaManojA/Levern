@@ -122,7 +122,8 @@ export const tierLabel = t => `P${t + 1} · ${state.settings.tierNames[t]}`;
 
 /* ---------- quests ---------- */
 export function addQuest(data) {
-  const q = { id: uid(), title: data.title, tier: data.tier ?? 3, due: data.due || null, time: data.time || null, notes: data.notes || '',
+  const q = { id: uid(), title: data.title, tier: data.tier ?? 3, due: data.due || null, time: data.time || null,
+    duration: data.duration ? +data.duration : null, notes: data.notes || '',
     subtasks: (data.subtasks || []).map(s => typeof s === 'string' ? { id: uid(), title: s, done: false, tier: data.tier ?? 3 } : s),
     repeat: anchored(data.repeat, data.due) || null, remind: null, done: false, doneAt: null, createdAt: Date.now() };
   // a quest with a due date always reminds at its due time, unless its alerts say otherwise.

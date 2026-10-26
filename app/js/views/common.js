@@ -1,6 +1,6 @@
 // Pieces several screens share: the quest row, the priority picker and the reminder picker.
 import { getState, tierLabel, TIER_COLORS, isReminderDue, reminderBase } from '../store.js';
-import { dueLabel, dueStatus, relTime, fmtStamp, todayStr, addDays, at } from '../dates.js';
+import { dueLabel, dueStatus, relTime, fmtStamp, todayStr, addDays, at, fmtDuration } from '../dates.js';
 import { esc, ICON, toast } from '../ui.js';
 import { describe, repeatShort } from '../recur.js';
 import { PRESETS, MAX_ALERT, cleanAlerts, alertLabel, alertShort } from '../alerts.js';
@@ -43,6 +43,7 @@ export function questRow(q, now = new Date()) {
     q.due ? `<span class="${st === 'overdue' ? 'od' : ''}">${esc(dueLabel(q, now))}</span>` : '',
     // right after the date, so it sits in the same place on every card
     reminderChip(q),
+    q.duration ? `<span class="tag" title="Duration">⏱ ${esc(fmtDuration(q.duration))}</span>` : '',
     q.repeat ? `<span class="tag">${ICON.repeat}${repeatShort(q.repeat)}</span>` : '',
     q.goal ? goalChip(q) : '',
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',
@@ -67,6 +68,7 @@ export function questPanel(q, now = new Date()) {
   const info = [
     // (no priority row: the card already shows it under the title)
     q.due ? ['Due', esc(dueLabel(q, now))] : null,
+    q.duration ? ['Duration', esc(fmtDuration(q.duration))] : null,
     q.repeat ? ['Repeats', esc(describe(q.repeat, q.due))] : null,
     q.remind && !q.remind.dismissed && !q.done ? ['Reminder', esc(fmtStamp(q.remind.at))] : null,
     q.sketches?.length ? ['Sketches', `${q.sketches.length}`] : null,

@@ -21,7 +21,11 @@ service cloud.firestore {
       allow create, update: if request.auth != null && request.auth.uid == owner &&
         request.resource.data.keys().hasOnly(['ownerUid','clientId','recipientUid','recipientEmail','projectIds','invoiceIds','docIds','data']) &&
         request.resource.data.ownerUid == owner && request.resource.data.clientId == client &&
-        request.resource.data.recipientUid is string && request.resource.data.recipientEmail is string;
+        request.resource.data.recipientUid is string && request.resource.data.recipientEmail is string &&
+        // Every publish carries the newest change it includes (since 1.10). An older copy of the workspace, such
+        // as a tab that has not reloaded, cannot replace a newer portal.
+        request.resource.data.data.wsStamp is string &&
+        (resource == null || request.resource.data.data.wsStamp >= resource.data.data.get('wsStamp', ''));
       allow delete: if request.auth != null && request.auth.uid == owner;
       function share() { return get(/databases/$(database)/documents/solodeskPortals/$(owner)/shares/$(client)).data; }
       function isClient() {

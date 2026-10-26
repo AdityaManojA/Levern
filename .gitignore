@@ -4,3 +4,4 @@ node_modules/
 .firebase/
 functions/shared/
 *.local
+brag-output/

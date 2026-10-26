@@ -12,6 +12,12 @@ import * as account from './account.js';
 import { esc } from './ui.js';
 
 const KEY = 'levern-update-seen';
+const userKey = () => {
+  try {
+    const u = account.user();
+    return u?.uid ? `${KEY}-${u.uid}` : KEY;
+  } catch (e) { return KEY; }
+};
 const latest = () => CHANGELOG[0].v;
 const parts = v => String(v || '0').split('.').map(n => parseInt(n, 10) || 0);
 // a > b for versions like 1.09 / 1.10
@@ -20,10 +26,18 @@ export function newer(a, b) {
   for (let i = 0; i < Math.max(x.length, y.length); i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); }
   return false;
 }
-const localSeen = () => { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } };
+const localSeen = () => {
+  try {
+    const uk = userKey();
+    return localStorage.getItem(uk) || localStorage.getItem(KEY) || '';
+  } catch (e) { return ''; }
+};
 const seenVersion = () => { const a = getState().settings.updateSeen || '', b = localSeen(); return newer(a, b) ? a : b; };
 function markSeen(v) {
-  try { localStorage.setItem(KEY, v); } catch (e) {}
+  try {
+    localStorage.setItem(userKey(), v);
+    localStorage.setItem(KEY, v);
+  } catch (e) {}
   if (getState().settings.updateSeen !== v) setSetting('updateSeen', v, { quiet: true });
 }
 
@@ -36,10 +50,11 @@ export const isShowing = () => !!el;
 // the updates this person hasn't seen yet, newest first (at most three in the pop-up)
 export const unseen = (seen = seenVersion()) => CHANGELOG.filter(r => !seen || newer(r.v, seen));
 
-export function maybeShowUpdate({ onboardingOpen = false } = {}) {
-  if (shown || !account.user() || onboardingOpen || !getState().onboarded) return false;
-  // wait for a real sync with the account, so another device's "seen" has arrived; offline, try again later
-  if (!cloudReady() || !cloudInfo().lastSync) return false;
+export function maybeShowUpdate({ onboardingOpen = false, force = false } = {}) {
+  if (shown || onboardingOpen || !getState().onboarded) return false;
+  // wait for cloud sync if user is signed in and cloud is configured, unless offline/timeout or force
+  const u = account.user();
+  if (!force && u && cloudReady() && !cloudInfo().lastSync) return false;
   const seen = seenVersion();
   if (seen && !newer(latest(), seen)) return false;
   // someone who had never seen a pop-up gets only the latest update, not the whole history
@@ -75,8 +90,9 @@ function open(list) {
 
 // check once things have settled, and again when the account finishes syncing (the first check may be too early)
 export function startUpdatePop(isOnboardingOpen) {
-  const tryIt = () => setTimeout(() => maybeShowUpdate({ onboardingOpen: isOnboardingOpen() }), 1200);
-  tryIt();
-  onCloud(tryIt);
-  account.onAccount(tryIt);
+  const tryIt = (force = false) => setTimeout(() => maybeShowUpdate({ onboardingOpen: isOnboardingOpen(), force }), 1200);
+  tryIt(false);
+  onCloud(() => tryIt(false));
+  account.onAccount(() => tryIt(false));
+  setTimeout(() => tryIt(true), 2500);
 }

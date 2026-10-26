@@ -68,11 +68,30 @@ const DAY_LIST_RE = new RegExp(`\\b(?:every|each|on)\\s+(${DAY_NC}(?:\\s*(?:,|an
 // "every Friday", "each Monday", "on Mondays" (a plain "on Friday" is a date, not a repeat)
 const DAY_EVERY_RE = new RegExp(`\\b(?:every|each)\\s+${DAY_RE}\\b|\\bon\\s+(?:${DAY_CORE})(?:day|nesday|sday|urday|rsday)s\\b`, 'i');
 
+// parses duration phrases like "for 2 hours", "for 45 mins", "for half an hour" -> minutes
+function parseDurationPhrase(s) {
+  const raw = String(s).toLowerCase();
+  if (/half\s+an?\s+hour|half\s+hour/.test(raw)) return 30;
+  if (/an?\s+hour\s+and\s+(?:a\s+)?half/.test(raw)) return 90;
+  let total = 0;
+  const hm = raw.match(/(\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten|half|an?)\s*(?:hours?|hrs?|h)\b/);
+  const mm = raw.match(/(\d+|fifteen|twenty|thirty|forty-five|fortyfive|forty|fifty)\s*(?:minutes?|mins?|m)\b/);
+  if (hm) {
+    const v = hm[1] === 'half' ? 0.5 : (hm[1] === 'a' || hm[1] === 'an') ? 1 : (numVal(hm[1]) ?? parseFloat(hm[1]));
+    if (!isNaN(v)) total += Math.round(v * 60);
+  }
+  if (mm) {
+    const v = numVal(mm[1]) ?? parseInt(mm[1], 10);
+    if (!isNaN(v)) total += v;
+  }
+  return total > 0 ? total : null;
+}
+
 export function parseQuest(text, now = new Date()) {
   const today = todayStr(now);
   let rest = ' ' + text + ' ';
   const chips = [];
-  let due = null, time = null, tier = null, repeat = null;
+  let due = null, time = null, duration = null, tier = null, repeat = null;
   const take = (re, fn) => {
     const m = rest.match(re);
     if (!m) return false;
@@ -106,6 +125,15 @@ export function parseQuest(text, now = new Date()) {
     repeat = { freq: 'weekly' }; due = nextWeekday(today, dayIndex(day[1]), false); chips.push({ kind: 'repeat', text: m[0].trim() });
   });
 
+  // duration: "for 2 hours", "for 45 mins", "for 1h", "for 1.5 hours", "for half an hour"
+  const DURATION_RE = /\b(?:for|duration|length)\s+(?:(?:an?\s+hour\s+and\s+(?:a\s+)?half)|(?:half\s+an?\s+hour)|(?:half\s+hour)|(?:(?:\d+(?:\.\d+)?|one|two|three|four|five|six|seven|eight|nine|ten|half|an?)\s*(?:hours?|hrs?|h)(?:\s*(?:and\s+)?(?:\d+|fifteen|twenty|thirty|forty-five|fortyfive|forty|fifty)?\s*(?:minutes?|mins?|m)?)?)|(?:(?:\d+|fifteen|twenty|thirty|forty-five|fortyfive|forty|fifty)\s*(?:minutes?|mins?|m)))\b|\b(?:duration|length)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hours?|m|min|mins|minutes?)\b/i;
+  take(DURATION_RE, m => {
+    const mins = parseDurationPhrase(m[0]);
+    if (!mins) return false;
+    duration = mins;
+    chips.push({ kind: 'duration', text: m[0].trim() });
+  });
+
   // time. Checked from the most specific phrase to the least.
   take(new RegExp(`\\b(?:at\\s+)?(quarter|half)\\s+(past|to)\\s+(${HOUR_RE})(?:\\s*${AMPM}(?![a-z]))?`, 'i'), m => {
     let h = numVal(m[3]);
@@ -130,7 +158,12 @@ export function parseQuest(text, now = new Date()) {
   })
   || take(/\b(?:at\s+)?(noon|midnight)\b/i, m => setTime(m[1].toLowerCase() === 'noon' ? '12:00' : '00:00', m))
   || take(/\b(?:by\s+)?(eod|end of (?:the )?day)\b/i, m => setTime('17:00', m))
-  || take(/\b(?:at\s+)?([01]?\d|2[0-3]):([0-5]\d)\b/i, m => setTime(`${m[1].padStart(2, '0')}:${m[2]}`, m));
+  || take(/\b(?:at\s+)?([01]?\d|2[0-3]):([0-5]\d)\b/i, m => setTime(`${m[1].padStart(2, '0')}:${m[2]}`, m))
+  || take(new RegExp(`\\bat\\s+(${HOUR_RE})\\b(?!\\s*[:/\\d])`, 'i'), m => {
+    const h = numVal(m[1]);
+    if (h === undefined || h < 1 || h > 12) return false;
+    setTime(`${String(inferHour(h)).padStart(2, '0')}:00`, m);
+  });
 
   // dates
   const setDue = (s, m) => { due = s; chips.push({ kind: 'date', text: m[0].trim() }); };
@@ -179,5 +212,5 @@ export function parseQuest(text, now = new Date()) {
   if (repeat && tier !== null && tier < 3 && !chips.some(c => c.kind === 'tier' || c.kind === 'keyword')) tier = 3;   // habits are not emergencies
 
   const title = rest.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/^[\s,.;:–-]+|[\s,.;:–-]+$/g, '').replace(/\s+(due|by|on|at|for|before)$/i, '').trim();
-  return { title: title || text.trim(), due, time, tier: tier ?? 3, repeat, chips };
+  return { title: title || text.trim(), due, time, duration, tier: tier ?? 3, repeat, chips };
 }

@@ -2,7 +2,7 @@
 // and can be changed before saving.
 import { addQuest, tierLabel, TIER_COLORS, findQuest, getState } from '../store.js';
 import { parseQuest } from '../parse.js';
-import { fmtDate, fmtTime, fmtStamp } from '../dates.js';
+import { fmtDate, fmtTime, fmtStamp, fmtDuration } from '../dates.js';
 import { REPEATS, dayChips, describe, oftenOf, oftenSeg } from '../recur.js';
 import { timeWheelHTML, setTimeWheel } from '../timewheel.js';
 import { sheet, esc, toast, play, ICON } from '../ui.js';
@@ -32,7 +32,7 @@ const multiBlock = m => `<label class="check-row" style="margin-top:8px"><input 
 
 export function openAdd(prefill = {}) {
   // a new quest with a due date reminds at its due time by default; the user can add more before it
-  const f = { title: '', tier: 3, due: prefill.due || null, time: null, repeat: null, subtasks: [], remindKey: 'none', alerts: DEFAULT_ALERTS.slice(), goal: null };
+  const f = { title: '', tier: 3, due: prefill.due || null, time: null, duration: null, repeat: null, subtasks: [], remindKey: 'none', alerts: DEFAULT_ALERTS.slice(), goal: null };
   const manual = new Set(prefill.due ? ['due'] : []);   // fields the user set by hand win over the parser
   let parsed = { chips: [] }, stop = null;
   const ink = { pad: null, rd: null, kind: 'writing', lang: null, refresh: null };
@@ -61,6 +61,8 @@ export function openAdd(prefill = {}) {
     <div data-pick></div>
     <label class="lbl">Due</label>
     <div class="two"><input class="field" type="date" name="due" aria-label="Due date">${timeWheelHTML('', { name: 'time', label: 'Due time', disabled: true })}</div>
+    <label class="lbl">Duration</label>
+    <div data-durations></div>
     <label class="lbl">How often</label>
     <div data-often></div>
     <select class="field" name="repeat" aria-label="Repeats">${REPEATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
@@ -78,12 +80,17 @@ export function openAdd(prefill = {}) {
 
   function paint() {
     $f('[data-chips]').innerHTML = parsed.chips.length
-      ? parsed.chips.map(c => `<span class="chip" style="background:${c.kind === 'tier' || c.kind === 'keyword' ? TIER_COLORS[f.tier] : c.kind === 'repeat' ? 'var(--mint)' : 'var(--sky)'}">${esc(c.text)}</span>`).join('')
-        + (f.due ? `<span class="chip">→ ${esc(fmtDate(f.due))}${f.time ? ' ' + esc(fmtTime(f.time)) : ''}</span>` : '')
-      : '<span class="small">Nothing yet. Try "tomorrow at 6pm", "every Monday" or "exam".</span>';
+      ? parsed.chips.map(c => `<span class="chip" style="background:${c.kind === 'tier' || c.kind === 'keyword' ? TIER_COLORS[f.tier] : c.kind === 'repeat' ? 'var(--mint)' : c.kind === 'duration' ? 'var(--mint)' : 'var(--sky)'}">${esc(c.text)}</span>`).join('')
+        + (f.due ? `<span class="chip">→ ${esc(fmtDate(f.due))}${f.time ? ' ' + esc(fmtTime(f.time)) : ''}${f.duration ? ' (' + esc(fmtDuration(f.duration)) + ')' : ''}</span>` : '')
+      : '<span class="small">Nothing yet. Try "tomorrow at 6pm", "gym at 7 for 2 hours" or "exam".</span>';
     $f('[data-pick]').innerHTML = `<div class="pick">${TIER_COLORS.map((c, i) => `<button type="button" data-tier="${i}" class="${i === f.tier ? 'on' : ''}" style="--c:${c}">P${i + 1}</button>`).join('')}</div><div class="small" style="margin-top:6px">${esc(tierLabel(f.tier))}</div>`;
     $f('[name=due]').value = f.due || '';
     setTimeWheel($f('[data-tw]'), f.time || '', !f.due);
+    const durs = [[30, '30m'], [45, '45m'], [60, '1h'], [90, '1.5h'], [120, '2h'], [0, 'None']];
+    $f('[data-durations]').innerHTML = `<div class="chips" style="margin-bottom:6px">
+      ${durs.map(([min, lbl]) => `<button type="button" class="chip chip-btn${(f.duration || 0) === min ? ' on' : ''}" data-dur="${min}">${lbl}</button>`).join('')}
+      ${f.duration && !durs.some(([m]) => m === f.duration) ? `<button type="button" class="chip chip-btn on" data-dur="${f.duration}">${esc(fmtDuration(f.duration))}</button>` : ''}
+    </div>`;
     $f('[data-often]').innerHTML = oftenSeg(oftenOf(f), 'data-often-k');
     $f('[name=repeat]').hidden = !f.repeat;
     if (f.repeat) $f('[name=repeat]').value = f.repeat.freq;
@@ -99,6 +106,7 @@ export function openAdd(prefill = {}) {
     parsed = parseQuest(text);
     if (!manual.has('tier')) f.tier = parsed.tier;
     if (!manual.has('due')) { f.due = parsed.due; f.time = parsed.time; }
+    if (!manual.has('duration')) f.duration = parsed.duration;
     if (!manual.has('repeat')) f.repeat = parsed.repeat;
     f.title = parsed.title;
     const hadDue = $f('[data-ropts] [data-r="r0"]') != null;
@@ -159,6 +167,14 @@ export function openAdd(prefill = {}) {
       return;
     }
     if (e.target.closest('[data-close]')) { stop && stop(); dropInk(); sheet.close(); setTimeout(() => mascot.react('look-back', 'pfft'), 420); return; }
+    const dur = e.target.closest('[data-dur]');
+    if (dur) {
+      manual.add('duration');
+      const d = +dur.dataset.dur;
+      f.duration = d > 0 ? d : null;
+      play('click', 0.4);
+      return paint();
+    }
     const t = e.target.closest('[data-tier]');
     if (t) { manual.add('tier'); f.tier = +t.dataset.tier; play('click', 0.5); return paint(); }
     if (e.target.closest('[data-subadd]')) return addSub();
@@ -259,7 +275,7 @@ export function openAdd(prefill = {}) {
     // a dated quest keeps its list of alerts; several-times-a-day repeats keep their own reminder (multi.js)
     const dated = !!f.due && !mspec;
     const goal = f.goal ? { target: clampGoal(f.goal.target) } : null;
-    const q = addQuest({ title: f.title || raw, tier: f.tier, due: goal ? null : f.due, time: f.due && !goal ? f.time : null, repeat: f.due && !goal ? f.repeat : null, subtasks: f.subtasks, goal, alerts: dated && !goal ? f.alerts : undefined, remind: dated && !goal ? null : remindSpec || null, sketches: sk ? [sk] : [] });
+    const q = addQuest({ title: f.title || raw, tier: f.tier, due: goal ? null : f.due, time: f.due && !goal ? f.time : null, duration: f.due && !goal ? f.duration : null, repeat: f.due && !goal ? f.repeat : null, subtasks: f.subtasks, goal, alerts: dated && !goal ? f.alerts : undefined, remind: dated && !goal ? null : remindSpec || null, sketches: sk ? [sk] : [] });
     dropInk();
     play('click');
     sheet.close();
@@ -267,7 +283,7 @@ export function openAdd(prefill = {}) {
     const nq = findQuest(q.id);
     const n = nq.alerts ? nq.alerts.length : 0;
     if (nq.goal) toast(`Goal added: ${nq.goal.target} times a week`, 'good');
-    else toast(`Quest added to ${tierLabel(f.tier)}${n ? ` · ${n} reminder${n === 1 ? '' : 's'}` : nq.remind ? ` · reminder ${fmtStamp(nq.remind.at)}` : ''}`, 'good');
+    else toast(`Quest added to ${tierLabel(f.tier)}${nq.duration ? ` · ${fmtDuration(nq.duration)}` : ''}${n ? ` · ${n} reminder${n === 1 ? '' : 's'}` : nq.remind ? ` · reminder ${fmtStamp(nq.remind.at)}` : ''}`, 'good');
   });
 
   paint(); paintPicker();
