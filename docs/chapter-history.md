@@ -160,7 +160,7 @@ Pipeline: `D:\Projects\TaskFlow\design\mochi\v3` builds 3x WebP strips, using on
 - **Uncommitted portal change:** `TaskFlow-controls/firestore.rules` also has SoloDesk's uncommitted portal (`wsStamp`) change. It stays uncommitted and undeployed from here.
 - **OG badge:** to be removed after Season 3.
 - **Premium (S-002):** on hold.
-- **Logo:** not chosen yet. Once one is picked, make the full icon set (app icons, favicon, maskable, lockups) and swap it into `app/icons/` and the manifest.
+- **Logo:** chosen and live (round 8, option 3, Ink tile). Not done yet: the Figma round-8 presentation board (blocked by the View seat's Figma call limit) and a wordmark lockup file for marketing.
 - **Installed copies and notifications:** people who installed TaskFlow must reinstall from getlevern.web.app and turn notifications on again, because browsers tie both to the address. Old push subscriptions stop once the old site's service worker retires itself.
 - **Google sign-in screen:** it may still show "taskflow-dailytracker.firebaseapp.com" and the old app name. That name lives in Google Cloud → APIs & Services → Branding, and the owner changes it there.
 - **Unused Hosting site:** `levern-app` only redirects now. It can be deleted later if wanted (never deleted without asking).
@@ -214,6 +214,8 @@ TC shipped all of it in Terracove 1.17 (commit b4fbcaf, tag v1.17) and left the 
 | 6 (cool palettes, informed by the library) | In Figma | Aurora, Check-L, Slit disc, **Pinwheel**, Progress ring, Ascent |
 | 7 (app palette) | In Figma | Pinwheel and Split sun, each in three versions using Levern's own colours |
 | 8 (combined) | Components in Figma; the board is local only (`design/logo-levern/round-8-combined.html`), because Figma's tool-call limit for the View seat was hit | Split sun "Ginger & ink" × "Cream tile": 1 Tile + ginger & ink (pick), 2 Outlined ginger & cream, 3 Ink tile, 4 Glow & ink |
+
+**Chosen (27 Oct): round 8, option 3 "Ink tile"**: ginger over cream, split and sliding, on an ink tile (#1E1B18 / #FF9A3D / #FFF8EE). It's live from v69 (commit dbdbf9b). Icons are in `app/icons/*-v3*`: 192/512, maskable 512, iPhone 180, SVG + PNG favicon, white badge 96. The old icons were removed. A faint ring keeps the tile visible in the dark header. Installed copies show the new home-screen icon only after a reinstall.
 
 The owner's favourites so far are round 2's **Split sun** and round 6's **Pinwheel**.
 
