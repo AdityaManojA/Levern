@@ -181,6 +181,50 @@ Pipeline: `D:\Projects\TaskFlow\design\mochi\v3` builds 3x WebP strips, using on
 - **Sign-in:** `getlevern.web.app` was added to Firebase Auth's authorized domains by the owner, since that's a security setting. Google Calendar sync has no OAuth client set up (`GOOGLE_CLIENT_ID` is empty), so no OAuth origin was needed.
 - **Domain idea:** `levern.app` was unregistered on 26 Oct and would be the cleanest address.
 
+### 7.1b Rebrand checklist (audited 27 Oct)
+
+**Done in the app:**
+- The name in every screen, page title, home-screen name, manifest and notification.
+- /lev·earn/ under the logo.
+- The black-and-white cat icon on every device.
+- The privacy and cookies pages.
+- Backup and calendar download names: `levern-backup-DATE.json`, `levern.ics`.
+- Share previews (Open Graph, Twitter card) and a canonical link to getlevern.web.app.
+
+**Done for the move:**
+- getlevern.web.app is live.
+- The old addresses redirect page by page and retire old installs.
+- getlevern.web.app is an authorized sign-in domain.
+- The old site is marked noindex with a canonical link, so search engines move to the new address.
+
+**Done for users:**
+- A once-only 1.09 pop-up: the rebrand reason, the new address, old links redirecting, turning notifications back on, and the reinstall tip.
+- Data, streaks and leaderboard are unaffected, because the internal keys were kept.
+
+**Reminders:**
+- Old-address push subscriptions are deleted automatically by the job (404/410).
+- People re-subscribe by turning notifications on at the new address.
+- The job runs from `main`, which is 42 commits behind; its only difference is the name "TaskFlow reminders".
+
+**Terracove:** already says Levern and links to getlevern.web.app. Only its old release notes say TaskFlow, which is historically correct.
+
+**Kept on purpose (internal, renaming would lose data or break things):**
+- localStorage, IndexedDB and periodic-sync names (`taskflow-*`).
+- The Firestore collections `taskflow*`.
+- The Firebase project id.
+- The SW cache prefix.
+- The calendar event UIDs (`@taskflow.app`, so subscribed calendars don't duplicate).
+- `window.TaskFlow`.
+
+**Left for the owner (outside the code):**
+1. **The Google sign-in window** still shows "taskflow-dailytracker.firebaseapp.com" and the old app name.
+   - Change the app name under Google Cloud → APIs & Services → Branding.
+   - To show getlevern.web.app instead: add `https://getlevern.web.app/__/auth/handler` as an authorized redirect URI on the OAuth web client. Then `authDomain` in `app/config.js` can be switched to `getlevern.web.app`. Don't switch it before that, or sign-in breaks.
+2. **Firebase project display name** (console only, not user-facing): Project settings.
+3. **GitHub repository** `AdityaManojA/TaskFlow`: optionally rename it to Levern (GitHub redirects the old URL). Also decide whether to merge the branch into `main`, so the reminder job runs current code. `D:\Projects\TaskFlow` (main) has every app file staged as deleted, so merge carefully.
+4. **Tracker Google Sheet** title, if wanted.
+5. **Optional custom domain** `levern.app`.
+
 ### 7.2 Fixes
 - **Leaderboard mismatch** (card 30, board 8):
   - Cause: uploads failed silently, most likely two devices writing the entry at once, and nothing retried until the next change.
