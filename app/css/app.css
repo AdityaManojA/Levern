@@ -141,9 +141,9 @@ html, .sheet, .rpanel, .clist, .ctime-l, textarea { scrollbar-width: thin; scrol
 .brand img { border-radius: 30%; }
 /* the name with its pronunciation under it, written like a dictionary entry: /lev·earn/ */
 .brand-t { display: flex; flex-direction: column; line-height: 1.05; }
-.brand-ph, .ob-ph { font-family: ui-serif, Georgia, "Times New Roman", serif; font-style: italic; font-weight: 400; color: var(--muted); letter-spacing: .02em; }
-.brand-ph { font-size: 11px; margin-top: 1px; }
-.ob-ph { text-align: center; font-size: 15px; margin: -4px 0 8px; }
+.brand-ph, .ob-ph { font-family: ui-serif, Georgia, "Times New Roman", serif; font-style: italic; font-weight: 500; color: var(--ink); opacity: .62; letter-spacing: .03em; }
+.brand-ph { font-size: 13px; margin-top: 2px; }
+.ob-ph { text-align: center; font-size: 18px; margin: -2px 0 10px; }
 .top-actions { display: flex; gap: 8px; }
 .iconbtn { position: relative; width: 40px; height: 40px; border: var(--line); border-radius: 14px; background: var(--card); display: grid; place-items: center; text-decoration: none; }
 .iconbtn:hover { background: var(--paper); }

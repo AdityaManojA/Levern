@@ -1,7 +1,7 @@
 // Google Calendar from the server: OAuth with a refresh token (so it keeps working while the app is
-// closed), pushing quests into the "TaskFlow" calendar the app creates, and reading the person's own
-// upcoming events so TaskFlow can show them.
-//   calendar.app.created     create the TaskFlow calendar and manage events in it only
+// closed), pushing quests into the "Levern" calendar the app creates, and reading the person's own
+// upcoming events so Levern can show them.
+//   calendar.app.created     create the Levern calendar and manage events in it only
 //   calendar.events.readonly read events (we only read the primary calendar)
 import { planSync, applyOps } from '../shared/gcalmap.js';
 
@@ -43,13 +43,13 @@ export function calendarApi(accessToken, fetchImpl = fetch) {
   };
 }
 
-// make sure the TaskFlow calendar exists; returns its id (and an empty mapping if it was re-created)
+// make sure the Levern calendar exists; returns its id (and an empty mapping if it was re-created)
 export async function ensureCalendar(api, g, tz) {
   if (g.calendarId) {
     try { await api('GET', `/calendars/${encodeURIComponent(g.calendarId)}`); return { calendarId: g.calendarId, map: g.map || {} }; }
     catch (e) { if (e.status !== 404 && e.status !== 410) throw e; }
   }
-  const cal = await api('POST', '/calendars', { summary: 'TaskFlow', description: 'Quests from TaskFlow. Edit them in TaskFlow; changes here are overwritten.', timeZone: tz || 'UTC' });
+  const cal = await api('POST', '/calendars', { summary: 'Levern', description: 'Quests from Levern. Edit them in Levern; changes here are overwritten.', timeZone: tz || 'UTC' });
   return { calendarId: cal.id, map: {} };
 }
 

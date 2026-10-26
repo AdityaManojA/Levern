@@ -1,4 +1,4 @@
-// TaskFlow server on Firebase (Cloud Functions + Firestore, asia-south2 next to the database). Firebase Hosting sends /api/** and /feed/**
+// Levern server on Firebase (Cloud Functions + Firestore, asia-south2 next to the database). Firebase Hosting sends /api/** and /feed/**
 // here (see firebase.json), so the app calls it on its own address.
 //
 //   /api/...           the app, signed in with Google (Firebase ID token): sync, calendar feed link,
@@ -9,8 +9,8 @@
 //
 // Firestore (only this server can read it; firestore.rules denies the app):
 //   users/{uid}                  rev, chunk count, time zone, feed token, Google Calendar status
-//   users/{uid}/chunks/{i}       the person's TaskFlow data, deflated (lib/blob.js)
-//   users/{uid}/private/google   Google refresh token, TaskFlow calendar id, quest → event mapping
+//   users/{uid}/chunks/{i}       the person's Levern data, deflated (lib/blob.js)
+//   users/{uid}/private/google   Google refresh token, Levern calendar id, quest → event mapping
 //   users/{uid}/private/events   their upcoming Google events, as shown in the app
 //   feeds/{token}                feed token → uid
 //   oauthStates/{state}          short-lived, links Google's redirect back to the person who started it
@@ -34,7 +34,7 @@ const db = getFirestore();
 const CLIENT_ID = defineString('GOOGLE_CLIENT_ID', { description: 'OAuth web client ID (ends in .apps.googleusercontent.com)' });
 const PUBLIC_URL = defineString('PUBLIC_URL', { default: 'https://getlevern.web.app' });
 const CLIENT_SECRET = defineSecret('GOOGLE_CLIENT_SECRET');
-// sites that share this server and sign-in (TaskFlow and Solodesk); Google sends people back to the one they came from
+// sites that share this server and sign-in (Levern and Solodesk); Google sends people back to the one they came from
 const ORIGINS = defineString('ALLOWED_ORIGINS', { default: 'https://getlevern.web.app,https://taskflow-dailytracker.web.app,https://taskflow-solodesk.web.app' });
 function originOf(req) {
   const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
@@ -96,9 +96,9 @@ async function syncGoogleFor(uid, { pull = true } = {}) {
     return pushed.counts;
   } catch (e) {
     logger.warn('google sync failed', { uid, message: e.message, code: e.code, status: e.status });
-    // the person removed TaskFlow's access in their Google account: stop trying until they reconnect
+    // the person removed Levern's access in their Google account: stop trying until they reconnect
     if (e.code === 'invalid_grant') { await gRef.delete(); await userRef(uid).update({ gcal: { connected: false, error: 'Google access was removed. Connect again to keep syncing.' } }); }
-    else await userRef(uid).update({ 'gcal.error': "Couldn't reach Google Calendar. TaskFlow will try again." });
+    else await userRef(uid).update({ 'gcal.error': "Couldn't reach Google Calendar. Levern will try again." });
     return null;
   }
 }
@@ -113,7 +113,7 @@ async function authed(req) {
 const page = (title, text, ok) => `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
 <style>body{font:16px/1.5 system-ui,sans-serif;background:#FFF8EE;color:#1E1B18;display:grid;place-items:center;min-height:100vh;margin:0;padding:16px;box-sizing:border-box}
 div{max-width:380px;border:2.5px solid #1E1B18;border-radius:20px;background:#fff;padding:20px;text-align:center}a{color:inherit;font-weight:700}</style>
-<div><h1 style="font-size:20px;margin:0 0 8px">${title}</h1><p>${text}</p><p><a href="/#/settings">Back to TaskFlow</a></p></div>
+<div><h1 style="font-size:20px;margin:0 0 8px">${title}</h1><p>${text}</p><p><a href="/#/settings">Back to Levern</a></p></div>
 <script>try{window.opener&&window.opener.postMessage({taskflow:'gcal',ok:${ok ? 'true' : 'false'}},location.origin);if(window.opener)setTimeout(()=>window.close(),${ok ? 900 : 4000});else setTimeout(()=>location.replace('/#/settings'),${ok ? 1200 : 6000})}catch(e){}</script>`;
 
 /* ---------- /api ---------- */
@@ -129,18 +129,18 @@ export const api = onRequest({ secrets: [CLIENT_SECRET], cors: false }, async (r
       const s = sRef && await sRef.get();
       if (sRef) await sRef.delete().catch(() => {});
       if (error || !code || !s?.exists || s.get('exp') < Date.now()) {
-        return res.status(400).type('html').send(page('Not connected', error === 'access_denied' ? 'Google Calendar access was not allowed.' : 'That sign-in link expired. Go back to TaskFlow and tap Connect again.', false));
+        return res.status(400).type('html').send(page('Not connected', error === 'access_denied' ? 'Google Calendar access was not allowed.' : 'That sign-in link expired. Go back to Levern and tap Connect again.', false));
       }
       const uid = s.get('uid');
       const t = await G.exchangeCode({ code: String(code), clientId: CLIENT_ID.value(), clientSecret: CLIENT_SECRET.value(), redirectUri: `${s.get('origin') || PUBLIC_URL.value()}/api/gcal/callback` });
       const granted = String(t.scope || '').split(' ');
-      if (!granted.includes(G.SCOPES[0])) return res.status(400).type('html').send(page('Not connected', 'TaskFlow needs permission to manage its own calendar. Tap Connect again and leave that box ticked.', false));
+      if (!granted.includes(G.SCOPES[0])) return res.status(400).type('html').send(page('Not connected', 'Levern needs permission to manage its own calendar. Tap Connect again and leave that box ticked.', false));
       const gRef = userRef(uid).collection('private').doc('google');
       const prev = (await gRef.get()).data() || {};
       await gRef.set({ refreshToken: t.refresh_token || prev.refreshToken, calendarId: prev.calendarId || null, map: prev.map || {}, scope: t.scope, readsEvents: granted.includes(G.SCOPES[1]) }, { merge: true });
       await userRef(uid).set({ gcal: { connected: true, since: Date.now() } }, { merge: true });
       await syncGoogleFor(uid);
-      return res.status(200).type('html').send(page('Google Calendar connected', 'Your dated quests are going into a calendar called TaskFlow, and your own events will show in TaskFlow.', true));
+      return res.status(200).type('html').send(page('Google Calendar connected', 'Your dated quests are going into a calendar called Levern, and your own events will show in Levern.', true));
     }
 
     const user = await authed(req);
@@ -201,7 +201,7 @@ export const api = onRequest({ secrets: [CLIENT_SECRET], cors: false }, async (r
       const gRef = userRef(uid).collection('private').doc('google');
       const g = (await gRef.get()).data();
       if (g?.refreshToken) await G.revoke(g.refreshToken);
-      // keep the calendar id, so reconnecting re-uses the same TaskFlow calendar
+      // keep the calendar id, so reconnecting re-uses the same Levern calendar
       await gRef.set({ refreshToken: FieldValue.delete(), map: {} }, { merge: true });
       await userRef(uid).collection('private').doc('events').delete().catch(() => {});
       await userRef(uid).set({ gcal: { connected: false }, eventsRev: FieldValue.increment(1) }, { merge: true });
@@ -211,7 +211,7 @@ export const api = onRequest({ secrets: [CLIENT_SECRET], cors: false }, async (r
     return send(res, 404, { error: 'Not found' });
   } catch (e) {
     logger.error('api error', { path, message: e.message, stack: e.stack });
-    return send(res, 500, { error: 'Something went wrong on the TaskFlow server.' });
+    return send(res, 500, { error: 'Something went wrong on the Levern server.' });
   }
 });
 
@@ -220,7 +220,7 @@ export const feed = onRequest({ cors: false }, async (req, res) => {
   const m = /^\/feed\/([A-Za-z0-9_-]{20,64})\.ics$/.exec(req.path);
   if (!m) return res.status(404).send('Not found');
   const f = await db.collection('feeds').doc(m[1]).get();
-  if (!f.exists) return res.status(404).send('This calendar link was replaced or removed. Get the new one in TaskFlow → Settings → Calendars.');
+  if (!f.exists) return res.status(404).send('This calendar link was replaced or removed. Get the new one in Levern → Settings → Calendars.');
   const { doc } = await loadDoc(f.get('uid'));
   res.set('Cache-Control', 'private, max-age=300').type('text/calendar; charset=utf-8').send(buildICS(doc?.quests || []));
 });

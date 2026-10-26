@@ -1,4 +1,4 @@
-// TaskFlow reminder job. Runs every 5 minutes from .github/workflows/reminders.yml.
+// Levern reminder job. Runs every 5 minutes from .github/workflows/reminders.yml.
 //
 // For each person who turned on notifications on a device (taskflowUsers/{uid}/push/sub), it works out what
 // is due now and sends a web push. Nothing is sent twice: what was sent is recorded in taskflowUsers/{uid}/push/state.
@@ -101,7 +101,7 @@ export function dueNow({ quests = [], settings = {}, tz = 'UTC', now = Date.now(
       if (!inWindow(lp.minutes, hm)) continue;
       if (n.kind === 'daily') {
         const count = open.filter(q => q.due === lp.date || (q.due && q.due < lp.date)).length;
-        out.push({ key: `daily-${lp.date}-${hm}`, title: count ? `${count} quest${count === 1 ? '' : 's'} for today` : 'Nothing due today', body: count ? 'Open TaskFlow to see them' : 'A clear day', url: '#/home' });
+        out.push({ key: `daily-${lp.date}-${hm}`, title: count ? `${count} quest${count === 1 ? '' : 's'} for today` : 'Nothing due today', body: count ? 'Open Levern to see them' : 'A clear day', url: '#/home' });
       } else {
         out.push({ key: `${n.kind}-${lp.date}-${hm}`, title: n.label, body: NUDGE_BODY[n.kind], url: '#/home' });
       }
