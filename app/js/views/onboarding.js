@@ -37,7 +37,7 @@ function screen(name) {
       <div class="ob-center ob-hello">
         <div class="ob-circle ob-circle-sm" style="background:var(--lav)"><span class="ob-mochi" data-anim="happy-wiggle" data-scale="1.1" data-pause="1400"></span></div>
         <h1 class="ob-h" style="text-align:center">Welcome to Levern</h1>
-        <div class="ob-ph" aria-hidden="true">/lev·earn/</div>
+        <div class="ob-ph" aria-hidden="true"><i>/</i>lev<b>·</b><em>earn</em><i>/</i></div>
         <p class="ob-p muted" style="text-align:center">A calm to-do list that feels like a game. Finish quests, build a streak and earn points. Sign in with Google to keep them safe and the same on all your devices.</p>
       </div>
       ${u ? `<div class="ob-row ob-me">${u.photo ? `<img src="${esc(u.photo)}" alt="" width="40" height="40" referrerpolicy="no-referrer">` : ''}<span><b>${esc(u.name || 'Signed in')}</b><small>${esc(u.email)}</small></span><button type="button" class="link" data-ob-signout>Sign out</button></div>`

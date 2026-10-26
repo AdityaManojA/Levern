@@ -51,7 +51,7 @@ async function load() {
   if (loading) return;
   const again = !!rows;
   loading = true; failed = false; swap(render());
-  try { if (board.isOn()) await board.publish().catch(() => {}); all = await board.entries(); rows = board.standings(all, mode); top3 = board.topThreeFrom(all); enter = !again; }
+  try { if (board.isOn()) await board.publish().catch(e => { console.warn('[Levern board] upload before loading failed', e?.code || e); board.publishSoon(0); }); all = await board.entries(); rows = board.standings(all, mode); top3 = board.topThreeFrom(all); enter = !again; }
   catch (e) { failed = true; all = rows = null; }
   loading = false;
   swap(render());

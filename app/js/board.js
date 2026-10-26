@@ -103,10 +103,20 @@ export async function unpublish() {
   return true;
 }
 
-// saves come in bursts while someone works: send once things settle
-export function publishSoon() {
-  clearTimeout(pushT);
-  pushT = setTimeout(() => { publish().catch(() => {}); }, 2500);
+// saves come in bursts while someone works: send once things settle. A refused or failed send (most often another
+// device writing the entry at the same moment, so this one's copy was out of date) is read again and retried,
+// a little later each time, instead of waiting for the next change.
+let retries = 0, retryT = null;
+export function publishSoon(delay = 2500) {
+  clearTimeout(pushT); clearTimeout(retryT);
+  pushT = setTimeout(async () => {
+    try { await publish(); retries = 0; }
+    catch (e) {
+      console.warn('[Levern board] upload failed, retrying', e?.code || e?.message || e);
+      lastSent = '';
+      if (retries < 6) retryT = setTimeout(() => publishSoon(0), 15000 * 2 ** retries++);
+    }
+  }, delay);
 }
 
 export async function setOn(on) {
@@ -162,6 +172,8 @@ export function standings(list, which, now = seasonOf()) {
 }
 
 export function startBoard() {
-  onSave(publishSoon);
+  onSave(() => publishSoon());
   account.onAccount(() => publishSoon());
+  // back in the app (another tab, the phone unlocked): make sure the board has what this device has
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { retries = 0; publishSoon(); } });
 }

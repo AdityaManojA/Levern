@@ -141,9 +141,15 @@ html, .sheet, .rpanel, .clist, .ctime-l, textarea { scrollbar-width: thin; scrol
 .brand img { border-radius: 30%; }
 /* the name with its pronunciation under it, written like a dictionary entry: /lev·earn/ */
 .brand-t { display: flex; flex-direction: column; line-height: 1.05; }
-.brand-ph, .ob-ph { font-family: ui-serif, Georgia, "Times New Roman", serif; font-style: italic; font-weight: 500; color: var(--ink); opacity: .62; letter-spacing: .03em; }
-.brand-ph { font-size: 13px; margin-top: 2px; }
-.ob-ph { text-align: center; font-size: 18px; margin: -2px 0 10px; }
+/* in the app's own type: faint slashes, "lev" muted, "earn" in the accent (earning is the point of the app) */
+.brand-ph, .ob-ph { font-weight: 600; letter-spacing: .06em; color: var(--muted); font-variant-numeric: normal; }
+.brand-ph i, .ob-ph i { font-style: normal; font-weight: 400; opacity: .45; }
+.brand-ph b, .ob-ph b { font-weight: 800; opacity: .5; margin: 0 .08em; }
+.brand-ph em, .ob-ph em { font-style: normal; font-weight: 800; color: #C2650A; }
+.brand-ph { font-size: 11.5px; margin-top: 2px; }
+.ob-ph { text-align: center; font-size: 17px; margin: -2px 0 10px; }
+:root[data-theme="dark"] .brand-ph em, :root[data-theme="dark"] .ob-ph em { color: var(--a-ginger, #FF9A3D); }
+:root[data-theme="mono"] .brand-ph em, :root[data-theme="mono"] .ob-ph em { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
 .top-actions { display: flex; gap: 8px; }
 .iconbtn { position: relative; width: 40px; height: 40px; border: var(--line); border-radius: 14px; background: var(--card); display: grid; place-items: center; text-decoration: none; }
 .iconbtn:hover { background: var(--paper); }
