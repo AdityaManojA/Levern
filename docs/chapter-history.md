@@ -213,6 +213,7 @@ TC shipped all of it in Terracove 1.17 (commit b4fbcaf, tag v1.17) and left the 
 | 5 (one mark type each) | In Figma | Tick wordmark, Block L, Cut-out L, Link, Dot grid, Maze |
 | 6 (cool palettes, informed by the library) | In Figma | Aurora, Check-L, Slit disc, **Pinwheel**, Progress ring, Ascent |
 | 7 (app palette) | In Figma | Pinwheel and Split sun, each in three versions using Levern's own colours |
+| 8 (combined) | Components in Figma; the board is local only (`design/logo-levern/round-8-combined.html`), because Figma's tool-call limit for the View seat was hit | Split sun "Ginger & ink" × "Cream tile": 1 Tile + ginger & ink (pick), 2 Outlined ginger & cream, 3 Ink tile, 4 Glow & ink |
 
 The owner's favourites so far are round 2's **Split sun** and round 6's **Pinwheel**.
 
