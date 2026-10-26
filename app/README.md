@@ -1,4 +1,6 @@
-# TaskFlow web app (v0.1)
+# Levern web app (1.09)
+
+*Called Levern until 1.09. Live at https://getlevern.web.app.*
 
 A calm to-do list that feels like a game, built as an installable PWA. Plain HTML, CSS and ES modules: there is no build step and nothing to install. Mochi the cat lives on the nav bar (`js/mochi.js`); Settings → Cat swaps in Cookie, his orange twin brother. Their art (`mochi/`, `cookie/`: a manifest and one WebP strip per animation, stored at 3× for sharp phone screens) is built from the Clarity 4× masters in `design/mochi/v3` (`hires.py`, `addcut.py`, `build.py`) and copied in by `python design/mochi/v3/sync.py`. `tests/cats.html` plays and checks every animation of both cats.
 
@@ -16,7 +18,7 @@ Service workers need `localhost` or HTTPS, so open it through the server rather 
 
 | Feature | Where | Notes |
 |---|---|---|
-| Onboarding | first run | Matches the Figma frames: Welcome, What's a quest?, How will you use TaskFlow?, How many quests a day?, Make it yours (calendars, sounds, voice), and Mochi's tour prompt. Shown once. Reopen it from Settings → You. |
+| Onboarding | first run | Matches the Figma frames: Welcome, What's a quest?, How will you use Levern?, How many quests a day?, Make it yours (calendars, sounds, voice), and Mochi's tour prompt. Shown once. Reopen it from Settings → You. |
 | Guided tour | "Show me around", or Settings → You → Quick tour | 9 steps: the real screen dimmed, a spotlight, and a card from Mochi. Tap Mochi to finish. |
 | Mochi | nav bar | Breathes and blinks, and picks idles from a large weighted pool (never the same as the last few, with random pauses). Walks and naps after a long quiet spell. A tap gives a random reaction. Long press shows heart eyes. Drag to pick him up, and he falls back onto the bar when you let go. Reacts to quests, the daily target, errors, the add sheet and reminders (walks to the Quests tab to catch them), and sleeps while you focus. Settings → Mochi. |
 | Pull to refresh | Home, Quests, Calendar, Stats | Pull down from the top. Mochi stretches as you pull and spins while it re-checks reminders, re-syncs calendars and looks for an app update. |
@@ -31,7 +33,7 @@ Service workers need `localhost` or HTTPS, so open it through the server rather 
 | Installable, offline | Settings → App | Manifest, icons, and an offline app shell cached by `sw.js`. |
 | Focus timer | Focus tab | Pomodoro sessions of 15/25/50 min, tied to a quest. Earns 1 EXP per 5 min and survives reloads. |
 | Calendar | Calendar tab | Week and month views, including every occurrence of a repeating quest. Add a quest on any day. Download an `.ics` file (Apple Calendar, Outlook, Google import), or use the Google Calendar link on each quest. |
-| Calendar connections | Settings → Calendars | Google Calendar sync into its own "TaskFlow" calendar (needs a client ID in `config.js`), a live `.ics` feed to subscribe to from Apple Calendar or Outlook, and `.ics` downloads. Setup and limits: [CALENDAR_SETUP.md](CALENDAR_SETUP.md). |
+| Calendar connections | Settings → Calendars | Google Calendar sync into its own "Levern" calendar (needs a client ID in `config.js`), a live `.ics` feed to subscribe to from Apple Calendar or Outlook, and `.ics` downloads. Setup and limits: [CALENDAR_SETUP.md](CALENDAR_SETUP.md). |
 | Stats and history | chart icon (top right) | Totals, current and best streak, EXP, a 7- or 30-day chart against your target, days kept this month, done by priority, focus minutes, and a full history. |
 
 Scoring follows `design/DESIGN_BRIEF.md`: a day's EXP is `20 × (done ÷ target)`, plus 10 when the target is hit. The streak counts days in a row that hit the target.
