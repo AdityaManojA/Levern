@@ -7,6 +7,7 @@ export const CHANGELOG = [
       'TaskFlow is now called Levern (say it /lev·earn/). Same app, same quests, same cats; your data and progress are untouched.',
       'Fixed: the leaderboard could show less EXP than your own card. A failed upload now retries on its own, and coming back to the app sends your latest score.',
       'The /lev·earn/ under the name now matches the app, with earn in the accent colour.',
+      'Home greets you by your leaderboard name, or by the name in your email if you haven’t set one.',
     ],
   },
   {

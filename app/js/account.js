@@ -51,6 +51,17 @@ export function greetName(full) {
   }
   return '';
 }
+// A name from an email address when nothing better is set: the first word of the part before the @
+// ("aditya.dev.org@gmail.com" → "Aditya", "mochi_queen99@…" → "Mochi").
+export function emailName(email) {
+  const w = String(email || '').split('@')[0].split(/[._+\-\d]+/).find(x => /^\p{L}{2,}$/u.test(x));
+  return w && isClean(w) ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
+}
+// Who the greeting is for: the leaderboard name they chose, else a name from their email.
+export function displayName(settings) {
+  const board = String(settings?.boardName || '').trim();
+  return (board && isClean(board) ? board : '') || emailName(current?.email) || greetName(settings?.name);
+}
 export const onAccount = fn => { listeners.add(fn); return () => listeners.delete(fn); };
 // the signed-in Firebase user once the session is restored (null when signed out)
 export async function firebaseUser() {

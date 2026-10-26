@@ -3,7 +3,7 @@ import { summary, lastDays } from '../stats.js';
 import { dueStatus, WEEKDAYS, fromStr } from '../dates.js';
 import { esc } from '../ui.js';
 import { questRow } from './common.js';
-import { greetName } from '../account.js';
+import { displayName } from '../account.js';
 
 function greeting() { const h = new Date().getHours(); return h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; }
 
@@ -20,7 +20,7 @@ export function render() {
   const left = Math.max(0, s.target - sum.todayCount);
   const rem = dueReminders().length;
   return `
-    <div class="h-sub">${greeting()}${greetName(s.name) ? ', ' + esc(s.name) : ''}</div>
+    <div class="h-sub">${greeting()}${displayName(s) ? ', ' + esc(displayName(s)) : ''}</div>
     <h1 class="h-title">Up next</h1>
     <div class="sec sec-top"><span></span><a href="#/quests">All quests</a></div>
     ${next.length ? next.map(q => questRow(q)).join('') + moreLink(open.length - next.length) : `<div class="card empty"><span class="empty-mochi" data-sprite="box-peek" data-scale=".9"></span><b>All clear</b><span class="small">Add a quest with the + button.</span></div>`}
