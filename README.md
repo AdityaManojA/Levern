@@ -91,6 +91,10 @@ Before every app deploy:
 
 **Google sign-in** only works on addresses listed under Firebase → Authentication → Settings → Authorized domains. `getlevern.web.app` is on it.
 
+## Rebrand: what's left
+
+The app side of the TaskFlow → Levern switch is done. A few steps live in accounts only the owner can change: the Google sign-in name and domain, the GitHub repo name and merging to `main`, and some optional renames. See [`docs/rebrand-todo.md`](docs/rebrand-todo.md).
+
 ## Names that must not change
 
 The product is called Levern, but these internal names still say TaskFlow. Renaming them would lose people's data or break sync:

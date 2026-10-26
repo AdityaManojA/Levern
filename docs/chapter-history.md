@@ -216,7 +216,7 @@ Pipeline: `D:\Projects\TaskFlow\design\mochi\v3` builds 3x WebP strips, using on
 - The calendar event UIDs (`@taskflow.app`, so subscribed calendars don't duplicate).
 - `window.TaskFlow`.
 
-**Left for the owner (outside the code):**
+**Left for the owner (outside the code)**, also as a checklist in [rebrand-todo.md](rebrand-todo.md):
 1. **The Google sign-in window** still shows "taskflow-dailytracker.firebaseapp.com" and the old app name.
    - Change the app name under Google Cloud → APIs & Services → Branding.
    - To show getlevern.web.app instead: add `https://getlevern.web.app/__/auth/handler` as an authorized redirect URI on the OAuth web client. Then `authDomain` in `app/config.js` can be switched to `getlevern.web.app`. Don't switch it before that, or sign-in breaks.
