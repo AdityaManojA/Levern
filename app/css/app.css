@@ -392,6 +392,32 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .toast.good::before { background: var(--mint); }
 .toast.remind { background: var(--tint-butter); }
 .toast.remind::before { background: var(--butter); }
+.toast.has-undo { pointer-events: auto; padding: 7px 8px 7px 14px; gap: 10px; }
+.toast-txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toast-undo-btn { border: 2px solid var(--edge); background: var(--butter); color: var(--ink); font-weight: 700; font-size: 12.5px; padding: 5px 14px; border-radius: 999px; cursor: pointer; box-shadow: 0 2px 0 rgba(var(--ink-rgb),.15); transition: transform .15s var(--ease), background .15s; flex: none; }
+.toast-undo-btn:active { transform: scale(.92); }
+:root[data-theme="dark"] .toast-undo-btn { background: var(--a-ginger); color: #141414; border-color: transparent; }
+
+/* delete confirmation dialog */
+.del-confirm-box { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 4px 0 2px; }
+.del-confirm-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--tint-coral); color: var(--p1); display: grid; place-items: center; margin-bottom: 2px; border: 2px solid var(--edge); }
+.del-confirm-icon svg { width: 22px; height: 22px; }
+:root[data-theme="dark"] .del-confirm-icon { background: rgba(255,123,107,.18); color: var(--a-coral); border-color: transparent; }
+.del-confirm-box h3 { font-size: 19px; font-weight: 700; margin: 0; }
+.del-confirm-target { font-size: 15px; font-weight: 600; color: var(--ink); margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.del-confirm-sub { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; font-weight: 500; }
+.del-confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+
+/* quest missing / deleted view */
+.missing-view { max-width: 480px; margin: 0 auto; }
+.missing-card { background: var(--card); border: var(--line); border-radius: 26px; padding: 26px 22px 22px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 6px; box-shadow: 0 4px 0 rgba(var(--ink-rgb),.08); }
+.missing-mochi { margin-bottom: 2px; min-height: 72px; display: grid; place-items: center; }
+.missing-pill { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--edge); border-radius: 999px; padding: 3px 12px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; background: var(--tint-butter); color: var(--ink); }
+:root[data-theme="dark"] .missing-pill { background: rgba(255,154,61,.18); color: var(--a-ginger); border-color: color-mix(in srgb, var(--a-ginger) 40%, transparent); }
+.missing-title { font-size: 21px; font-weight: 700; letter-spacing: -.01em; line-height: 1.25; margin: 2px 0 0; word-break: break-word; }
+.missing-text { font-size: 14px; line-height: 1.45; color: var(--muted); max-width: 320px; margin: 0 0 10px; font-weight: 500; }
+.missing-btns { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.missing-btns .btn { font-size: 14.5px; min-height: 46px; }
 
 /* detail */
 .back { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; text-decoration: none; margin-bottom: 8px; }
@@ -1342,4 +1368,65 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
   .settings-account > .acct > .mini { grid-column: 2; justify-self: start; margin-top: 2px; }
   .settings-account > .acct:not(:has(> img)) { grid-template-columns: minmax(0, 1fr); }
   .settings-account > .acct:not(:has(> img)) > .mini { grid-column: 1; }
+}
+
+/* Hashtags & Project Spaces */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8em;
+  font-weight: 700;
+  padding: 1px 7px;
+  margin: 0 3px;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--edge);
+  vertical-align: 1px;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+.tag-chip:hover {
+  background: var(--butter);
+  transform: translateY(-1px);
+}
+.tag-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  margin-bottom: 4px;
+  scrollbar-width: none;
+}
+.tag-bar::-webkit-scrollbar { display: none; }
+.tag-pill {
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+.tag-pill .n {
+  opacity: 0.65;
+  font-size: 0.85em;
+  margin-left: 4px;
+}
+.tag-pill.on {
+  background: var(--ink) !important;
+  color: var(--cream) !important;
+}
+
+/* Ambient Focus Audio */
+.ambient-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+.ambient-select {
+  width: auto !important;
+  padding: 4px 8px !important;
+  font-size: 0.85em !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
 }

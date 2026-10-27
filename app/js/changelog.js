@@ -3,14 +3,16 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
-    v: '1.10', date: '2026-10-27', title: 'Quest durations & grace windows',
-    note: 'Quests now support durations (e.g. 2 hours at the gym). A quest is only flagged as overdue and penalized after its full duration has elapsed, giving you time to complete your activity.',
-    tip: 'Add "for 2 hours" or "for 45 mins" in words when creating a quest, or pick a duration from the sheet.',
+    v: '1.10', date: '2026-10-27', title: 'Durations, Micro-EXP, Tags & Ambient Audio',
+    note: 'Quests now support durations (e.g. 2 hours at the gym), Micro-EXP for subtasks, hashtag organization, ambient focus sound loops, and interactive mobile notification actions.',
+    tip: 'Try #tags like #work or #fitness in your quest titles, and switch on ambient audio in Focus mode!',
     items: [
-      'Quest durations: Add durations like "for 2 hours", "for 45 mins", or "for 1h" directly when typing or speaking a quest.',
-      'Fair late penalty: Quests with a duration stay active without penalty until the full duration ends. Finish within your window to earn full EXP.',
-      'Duration pickers: Easily select or adjust durations in the New Quest and Quest Detail screens.',
-      'Calendar export: Calendar export (.ics) and Google Calendar links accurately reflect your quest duration.',
+      'Quest durations & grace window: Quests with a duration stay active without penalty until the full duration ends.',
+      'Micro-EXP for subtasks: Earn 2 EXP per completed subtask (up to 10 EXP per quest) to stay motivated on larger tasks.',
+      'Hashtags & Project Spaces: Add #tags to quest titles and click tags to filter your quests instantly.',
+      'Ambient Focus Audio: Relax with procedural background sounds (cat purring, rain, cafe, white noise) during focus sessions.',
+      'Notification Quick Actions & Badge: Mark quests Done or Snooze directly from mobile notifications, with dynamic app badge counts.',
+      'Reliability & Performance: IndexedDB events cache, single audio spritesheet, and Firestore anti-cheat drift protections.',
     ],
   },
   {

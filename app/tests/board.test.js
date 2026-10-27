@@ -89,3 +89,11 @@ test('the board tries again as soon as the bucket has room, and leaves the entry
   const got = allowed({ ...o, updatedMs: t0 }, { exp: 143, season: 2, seasonExp: 8 }, t0 + 10 * 60000);
   assert.deepEqual([got.exp, got.seasonExp], [143, 8]);
 });
+
+test('anti-cheat: safe 45s clock margin prevents premature bank refill on client time drift', () => {
+  const o = { exp: 500, season: 3, seasonExp: 100, bank: 0, updatedMs: t0 };
+  const got = allowed(o, { exp: 505, season: 3, seasonExp: 105 }, t0 + 30000);
+  assert.equal(got.exp, 500);
+  assert.equal(got.seasonExp, 100);
+  assert.equal(got.bank, 0);
+});

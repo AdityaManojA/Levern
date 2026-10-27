@@ -156,7 +156,7 @@ const ACTIONS = {
   'sub-toggle': el => {
     const q = store.findQuest(el.dataset.id), s = q?.subtasks.find(x => x.id === el.dataset.sid);
     if (!s) return;
-    store.updateSubtask(q.id, s.id, { done: !s.done });
+    const nowDone = !s.done; store.updateSubtask(q.id, s.id, { done: nowDone }); if (nowDone) { ui.play('coin', 0.5); ui.toast('+2 EXP · Subtask complete', 'good'); } else ui.play('tap', 0.6);
     play(s.done ? 'tick' : 'click', 0.5);
   },
 };

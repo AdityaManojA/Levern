@@ -1,8 +1,8 @@
 // A themed right-click / long-press menu for quest rows (Open, Done, Reminder, Delete).
 // Everywhere else the browser's own menu stays, since text fields need copy and paste.
 // The menu presses the row's own buttons, so it does exactly what tapping them does.
-import { findQuest, deleteQuest } from './store.js';
-import { confirmBox, toast } from './ui.js';
+import { findQuest, deleteQuest, restoreQuest } from './store.js';
+import { confirmBox, toast, play } from './ui.js';
 import { reduced, EASE } from './motion.js';
 
 let menu = null, back = null;
@@ -54,7 +54,21 @@ function open(row, x, y) {
     if (k === 'open') location.hash = '#/quest/' + q.id;
     if (k === 'toggle') press('[data-act="toggle"]');
     if (k === 'remind') press('[data-act="remind-edit"]');
-    if (k === 'delete' && await confirmBox(`Delete "${q.title}"?`)) { deleteQuest(q.id); toast(`Deleted: ${q.title}`); }
+    if (k === 'delete') {
+      const title = q.title;
+      if (await confirmBox(`Delete "${title}"?`)) {
+        const copy = { ...q, subtasks: (q.subtasks || []).map(s => ({ ...s })) };
+        deleteQuest(q.id);
+        play('tap', 0.5);
+        toast(`Deleted "${title}"`, '', {
+          undo: () => {
+            restoreQuest(copy);
+            play('coin', 0.6);
+            toast(`Restored "${title}"`, 'good');
+          }
+        });
+      }
+    }
   });
 }
 

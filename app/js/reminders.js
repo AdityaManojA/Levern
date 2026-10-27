@@ -1,7 +1,8 @@
 // Reminder scheduler (page side). Every second it looks for reminders whose time has come, marks
 // them fired, and shows a system notification plus an in-app toast. The count of due reminders
 // drives the red badges, the tab title and the app-icon badge.
-import { getState, subscribe, markFired, dueReminders, upcomingReminders, findQuest, tierLabel, toggleDone, snooze, commit } from './store.js';
+import { getState, subscribe, markFired, dueReminders, upcomingReminders, findQuest, tierLabel, toggleDone, snooze, snoozeTomorrow, commit } from './store.js';
+import { dueStatus } from './dates.js';
 import * as N from './notify.js';
 import { toast, play } from './ui.js';
 import { dueLabel } from './dates.js';
@@ -31,7 +32,7 @@ export async function check() {
       if (shownSet.has(`${q.id}@${q.remind.at}`)) continue;   // the service worker already showed it
       N.show(`Reminder: ${q.title}`, {
         body: body(q, count), tag: 'quest-' + q.id, renotify: true, data: { id: q.id, url: '#/quest/' + q.id },
-        actions: [{ action: 'done', title: 'Done' }, { action: 'snooze', title: `Snooze ${st.settings.snoozeMin} min` }],
+        actions: [{ action: 'done', title: 'Done' }, { action: 'snooze', title: 'Snooze 15m' }, { action: 'snooze_tomorrow', title: 'Snooze to Tomorrow' }],
       });
     }
   }
@@ -43,7 +44,19 @@ export async function check() {
 
 let lastCount = null;
 export function paintBadges() {
-  const n = dueReminders().length, txt = n > 99 ? '99+' : String(n);
+  const st = getState();
+  const quests = st.quests || [];
+  // Dynamic badge count: overdue + due-today quests + active due reminders
+  const dueQIds = new Set();
+  for (const q of quests) {
+    if (q.done) continue;
+    const s = dueStatus(q);
+    if (s === 'overdue' || s === 'today' || (q.remind && q.remind.fired && !q.remind.dismissed)) {
+      dueQIds.add(q.id);
+    }
+  }
+  const n = dueQIds.size;
+  const txt = n > 99 ? '99+' : String(n);
   const grew = lastCount !== null && n > lastCount;
   const cleared = lastCount > 0 && n === 0;
   lastCount = n;
@@ -54,7 +67,7 @@ export function paintBadges() {
   document.querySelectorAll('.bell').forEach(b => b.classList.toggle('has-due', !!n));
   // he only holds a card while something is due; keep its count in step
   if (!n) { mascot.release(); if (cleared) mascot.react('celebrate', 'all caught up!'); }
-  else if (mascot.holding()) { const d = dueReminders(); mascot.hold({ count: n, title: d[d.length - 1].title }); }
+  else if (mascot.holding()) { const d = dueReminders(); mascot.hold({ count: n, title: d.length ? d[d.length - 1].title : (quests.find(q => dueQIds.has(q.id))?.title || '') }); }
   document.title = n ? `(${txt}) ${baseTitle}` : baseTitle;
   N.setBadge(n);
 }
@@ -73,7 +86,8 @@ function mirror() {
 export function handleAction(action, id) {
   const q = findQuest(id); if (!q) return;
   if (action === 'done' && !q.done) { toggleDone(id); toast(`Done: ${q.title}`); }
-  if (action === 'snooze') { snooze(id); toast(`Snoozed: ${q.title}`); }
+  else if (action === 'snooze' || action === 'snooze_15m') { snooze(id, 15); toast(`Snoozed 15 min: ${q.title}`); }
+  else if (action === 'snooze_tomorrow') { snoozeTomorrow(id); toast(`Snoozed to tomorrow: ${q.title}`); }
 }
 
 export async function startReminders() {

@@ -1,5 +1,6 @@
 graphify-out/
 node_modules/
+dist/
 .data/
 .firebase/
 functions/shared/

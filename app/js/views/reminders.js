@@ -1,5 +1,5 @@
 // The bell panel (due and upcoming reminders) and the quick "remind me" sheet from a quest's bell.
-import { dueReminders, upcomingReminders, findQuest, tierLabel, TIER_COLORS, snooze, dismissReminder, setReminder, setAlerts, getState } from '../store.js';
+import { dueReminders, upcomingReminders, findQuest, tierLabel, TIER_COLORS, snooze, snoozeTomorrow, dismissReminder, setReminder, setAlerts, getState } from '../store.js';
 import { fmtStamp, relTime } from '../dates.js';
 import { $, esc, sheet, toast, play, ICON } from '../ui.js';
 import { permission, requestPermission, supported } from '../notify.js';
@@ -30,7 +30,7 @@ function draw() {
   const item = (q, due) => `<div data-key="r-${q.id}" class="ritem${due ? '' : ' upcoming'}" style="--c:${TIER_COLORS[q.tier]}">
       <div class="rt">${esc(q.title)}</div>
       <div class="rw">${esc(tierLabel(q.tier))} · ${due ? 'went off ' + esc(relTime(q.remind.at)) : esc(fmtStamp(q.remind.at))}</div>
-      <div class="ract">${due ? `<button class="pri" data-act="r-done" data-id="${q.id}">Done</button><button data-act="r-snooze" data-id="${q.id}">Snooze ${snoozeMin} min</button><button data-act="r-dismiss" data-id="${q.id}">Dismiss</button>`
+      <div class="ract">${due ? `<button class="pri" data-act="r-done" data-id="${q.id}">Done</button><button data-act="r-snooze" data-id="${q.id}">Snooze 15m</button><button data-act="r-snooze-tomorrow" data-id="${q.id}">Tomorrow</button><button data-act="r-dismiss" data-id="${q.id}">Dismiss</button>`
         : `<button data-act="open-r" data-id="${q.id}">Open</button><button data-act="r-remove" data-id="${q.id}">Remove</button>`}</div>
     </div>`;
   const past = recentNotifs(), LABEL = { done: 'Done', snoozed: 'Snoozed', dismissed: 'Dismissed' };
@@ -76,7 +76,8 @@ export function openRemindSheet(id) {
 export const actions = {
   'r-close': close,
   'r-done': el => completeQuest(el.dataset.id),
-  'r-snooze': el => { snooze(el.dataset.id); play('click', 0.6); toast(`Snoozed for ${getState().settings.snoozeMin} min`); },
+  'r-snooze': el => { snooze(el.dataset.id, 15); play('click', 0.6); toast('Snoozed 15 min'); },
+  'r-snooze-tomorrow': el => { snoozeTomorrow(el.dataset.id); play('click', 0.6); toast('Snoozed to tomorrow 9am'); },
   'r-dismiss': el => { dismissReminder(el.dataset.id); play('click', 0.5); },
   'r-remove': el => { setReminder(el.dataset.id, null); play('click', 0.5); },
   'open-r': el => { close(); location.hash = '#/quest/' + el.dataset.id; },

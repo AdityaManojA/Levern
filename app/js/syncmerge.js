@@ -13,16 +13,39 @@ const qTime = q => q.updatedAt || q.createdAt || 0;
 export const canon = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x)
   ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x));
 
+// Runtime sanity check before merging quests: guarantees valid structure
+export function sanitizeQuest(q) {
+  if (!q || typeof q !== 'object') return null;
+  const subtasks = Array.isArray(q.subtasks)
+    ? q.subtasks.filter(s => s && typeof s === 'object')
+    : [];
+  const notes = typeof q.notes === 'string' ? q.notes : (q.notes != null ? String(q.notes) : '');
+  const rawTier = Number(q.tier);
+  const tier = (!Number.isFinite(rawTier) || rawTier < 0) ? 3 : Math.min(5, Math.floor(rawTier));
+  return {
+    ...q,
+    subtasks,
+    notes,
+    tier,
+  };
+}
+
 export function mergeQuests(aQuests = [], aTombs = [], bQuests = [], bTombs = []) {
   const best = new Map();
-  for (const q of [...aQuests, ...bQuests]) {
+  for (const raw of [...(aQuests || []), ...(bQuests || [])]) {
+    const q = sanitizeQuest(raw);
+    if (!q || !q.id) continue;
     const cur = best.get(q.id);
     // same moment: prefer the copy that knows whether it's an example quest (older saves lack the flag),
     // so the two sides agree instead of trading the quest back and forth
     if (!cur || qTime(q) > qTime(cur)) best.set(q.id, q);
   }
   const tombs = new Map();
-  for (const t of [...aTombs, ...bTombs]) { const cur = tombs.get(t.id); if (!cur || t.deletedAt > cur.deletedAt) tombs.set(t.id, t); }
+  for (const t of [...(aTombs || []), ...(bTombs || [])]) {
+    if (!t || !t.id) continue;
+    const cur = tombs.get(t.id);
+    if (!cur || t.deletedAt > cur.deletedAt) tombs.set(t.id, t);
+  }
   const quests = [];
   for (const [id, q] of best) { const t = tombs.get(id); if (!t || qTime(q) > t.deletedAt) quests.push(q); }
   // keep tombstones for a month so late copies can't bring a quest back

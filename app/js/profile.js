@@ -7,8 +7,9 @@ import * as account from './account.js';
 import { summary, seasonOf, seasonExp, rankLabel, rankStep, countsByDay } from './stats.js';
 import { myBoardName, myExp } from './board.js';
 import { todayStr, addDays } from './dates.js';
+import { FIRESTORE_COLLECTIONS } from './constants.js';
 
-const COL = 'taskflowProfiles', DAYS = 371;
+const COL = FIRESTORE_COLLECTIONS.PROFILES, DAYS = 371;
 export const isPublic = () => !!getState().settings.profilePublic;
 
 // a year of activity, oldest first: count * 10 + the most urgent priority finished that day (0 = P1 … 5 = P6), 0 = none
@@ -76,6 +77,6 @@ export async function load(uid) {
 // the board entry (name and EXP), shown for a private profile
 export async function boardEntry(uid) {
   const { db, F } = await account.database();
-  try { const d = await F.getDoc(F.doc(db, 'taskflowBoard', uid)); return d.exists() && !d.data().hidden ? d.data() : null; } catch (e) { return null; }
+  try { const d = await F.getDoc(F.doc(db, FIRESTORE_COLLECTIONS.BOARD, uid)); return d.exists() && !d.data().hidden ? d.data() : null; } catch (e) { return null; }
 }
 export const myUid = async () => (await account.firebaseUser())?.uid || null;

@@ -1,3 +1,10 @@
+export function extractTags(text) {
+  if (!text) return [];
+  const matches = String(text).match(/#[a-zA-Z0-9_\-]+/g);
+  if (!matches) return [];
+  return [...new Set(matches.map(t => t.slice(1).toLowerCase()))];
+}
+
 // Natural-language quest entry: "Renew passport due Friday at 5pm" ->
 // { title: 'Renew passport', due: '<next Friday>', time: '17:00', tier: 1, repeat: null, chips: [...] }
 // Typed and spoken text go through this same function (voice input turns speech into text first), so the
@@ -212,5 +219,5 @@ export function parseQuest(text, now = new Date()) {
   if (repeat && tier !== null && tier < 3 && !chips.some(c => c.kind === 'tier' || c.kind === 'keyword')) tier = 3;   // habits are not emergencies
 
   const title = rest.replace(/\s+/g, ' ').replace(/\s+([,.;:!?])/g, '$1').replace(/^[\s,.;:–-]+|[\s,.;:–-]+$/g, '').replace(/\s+(due|by|on|at|for|before)$/i, '').trim();
-  return { title: title || text.trim(), due, time, duration, tier: tier ?? 3, repeat, chips };
+  return { title: title || text.trim(), due, time, duration, tier: tier ?? 3, repeat, chips, tags: extractTags(text) };
 }

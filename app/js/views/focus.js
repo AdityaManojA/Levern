@@ -9,6 +9,7 @@ import { esc, ICON, toast, play } from '../ui.js';
 import { show } from '../notify.js';
 import { mascot } from '../mascot.js';
 import { timeWheelHTML, fmtTime } from '../timewheel.js';
+import { playAmbient, stopAmbient, setAmbientKind, getAmbientKind, isAmbientActive } from '../ambient.js';
 
 let tick = null, pickQuest = '', pickMode = 'focus', lastRunning = null;
 // the custom length, while picking: { kind: 'for' | 'until', min: minutes, until: 'HH:MM' }, or null for the chips
@@ -63,6 +64,18 @@ export function render(params) {
       ${zc(true, `<div class="small" style="padding-bottom:12px">${q ? `On: <b style="color:var(--ink)">${esc(q.title)}</b>` : mode === 'focus' ? 'Just focusing' : 'Stretch, drink water, look away from the screen.'}</div>`)}
       ${mode === 'focus' ? zc(false, `<div style="padding-bottom:12px"><select class="field" data-change="fquest" aria-label="Quest to focus on"><option value="">Just focus (no quest)</option>${open.map(o => `<option value="${esc(o.id)}" ${o.id === pickQuest ? 'selected' : ''}>${esc(o.title)}</option>`).join('')}</select></div>`) : ''}
       ${zc(false, `<div class="chips" style="justify-content:center;padding-bottom:12px">${chips}</div>${customBox}`)}
+      <div class="ambient-control">
+        <button type="button" class="chip chip-btn ${isAmbientActive() ? 'on' : ''}" data-act="ambient-toggle" aria-label="Toggle ambient sound">
+          ${isAmbientActive() ? '🔊' : '🔇'} Ambient: <b>${{ none: 'Off', purr: '🐱 Purr', rain: '🌧️ Rain', cafe: '☕ Cafe', whitenoise: '💨 White Noise' }[getAmbientKind()] || 'Off'}</b>
+        </button>
+        <select class="field ambient-select" data-change="ambient-kind" aria-label="Select ambient audio">
+          <option value="none" ${getAmbientKind() === 'none' ? 'selected' : ''}>Off</option>
+          <option value="purr" ${getAmbientKind() === 'purr' ? 'selected' : ''}>🐱 Cat Purring</option>
+          <option value="rain" ${getAmbientKind() === 'rain' ? 'selected' : ''}>🌧️ Gentle Rain</option>
+          <option value="cafe" ${getAmbientKind() === 'cafe' ? 'selected' : ''}>☕ Cafe Murmur</option>
+          <option value="whitenoise" ${getAmbientKind() === 'whitenoise' ? 'selected' : ''}>💨 White Noise</option>
+        </select>
+      </div>
       <div class="row-btns fbtns">
         ${!t ? `<button class="btn dark" data-key="fb-start" data-act="fstart">${ICON.play} Start</button>`
           : `${t.pausedAt ? `<button class="btn dark" data-key="fb-resume" data-act="fresume">${ICON.play} Resume</button>` : `<button class="btn dark" data-key="fb-pause" data-act="fpause">${ICON.pause} Pause</button>`}<button class="btn white" data-key="fb-stop" data-act="fstop">${mode === 'focus' ? 'Stop' : 'Skip break'}</button>`}
@@ -79,6 +92,7 @@ export function render(params) {
 }
 
 function finish(early) {
+  stopAmbient();
   const t = getState().timer; if (!t) return;
   const minutes = early ? Math.floor(timerElapsed(t) / 60000) : Math.round(t.minutes);
   if (!early) pickMode = t.mode === 'focus' ? 'break' : 'focus';   // set before the re-render below
@@ -135,6 +149,14 @@ export const actions = {
   fmode: el => { pickMode = el.dataset.m; rerender(); },
   flen: el => { custom = null; setSetting(pickMode === 'focus' ? 'focusMin' : 'breakMin', +el.dataset.m); play('click', 0.4); rerender(); },
   // Custom opens with the length the chips had, and an end time that far from now
+  'ambient-toggle': () => {
+    if (isAmbientActive()) stopAmbient();
+    else {
+      if (getAmbientKind() === 'none') setAmbientKind('purr');
+      playAmbient();
+    }
+    rerender();
+  },
   fcustom: () => {
     const s = getState().settings, m = pickMode === 'focus' ? s.focusMin : s.breakMin;
     custom = custom ? null : { kind: 'for', min: m, until: hhmm(endsAt(m)) };
@@ -142,6 +164,7 @@ export const actions = {
   },
   fckind: el => { custom = { ...custom, kind: el.dataset.k }; play('click', 0.4); rerender(); },
   fstart: () => {
+    if (getAmbientKind() !== 'none') playAmbient();
     const s = getState().settings, m = custom ? customMinutes() : pickMode === 'focus' ? s.focusMin : s.breakMin;
     if (!(m >= 1)) { toast(custom?.kind === 'until' ? 'Pick a time at least a minute from now' : 'Set at least 1 minute'); return; }
     startTimer(pickMode === 'focus' ? pickQuest || null : null, pickMode, Math.min(MAX_MIN, m)); play('click'); if (pickMode === 'focus') mascot.focusMode(true);

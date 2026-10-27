@@ -16,6 +16,25 @@ export function weightsByDay(history) {
 // Focus EXP: 1 point per 5 focused minutes (a 25 min session = 5 EXP).
 export const focusExp = minutes => Math.floor(minutes / 5);
 
+// Micro-EXP for subtasks: 2 EXP per completed subtask, capped at 10 EXP per quest
+export function subtasksExp(quests = []) {
+  let exp = 0;
+  for (const q of quests) {
+    const done = (q.subtasks || []).filter(s => s.done).length;
+    exp += Math.min(10, done * 2);
+  }
+  return exp;
+}
+
+export function todaySubtasksExp(quests = [], today = todayStr()) {
+  let exp = 0;
+  for (const q of quests) {
+    const doneToday = (q.subtasks || []).filter(s => s.done && (!s.doneAt || toStr(new Date(s.doneAt)) === today)).length;
+    exp += Math.min(10, doneToday * 2);
+  }
+  return exp;
+}
+
 export function countsByDay(history) {
   const m = new Map();
   for (const h of history) { const d = toStr(new Date(h.doneAt)); m.set(d, (m.get(d) || 0) + 1); }
@@ -44,22 +63,30 @@ export function lastDays(history, sessions, target, n, now = new Date()) {
   });
 }
 
-export function summary(history, sessions, target, now = new Date()) {
+export function summary(history, sessions, target, now = new Date(), quests = []) {
   const by = countsByDay(history), w = weightsByDay(history);
   let exp = 0;
   for (const [d, c] of by) exp += dayExp(w.get(d), target, c);
   const focusMin = sessions.reduce((a, s) => a + s.minutes, 0);
   for (const s of sessions) exp += focusExp(s.minutes);
+  const subExp = subtasksExp(quests);
+  exp += subExp;
   const today = todayStr(now), month = today.slice(0, 7);
   const daysInMonthSoFar = +today.slice(8, 10);
   const keptThisMonth = [...by.entries()].filter(([d, c]) => d.startsWith(month) && c >= target).length;
   const tiers = [0, 0, 0, 0, 0, 0];
-  for (const h of history) tiers[h.tier ?? 3]++;
+  for (const h of history) {
+    const raw = h?.tier;
+    const t = (raw !== null && raw !== undefined && raw !== '' && typeof raw !== 'boolean') ? Number(raw) : 3;
+    const validTier = Number.isInteger(t) && t >= 0 && t <= 5 ? t : 3;
+    tiers[validTier]++;
+  }
   const todayCount = by.get(today) || 0;
   const todayFocus = sessions.filter(s => toStr(new Date(s.endedAt)) === today).reduce((a, s) => a + s.minutes, 0);
+  const todaySubExp = todaySubtasksExp(quests, today);
   return {
-    totalDone: history.length, exp, focusMin, todayCount, todayFocus,
-    todayExp: (todayCount ? dayExp(w.get(today), target, todayCount) : 0) + sessions.filter(s => toStr(new Date(s.endedAt)) === today).reduce((a, s) => a + focusExp(s.minutes), 0),
+    totalDone: history.length, exp, focusMin, todayCount, todayFocus, subExp,
+    todayExp: (todayCount ? dayExp(w.get(today), target, todayCount) : 0) + sessions.filter(s => toStr(new Date(s.endedAt)) === today).reduce((a, s) => a + focusExp(s.minutes), 0) + todaySubExp,
     keptThisMonth, daysInMonthSoFar, tiers, ...streaks(history, target, now),
   };
 }
@@ -74,12 +101,16 @@ export const SEASON_MS = 14 * 86400000, SEASON_EPOCH = Date.UTC(2026, 9, 11, 18,
 export const seasonOf = (ms = Date.now()) => Math.max(1, Math.floor((ms - SEASON_EPOCH) / SEASON_MS) + 1);
 export const seasonRange = n => ({ start: n <= 1 ? FIRST_SEASON_FROM : SEASON_EPOCH + (n - 1) * SEASON_MS, end: SEASON_EPOCH + n * SEASON_MS });
 // EXP earned inside one season (same rules as the all-time EXP)
-export function seasonExp(history, sessions, target, n = seasonOf()) {
+export function seasonExp(history, sessions, target, n = seasonOf(), quests = []) {
   const { start, end } = seasonRange(n), inside = ms => ms >= start && ms < end;
   let exp = 0;
   const w = weightsByDay(history);
   for (const [d, c] of countsByDay(history)) if (inside(fromStr(d).getTime())) exp += dayExp(w.get(d), target, c);
   for (const s of sessions) if (inside(s.endedAt)) exp += focusExp(s.minutes);
+  for (const q of quests) {
+    const doneInSeason = (q.subtasks || []).filter(s => s.done && (!s.doneAt || inside(s.doneAt))).length;
+    exp += Math.min(10, doneInSeason * 2);
+  }
   return exp;
 }
 // Rank tiers for a season's EXP, Valorant style, kept easy to climb in a two-week season: hitting the daily target

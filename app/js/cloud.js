@@ -11,6 +11,8 @@ import { getState, onSave, syncDoc, adoptSynced, commit, resetAll, dropSamples }
 import { mergeDocs, canon } from './syncmerge.js';
 import * as account from './account.js';
 import { dlog } from './debuglog.js';
+import { kv } from './storage.js';
+import { FIRESTORE_COLLECTIONS } from './constants.js';
 
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 const CHUNK = 700 * 1024;
@@ -66,7 +68,7 @@ async function runSync() {
   try {
     const { db, F } = await account.database();
     if (!(await account.firebaseUser())) throw new Error('signed out');
-    const meta = F.doc(db, 'taskflowUsers', u.uid);
+    const meta = F.doc(db, FIRESTORE_COLLECTIONS.USERS, u.uid);
     const mine = syncDoc();
     // read the account's copy first (outside the transaction: big reads are cheaper to do once)
     const read = async get => {
@@ -77,7 +79,7 @@ async function runSync() {
         if (md.rev) throw new Error('account data could not be read');
         return { md, doc: null };
       }
-      const snaps = await Promise.all(Array.from({ length: md.chunks }, (_, i) => get(F.doc(db, 'taskflowUsers', u.uid, 'chunks', String(i)))));
+      const snaps = await Promise.all(Array.from({ length: md.chunks }, (_, i) => get(F.doc(db, FIRESTORE_COLLECTIONS.USERS, u.uid, 'chunks', String(i)))));
       const doc = await unpack(snaps.map(s => s.exists() ? s.get('b').toUint8Array() : new Uint8Array(0)), md.z);
       if (!doc) throw new Error('account data could not be read');
       return { md, doc };
@@ -95,8 +97,8 @@ async function runSync() {
       const ok = await F.runTransaction(db, async tx => {
         const cur = await tx.get(meta);
         if ((cur.exists() ? cur.get('rev') || 0 : 0) !== (md.rev || 0)) return false;
-        parts.forEach((p, i) => tx.set(F.doc(db, 'taskflowUsers', u.uid, 'chunks', String(i)), { b: F.Bytes.fromUint8Array(p) }));
-        for (let i = parts.length; i < (md.chunks || 0); i++) tx.delete(F.doc(db, 'taskflowUsers', u.uid, 'chunks', String(i)));
+        parts.forEach((p, i) => tx.set(F.doc(db, FIRESTORE_COLLECTIONS.USERS, u.uid, 'chunks', String(i)), { b: F.Bytes.fromUint8Array(p) }));
+        for (let i = parts.length; i < (md.chunks || 0); i++) tx.delete(F.doc(db, FIRESTORE_COLLECTIONS.USERS, u.uid, 'chunks', String(i)));
         tx.set(meta, { rev: (md.rev || 0) + 1, chunks: parts.length, z, tz: TZ, updatedAt: Date.now(), app: 'taskflow' }, { merge: true });
         return true;
       });
@@ -138,6 +140,7 @@ export async function signOutAndReset({ force = false } = {}) {
   unlisten?.(); unlisten = null;
   await account.signOut();
   try { localStorage.removeItem('taskflow-events'); } catch (e) {}
+  if (typeof indexedDB !== 'undefined') kv.del('taskflow-events').catch(() => {});
   resetAll({ fromSync: true });   // this device only: the empty copy must never look newer than the account
   rev = -1; dirty = false; lastShare = ''; sharedEvents = [];
   info = { lastSync: null, error: null }; emit();
@@ -157,15 +160,15 @@ export async function deleteAccount(feedback = {}) {
   const { db, F } = await account.database();
   unlisten?.(); unlisten = null; clearTimeout(timer); clearTimeout(shareT); dirty = false;
   const reason = String(feedback.reason || '').slice(0, 60), note = String(feedback.note || '').trim().slice(0, 1000);
-  if (reason || note) await F.addDoc(F.collection(db, 'taskflowFeedback'), { kind: 'account-deleted', reason, note, app: 'taskflow', at: F.serverTimestamp() }).catch(() => {});
-  const [chunks, shares] = await Promise.all([F.getDocs(F.collection(db, 'taskflowUsers', u.uid, 'chunks')), F.getDocs(F.collection(db, 'taskflowUsers', u.uid, 'share'))]);
+  if (reason || note) await F.addDoc(F.collection(db, FIRESTORE_COLLECTIONS.FEEDBACK), { kind: 'account-deleted', reason, note, app: 'taskflow', at: F.serverTimestamp() }).catch(() => {});
+  const [chunks, shares] = await Promise.all([F.getDocs(F.collection(db, FIRESTORE_COLLECTIONS.USERS, u.uid, 'chunks')), F.getDocs(F.collection(db, FIRESTORE_COLLECTIONS.USERS, u.uid, 'share'))]);
   const batch = F.writeBatch(db);
   chunks.forEach(d => batch.delete(d.ref));
   shares.forEach(d => batch.delete(d.ref));
-  batch.delete(F.doc(db, 'taskflowUsers', u.uid));
+  batch.delete(F.doc(db, FIRESTORE_COLLECTIONS.USERS, u.uid));
   await batch.commit();
-  await F.deleteDoc(F.doc(db, 'taskflowProfiles', u.uid)).catch(() => {});   // the public profile, if there is one
-  const entry = F.doc(db, 'taskflowBoard', u.uid);
+  await F.deleteDoc(F.doc(db, FIRESTORE_COLLECTIONS.PROFILES, u.uid)).catch(() => {});   // the public profile, if there is one
+  const entry = F.doc(db, FIRESTORE_COLLECTIONS.BOARD, u.uid);
   try { await F.deleteDoc(entry); }
   catch (e) { try { await (await import('./board.js')).unpublish(); } catch (e2) {} }   // rules not updated yet: hide it
   let solodesk = false;
@@ -173,6 +176,7 @@ export async function deleteAccount(feedback = {}) {
   if (solodesk) await account.signOut();
   else { try { await account.deleteSignIn(); } catch (e) { await account.signOut(); } }
   try { localStorage.removeItem('taskflow-events'); } catch (e) {}
+  if (typeof indexedDB !== 'undefined') kv.del('taskflow-events').catch(() => {});
   resetAll({ fromSync: true });
   rev = -1; dirty = false; lastShare = ''; sharedEvents = [];
   info = { lastSync: null, error: null }; emit();
@@ -187,7 +191,7 @@ async function listen() {
   try {
     const { db, F } = await account.database();
     await account.firebaseUser();
-    unlisten = F.onSnapshot(F.doc(db, 'taskflowUsers', u.uid), s => {
+    unlisten = F.onSnapshot(F.doc(db, FIRESTORE_COLLECTIONS.USERS, u.uid), s => {
       const r = s.exists() ? s.get('rev') || 0 : 0;
       // a change that arrives during a sync is picked up right after it, instead of being missed
       if (r !== rev) { if (busy) again = true; else schedule(100); }
@@ -210,7 +214,7 @@ async function writeShare() {
   if (key === lastShare) return;
   try {
     const { db, F } = await account.database();
-    await F.setDoc(F.doc(db, 'taskflowUsers', u.uid, 'share', 'open'), { ...body, updatedAt: Date.now() });
+    await F.setDoc(F.doc(db, FIRESTORE_COLLECTIONS.USERS, u.uid, 'share', 'open'), { ...body, updatedAt: Date.now() });
     lastShare = key;
   } catch (e) {}
 }

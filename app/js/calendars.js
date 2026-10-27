@@ -13,6 +13,7 @@ import { buildICS } from './ics.js';
 import { GOOGLE_CLIENT_ID } from '../config.js';
 import * as account from './account.js';
 import * as cloud from './cloud.js';
+import { kv } from './storage.js';
 
 const SCOPE = 'https://www.googleapis.com/auth/calendar.app.created';
 const READ_SCOPE = 'https://www.googleapis.com/auth/calendar.events.readonly';
@@ -22,6 +23,20 @@ const EVENTS_KEY = 'taskflow-events';
 let token = null, tokenExp = 0, tokenClient = null, syncing = false, timer = null, pullT = null;
 let events = (() => { try { return JSON.parse(localStorage.getItem(EVENTS_KEY)) || []; } catch (e) { return []; } })();
 const listeners = new Set();
+
+// Asynchronously hydrate events from IndexedDB to avoid blocking main thread; migrate localStorage
+if (typeof indexedDB !== 'undefined') {
+  kv.get(EVENTS_KEY).then(cached => {
+    if (Array.isArray(cached) && cached.length) {
+      events = cached;
+      try { localStorage.removeItem(EVENTS_KEY); } catch (e) {}
+      emit();
+    } else if (events.length) {
+      kv.set(EVENTS_KEY, events).catch(() => {});
+      try { localStorage.removeItem(EVENTS_KEY); } catch (e) {}
+    }
+  }).catch(() => {});
+}
 const emit = () => listeners.forEach(f => f());
 export const onCalendarChange = fn => listeners.add(fn);
 
@@ -106,7 +121,11 @@ async function pullEvents() {
     const allDay = !!e.start?.date;
     return { id: e.id, title: e.summary || '(No title)', allDay, start: allDay ? e.start.date : e.start?.dateTime, end: allDay ? e.end?.date : e.end?.dateTime, where: e.location || '', url: e.htmlLink || '' };
   });
-  try { localStorage.setItem(EVENTS_KEY, JSON.stringify(events)); } catch (e) {}
+  if (typeof indexedDB !== 'undefined') {
+    kv.set(EVENTS_KEY, events).catch(() => {});
+  } else {
+    try { localStorage.setItem(EVENTS_KEY, JSON.stringify(events)); } catch (e) {}
+  }
   cloud.setSharedEvents(events);
 }
 
@@ -121,6 +140,7 @@ export async function connectGoogle() {
 export function disconnectGoogle() {
   if (token && !viaAccount() && window.google) try { google.accounts.oauth2.revoke(token, () => {}); } catch (e) {}
   token = null; tokenExp = 0; events = [];
+  if (typeof indexedDB !== 'undefined') kv.del(EVENTS_KEY).catch(() => {});
   try { localStorage.removeItem(EVENTS_KEY); } catch (e) {}
   cloud.setSharedEvents([]);
   // the Levern calendar is left in place in Google; reconnecting re-uses it

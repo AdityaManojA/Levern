@@ -10,7 +10,7 @@ function greeting() { const h = new Date().getHours(); return h < 5 ? 'Up late' 
 // a quiet line under Up next when it doesn't show every open quest: how many more, linking to them all
 const moreLink = n => n > 0 ? `<a class="more-q" href="#/quests">+${n} more quest${n === 1 ? '' : 's'}</a>` : '';
 export function render() {
-  const st = getState(), s = st.settings, sum = summary(st.history, st.sessions, s.target);
+  const st = getState(), s = st.settings, sum = summary(st.history, st.sessions, s.target, new Date(), st.quests);
   const open = st.quests.filter(q => !q.done);
   const overdue = open.filter(q => dueStatus(q) === 'overdue');
   const next = sortQuests(open, 'smart').slice(0, 5);

@@ -182,7 +182,19 @@ export function undoGoal(id) {
     if (i >= 0) s.history.splice(i, 1);
   });
 }
-export function deleteQuest(id) { commit(s => { s.quests = s.quests.filter(q => q.id !== id); s.seeded = false; }); }
+export function deleteQuest(id, opts = {}) {
+  commit(s => { s.quests = s.quests.filter(q => q.id !== id); s.seeded = false; }, opts);
+}
+export function restoreQuest(q) {
+  if (!q) return;
+  commit(s => {
+    if (s.tombstones) s.tombstones = s.tombstones.filter(t => t.id !== q.id);
+    if (!s.quests.some(x => x.id === q.id)) {
+      s.quests.push({ ...q, updatedAt: Date.now() });
+      s.seeded = false;
+    }
+  });
+}
 
 // returns { done, next } where next is the new due date when a repeating quest rolls forward
 export function toggleDone(id) {
@@ -205,7 +217,7 @@ export function toggleDone(id) {
     // a repeating quest counts once per occurrence: once its next date is ahead, today's is already done
     if (q.repeat && q.due && q.due > todayStr()) return { done: false, blocked: true, next: q.due };
     // done after it was due: it counts for less EXP (stats.js LATE), and the app says so
-    const late = dueStatus(q) === 'overdue';
+    const late = dueStatus(q, new Date(Date.now())) === 'overdue';
     s.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: Date.now(), ...(late ? { late: true } : {}) });
     noteNotif(s, q.id, 'done');
     if (q.repeat && q.due) {
@@ -224,7 +236,17 @@ export function toggleDone(id) {
 
 /* ---------- subtasks ---------- */
 export function addSubtask(id, title) { commit(s => { s.seeded = false; const q = findQuest(id); q && q.subtasks.push({ id: uid(), title, done: false, tier: q.tier }); }); }
-export function updateSubtask(id, sid, patch, opts) { commit(() => { const st = findQuest(id)?.subtasks.find(x => x.id === sid); st && Object.assign(st, patch); }, opts); }
+export function updateSubtask(id, sid, patch, opts) {
+  return commit(() => {
+    const q = findQuest(id);
+    const sub = q?.subtasks.find(x => x.id === sid);
+    if (!sub) return;
+    if (patch.done !== undefined && patch.done !== sub.done) {
+      patch.doneAt = patch.done ? Date.now() : null;
+    }
+    Object.assign(sub, patch);
+  }, opts);
+}
 export function removeSubtask(id, sid) { commit(() => { const q = findQuest(id); if (q) q.subtasks = q.subtasks.filter(x => x.id !== sid); }); }
 
 /* ---------- sketches and handwriting (see ink.js) ---------- */
@@ -276,6 +298,18 @@ function noteNotif(s, id, status) {
   if (n) { n.status = status; n.handledAt = Date.now(); }
 }
 export const recentNotifs = () => (state.notifs || []).filter(n => n.status !== 'due').slice(-10).reverse();
+export function snoozeTomorrow(id) {
+  commit(s => {
+    const q = findQuest(id);
+    if (!q) return;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0); // 9:00 AM tomorrow
+    q.remind = { at: tomorrow.getTime(), offset: null, fired: false, dismissed: false };
+    noteNotif(s, id, 'snoozed');
+  });
+}
+
 export function snooze(id, min = state.settings.snoozeMin) {
   commit(s => { const q = findQuest(id); if (q) q.remind = { at: Date.now() + min * 60000, offset: null, fired: false, dismissed: false }; noteNotif(s, id, 'snoozed'); });
 }

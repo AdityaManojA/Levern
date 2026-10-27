@@ -34,12 +34,33 @@ export const ICON = {
 };
 
 let toastT;
-export function toast(msg, kind = '') {
+export function toast(msg, kind = '', opts = {}) {
   const t = $('#toast');
+  if (!t) return;
   t.className = 'toast ' + kind;
-  t.textContent = msg;
-  void t.offsetWidth; t.classList.add('show');
-  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600);
+  if (opts.undo) {
+    t.innerHTML = `<span class="toast-txt">${esc(msg)}</span><button class="toast-undo-btn" type="button" aria-label="Undo action">Undo</button>`;
+    t.classList.add('has-undo');
+    const btn = t.querySelector('.toast-undo-btn');
+    if (btn) {
+      btn.onclick = e => {
+        e.stopPropagation();
+        e.preventDefault();
+        t.classList.remove('show', 'has-undo');
+        clearTimeout(toastT);
+        opts.undo();
+      };
+    }
+  } else {
+    t.textContent = msg;
+    t.classList.remove('has-undo');
+  }
+  void t.offsetWidth;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => {
+    t.classList.remove('show', 'has-undo');
+  }, opts.duration || (opts.undo ? 4500 : 2600));
 }
 
 // bottom sheet: open(html) returns the sheet element; close() hides it
@@ -57,7 +78,29 @@ export const sheet = {
   isOpen: () => $('#sheet').classList.contains('open'),
 };
 
+export function confirmDelete(title) {
+  return new Promise(res => {
+    const d = $('#dialog');
+    d.innerHTML = `<form method="dialog" class="del-confirm-box">
+      <div class="del-confirm-icon" aria-hidden="true">${ICON.trash}</div>
+      <h3>Delete quest?</h3>
+      <p class="del-confirm-target">"${esc(title)}"</p>
+      <p class="del-confirm-sub">You can undo this right away if you change your mind.</p>
+      <div class="del-confirm-btns">
+        <button value="no" class="btn ghost" autofocus>Cancel</button>
+        <button value="yes" class="btn danger">${ICON.trash} Delete</button>
+      </div>
+    </form>`;
+    d.onclose = () => res(d.returnValue === 'yes');
+    d.showModal();
+  });
+}
+
 export function confirmBox(msg, okLabel = 'Delete') {
+  if (okLabel === 'Delete' && typeof msg === 'string') {
+    const m = msg.match(/^Delete "(.*)"\?$/);
+    if (m) return confirmDelete(m[1]);
+  }
   return new Promise(res => {
     const d = $('#dialog');
     d.innerHTML = `<form method="dialog"><p>${esc(msg)}</p><div class="row-btns"><button value="no" class="btn ghost">Cancel</button><button value="yes" class="btn danger">${esc(okLabel)}</button></div></form>`;

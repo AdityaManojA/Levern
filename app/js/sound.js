@@ -45,16 +45,59 @@ function decoder() {
   return OAC ? new OAC(1, 1, 44100) : null;
 }
 
-// fetch and decode everything once, up front
+function sliceAudioBuffer(ctx, fullBuffer, startSec, durSec) {
+  const sr = fullBuffer.sampleRate;
+  const startOffset = Math.floor(startSec * sr);
+  const endOffset = Math.min(fullBuffer.length, Math.floor((startSec + durSec) * sr));
+  const frameCount = Math.max(1, endOffset - startOffset);
+  const sub = ctx.createBuffer ? ctx.createBuffer(fullBuffer.numberOfChannels, frameCount, sr)
+    : new AudioBuffer({ numberOfChannels: fullBuffer.numberOfChannels, length: frameCount, sampleRate: sr });
+  for (let c = 0; c < fullBuffer.numberOfChannels; c++) {
+    const channelData = fullBuffer.getChannelData(c).subarray(startOffset, endOffset);
+    sub.copyToChannel(channelData, c, 0);
+  }
+  return sub;
+}
+
+// fetch and decode audio sprite once up front (falling back to individual sound files if needed)
 export async function preloadSounds() {
   const d = decoder(); if (!d) return;
-  const names = [...new Set(Object.values(GROUPS).flatMap(g => g.files))];
-  await Promise.all(names.map(async n => {
-    try {
-      const data = await (await fetch(`sounds/${n}.${n.startsWith('fx-') ? 'wav' : 'mp3'}`)).arrayBuffer();
-      buffers.set(n, await new Promise((res, rej) => d.decodeAudioData(data, res, rej)));
-    } catch (e) { /* a missing sound is just silent */ }
-  }));
+  const allNames = [...new Set(Object.values(GROUPS).flatMap(g => g.files))];
+
+  // 1. Try loading single audio spritesheet & sound map
+  let spriteLoaded = false;
+  try {
+    const [spriteRes, mapRes] = await Promise.all([
+      fetch('sounds/sprite.mp3'),
+      fetch('sounds/sounds.json'),
+    ]);
+    if (spriteRes.ok && mapRes.ok) {
+      const [spriteData, soundMap] = await Promise.all([
+        spriteRes.arrayBuffer(),
+        mapRes.json(),
+      ]);
+      const fullBuffer = await new Promise((res, rej) => d.decodeAudioData(spriteData, res, rej));
+      for (const [name, [startSec, durSec]] of Object.entries(soundMap)) {
+        try {
+          buffers.set(name, sliceAudioBuffer(d, fullBuffer, startSec, durSec));
+        } catch (e) {}
+      }
+      spriteLoaded = true;
+    }
+  } catch (e) {
+    /* fallback to separate files below */
+  }
+
+  // 2. Load any remaining files (e.g. fx-fanfare or fallback if sprite failed)
+  const remaining = allNames.filter(n => !buffers.has(n));
+  if (remaining.length) {
+    await Promise.all(remaining.map(async n => {
+      try {
+        const data = await (await fetch(`sounds/${n}.${n.startsWith('fx-') ? 'wav' : 'mp3'}`)).arrayBuffer();
+        buffers.set(n, await new Promise((res, rej) => d.decodeAudioData(data, res, rej)));
+      } catch (e) { /* a missing sound is just silent */ }
+    }));
+  }
 }
 // Audio starts on the first real activation (click, key press, end of a touch). Idempotent and quiet:
 // once the context is running the listeners remove themselves.

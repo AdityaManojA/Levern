@@ -24,6 +24,7 @@ export function memoryAdapter(initial = null) {
 // because a classic service worker cannot import ES modules everywhere).
 const DB = 'taskflow-sw', STORE = 'kv';
 function db() {
+  if (typeof indexedDB === 'undefined') return Promise.reject(new Error('IndexedDB unavailable'));
   return new Promise((res, rej) => {
     const r = indexedDB.open(DB, 1);
     r.onupgradeneeded = () => r.result.createObjectStore(STORE);
@@ -31,6 +32,22 @@ function db() {
   });
 }
 export const kv = {
-  async get(k) { const d = await db(); return new Promise(res => { const r = d.transaction(STORE).objectStore(STORE).get(k); r.onsuccess = () => res(r.result); r.onerror = () => res(undefined); }); },
-  async set(k, v) { const d = await db(); return new Promise(res => { const t = d.transaction(STORE, 'readwrite'); t.objectStore(STORE).put(v, k); t.oncomplete = () => res(); t.onerror = () => res(); }); },
+  async get(k) {
+    try {
+      const d = await db();
+      return new Promise(res => { const r = d.transaction(STORE).objectStore(STORE).get(k); r.onsuccess = () => res(r.result); r.onerror = () => res(undefined); });
+    } catch (e) { return undefined; }
+  },
+  async set(k, v) {
+    try {
+      const d = await db();
+      return new Promise(res => { const t = d.transaction(STORE, 'readwrite'); t.objectStore(STORE).put(v, k); t.oncomplete = () => res(); t.onerror = () => res(); });
+    } catch (e) {}
+  },
+  async del(k) {
+    try {
+      const d = await db();
+      return new Promise(res => { const t = d.transaction(STORE, 'readwrite'); t.objectStore(STORE).delete(k); t.oncomplete = () => res(); t.onerror = () => res(); });
+    } catch (e) {}
+  },
 };

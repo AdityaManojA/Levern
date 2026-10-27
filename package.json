@@ -2,11 +2,15 @@
   "name": "taskflow",
   "version": "0.1.0",
   "private": true,
-  "description": "TaskFlow: a calm, game-like to-do list (PWA)",
+  "description": "Levern: a calm, game-like to-do list (PWA)",
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
+    "build": "vite build",
     "test": "node --test app/tests/*.test.js",
     "test:pwa": "node app/tests/pwa.e2e.mjs"
+  },
+  "devDependencies": {
+    "vite": "^8.3.5"
   }
 }

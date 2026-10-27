@@ -158,3 +158,128 @@ test('a quest done after it was due counts half toward the day\'s EXP', async ()
   const five = [h(false, 1), h(false, 2), h(false, 3), h(true, 4), h(true, 5)];
   assert.equal(summary(five, [], 5, new Date(day)).exp, 26);
 });
+
+test('store: deleteQuest and restoreQuest undo workflow', async () => {
+  const S = await import('../js/store.js');
+  const { memoryAdapter } = await import('../js/storage.js');
+  S.init(memoryAdapter());
+
+  const q = S.addQuest({ title: 'Undo Test', tier: 2 });
+  assert.equal(S.getState().quests.length, 1);
+  assert.equal(S.findQuest(q.id)?.title, 'Undo Test');
+
+  // Delete quest
+  S.deleteQuest(q.id);
+  assert.equal(S.getState().quests.length, 0);
+  assert.equal(S.findQuest(q.id), undefined);
+  assert.ok(S.getState().tombstones.some(t => t.id === q.id));
+
+  // Restore quest
+  S.restoreQuest(q);
+  assert.equal(S.getState().quests.length, 1);
+  assert.equal(S.findQuest(q.id)?.title, 'Undo Test');
+  // Tombstone should be removed
+  assert.equal(S.getState().tombstones?.some(t => t.id === q.id), false);
+});
+
+test('constants: exports correct collection, storage, and service worker names', async () => {
+  const { FIRESTORE_COLLECTIONS, STORAGE_KEYS, SW_CONFIG } = await import('../js/constants.js');
+  assert.equal(FIRESTORE_COLLECTIONS.USERS, 'taskflowUsers');
+  assert.equal(FIRESTORE_COLLECTIONS.BOARD, 'taskflowBoard');
+  assert.equal(FIRESTORE_COLLECTIONS.PROFILES, 'taskflowProfiles');
+  assert.equal(STORAGE_KEYS.STATE, 'taskflow.v1');
+  assert.equal(STORAGE_KEYS.EVENTS, 'taskflow-events');
+  assert.equal(SW_CONFIG.CACHE_VERSION, 'taskflow-v78');
+});
+
+test('stats: micro-EXP awards 2 EXP per subtask capped at 10 EXP per quest', async () => {
+  const { subtasksExp, summary } = await import('../js/stats.js');
+  const quests = [
+    { id: 'q1', subtasks: [{ done: true }, { done: true }, { done: true }] },
+    { id: 'q2', subtasks: [{ done: true }, { done: true }, { done: true }, { done: true }, { done: true }, { done: true }] },
+    { id: 'q3', subtasks: [{ done: false }] },
+  ];
+  assert.equal(subtasksExp(quests), 16);
+  const sum = summary([], [], 5, new Date(), quests);
+  assert.equal(sum.subExp, 16);
+  assert.equal(sum.exp, 16);
+});
+
+test('parse: extractTags detects and normalizes hashtags in quest titles', async () => {
+  const { extractTags, parseQuest } = await import('../js/parse.js');
+  assert.deepEqual(extractTags('Finish report #work #urgent'), ['work', 'urgent']);
+  assert.deepEqual(extractTags('Buy groceries #Home #home'), ['home']);
+  assert.deepEqual(extractTags('No tags here'), []);
+  const p = parseQuest('Design mockups #UI-ux tomorrow at 3pm');
+  assert.deepEqual(p.tags, ['ui-ux']);
+});
+
+test('ambient: supports kind selection and play/stop state', async () => {
+  const { setAmbientKind, getAmbientKind, isAmbientActive, stopAmbient } = await import('../js/ambient.js');
+  setAmbientKind('rain');
+  assert.equal(getAmbientKind(), 'rain');
+  setAmbientKind('purr');
+  assert.equal(getAmbientKind(), 'purr');
+  stopAmbient();
+  assert.equal(isAmbientActive(), false);
+});
+
+test('store: snoozeTomorrow reschedules to 9am tomorrow', async () => {
+  const S = await import('../js/store.js');
+  const q = S.addQuest({ title: 'Tomorrow Test', tier: 1 });
+  S.snoozeTomorrow(q.id);
+  const updated = S.findQuest(q.id);
+  assert.ok(updated.remind);
+  const d = new Date(updated.remind.at);
+  assert.equal(d.getHours(), 9);
+  assert.equal(d.getMinutes(), 0);
+  assert.equal(updated.remind.fired, false);
+});
+
+test('quests: matchQuest safely handles missing subtasks, null notes, and tags', async () => {
+  const { matchQuest } = await import('../js/views/quests.js');
+  const qWithoutSubtasks = { title: 'Call client', notes: null };
+  assert.doesNotThrow(() => matchQuest(qWithoutSubtasks, 'call'));
+  assert.equal(matchQuest(qWithoutSubtasks, 'call'), true);
+  assert.equal(matchQuest(qWithoutSubtasks, 'undefined'), false);
+
+  const qTagged = { title: 'Review budget #finance', notes: 'Urgent task' };
+  assert.equal(matchQuest(qTagged, '', 'finance'), true);
+  assert.equal(matchQuest(qTagged, '', 'personal'), false);
+  assert.equal(matchQuest(qTagged, 'budget', 'finance'), true);
+});
+
+test('stats: summary safely tallies tiers with out-of-bounds or non-integer tier values', async () => {
+  const { summary } = await import('../js/stats.js');
+  const historyWithCorruptTiers = [
+    { tier: 0, completedAt: Date.now() },
+    { tier: 5, completedAt: Date.now() },
+    { tier: -1, completedAt: Date.now() },
+    { tier: 99, completedAt: Date.now() },
+    { tier: null, completedAt: Date.now() },
+    { tier: 'invalid', completedAt: Date.now() },
+  ];
+  const s = summary(historyWithCorruptTiers, [], 5, new Date(), []);
+  assert.equal(s.tiers.length, 6);
+  assert.ok(s.tiers.every(n => Number.isInteger(n) && !Number.isNaN(n)));
+  assert.equal(s.tiers[0], 1);
+  assert.equal(s.tiers[5], 1);
+  assert.equal(s.tiers[3], 4);
+});
+
+test('dates: at constructs exact local timestamps across dates and times without DST drift', async () => {
+  const { at } = await import('../js/dates.js');
+  const ts = at('2026-10-22', '14:30');
+  const d = new Date(ts);
+  assert.equal(d.getFullYear(), 2026);
+  assert.equal(d.getMonth(), 9);
+  assert.equal(d.getDate(), 22);
+  assert.equal(d.getHours(), 14);
+  assert.equal(d.getMinutes(), 30);
+
+  const midnightTs = at('2026-10-22');
+  const dMidnight = new Date(midnightTs);
+  assert.equal(dMidnight.getDate(), 22);
+  assert.equal(dMidnight.getHours(), 0);
+  assert.equal(dMidnight.getMinutes(), 0);
+});

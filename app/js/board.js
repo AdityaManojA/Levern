@@ -16,12 +16,13 @@ import * as account from './account.js';
 import { getState, onSave, setSetting } from './store.js';
 import { summary, seasonExp, seasonOf } from './stats.js';
 import { shownName, isClean, tidyName } from './namefilter.js';
+import { FIRESTORE_COLLECTIONS } from './constants.js';
 
-const COL = 'taskflowBoard';
+const COL = FIRESTORE_COLLECTIONS.BOARD;
 export const BUCKET = 60, REFILL = 60, START_CAP = 3000, START_SEASON_CAP = 420;
 export const isOn = () => !!getState().settings.board;
-export const myExp = () => { const st = getState(); return summary(st.history, st.sessions, st.settings.target).exp; };
-export const mySeasonExp = () => { const st = getState(); return seasonExp(st.history, st.sessions, st.settings.target); };
+export const myExp = () => { const st = getState(); return summary(st.history, st.sessions, st.settings.target, new Date(), st.quests).exp; };
+export const mySeasonExp = () => { const st = getState(); return seasonExp(st.history, st.sessions, st.settings.target, seasonOf(), st.quests); };
 // the name that goes on the board: the board name if one is set, otherwise the greeting name
 export const myBoardName = () => { const s = getState().settings; return shownName(s.boardName || s.name); };
 
@@ -32,7 +33,7 @@ export function allowed(o, want, nowMs = Date.now()) {
     const exp = Math.min(want.exp, START_CAP);
     return { exp, seasonExp: Math.min(want.seasonExp, START_SEASON_CAP, exp), bank: 0 };
   }
-  const hrs = Math.max(0, (nowMs - o.updatedMs - 20000) / 3600000);   // 20 s for clock differences
+  const hrs = Math.max(0, (nowMs - o.updatedMs - 45000) / 3600000);   // 45 s for clock differences
   const room = Math.floor(Math.min(BUCKET, (o.bank || 0) + REFILL * hrs) * 100) / 100;
   let exp = want.exp;
   if (exp - o.exp > room) exp = o.exp + Math.floor(room);
@@ -42,7 +43,7 @@ export function allowed(o, want, nowMs = Date.now()) {
   const same = (o.season || 0) === want.season, base = same ? (o.seasonExp || 0) : 0;
   const sExp = Math.max(0, Math.min(want.seasonExp, base + Math.floor(room), exp));
   const used = Math.max(0, exp - o.exp, sExp - base);
-  return { exp, seasonExp: sExp, bank: Math.max(0, Math.floor((room - used) * 100) / 100) };
+  return { exp, seasonExp: sExp, bank: Math.max(0, Math.min(BUCKET, Math.floor((room - used) * 100) / 100)) };
 }
 
 let lastSent = '', pushT = null, catchUpT = null;

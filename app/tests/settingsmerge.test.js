@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeDocs, mergeSettings } from '../js/syncmerge.js';
+import { mergeDocs, mergeSettings, mergeQuests, sanitizeQuest } from '../js/syncmerge.js';
 import { seasonOf, seasonRange, seasonExp, rankOf, rankLabel, rankStep, nextRank, masterLevel, SEASON_EPOCH, FIRST_SEASON_FROM } from '../js/stats.js';
 
 test('changing one setting on a phone does not bring back its old copy of the others (reminders stop bug)', () => {
@@ -62,4 +62,29 @@ test('Master has no top: a level every 50 EXP after 175', () => {
   assert.deepEqual(nextRank(140), ['Master 1', 175]);
   assert.deepEqual(nextRank(230), ['Master 3', 275]);
   assert.deepEqual(nextRank(30), ['Gold', 45]);
+});
+
+test('syncmerge: sanitizeQuest guarantees subtasks array, string notes, and 0..5 tier', () => {
+  assert.equal(sanitizeQuest(null), null);
+  assert.equal(sanitizeQuest('string'), null);
+  const clean = sanitizeQuest({ id: 'q1', title: 'Test' });
+  assert.deepEqual(clean.subtasks, []);
+  assert.equal(clean.notes, '');
+  assert.equal(clean.tier, 3);
+
+  const clamped = sanitizeQuest({ id: 'q2', tier: 99, notes: 123, subtasks: 'invalid' });
+  assert.equal(clamped.tier, 5);
+  assert.equal(clamped.notes, '123');
+  assert.deepEqual(clamped.subtasks, []);
+
+  const clampedLow = sanitizeQuest({ id: 'q3', tier: -5 });
+  assert.equal(clampedLow.tier, 3);
+});
+
+test('syncmerge: mergeQuests applies schema validation to incoming documents', () => {
+  const merged = mergeQuests([{ id: 'q1', title: 'Quest A', tier: 10, subtasks: null, notes: undefined }]);
+  assert.equal(merged.quests.length, 1);
+  assert.equal(merged.quests[0].tier, 5);
+  assert.deepEqual(merged.quests[0].subtasks, []);
+  assert.equal(merged.quests[0].notes, '');
 });

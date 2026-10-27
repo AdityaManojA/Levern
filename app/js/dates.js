@@ -8,7 +8,7 @@ export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', '
 
 export const toStr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const fromStr = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
-export const todayStr = (now = new Date()) => toStr(now);
+export const todayStr = (now = new Date(Date.now())) => toStr(now);
 export function addDays(s, n) { const d = fromStr(s); d.setDate(d.getDate() + n); return toStr(d); }
 export function addMonths(s, n) {
   const d = fromStr(s), day = d.getDate();
@@ -36,9 +36,12 @@ export function monthGrid(year, month) {
   return Array.from({ length: 42 }, (_, i) => addDays(start, i));
 }
 export function at(s, time) {
-  const d = fromStr(s);
-  if (time) { const [h, m] = time.split(':').map(Number); d.setHours(h, m, 0, 0); }
-  return d.getTime();
+  const [y, m, d] = s.split('-').map(Number);
+  if (time) {
+    const [h, min] = time.split(':').map(Number);
+    return new Date(y, m - 1, d, h || 0, min || 0, 0, 0).getTime();
+  }
+  return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
 }
 // the moment a quest becomes overdue: its time plus any duration, or the end of its day
 export const dueTimestamp = q => {
@@ -85,7 +88,7 @@ export function fmtStamp(ms, now = new Date()) {
 }
 
 // 'overdue' | 'today' | 'soon' (next 2 days) | 'week' | 'later' | 'none'
-export function dueStatus(q, now = new Date()) {
+export function dueStatus(q, now = new Date(Date.now())) {
   if (!q.due) return 'none';
   if (!q.done && dueTimestamp(q) < now.getTime()) return 'overdue';
   const n = diffDays(todayStr(now), q.due);

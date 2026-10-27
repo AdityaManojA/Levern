@@ -1,10 +1,10 @@
 // Quest detail: edit everything about one quest. Fields save as you go.
-import { findQuest, updateQuest, deleteQuest, addSubtask, updateSubtask, removeSubtask, setReminder, setAlerts, tierLabel, TIER_COLORS, getState } from '../store.js';
+import { findQuest, updateQuest, deleteQuest, restoreQuest, addSubtask, updateSubtask, removeSubtask, setReminder, setAlerts, tierLabel, TIER_COLORS, getState } from '../store.js';
 import { dueLabel, dueStatus, fmtStamp, todayStr, fmtDuration } from '../dates.js';
 import { REPEATS, describe, oftenOf, oftenSeg } from '../recur.js';
 import { multiLabel } from '../multi.js';
 import { googleLink, buildICS } from '../ics.js';
-import { esc, ICON, toast, play, confirmBox, download } from '../ui.js';
+import { esc, ICON, toast, play, confirmDelete, download } from '../ui.js';
 import { tierPicker, reminderPicker, bindPicker, bindAlerts, goalBlock } from './common.js';
 import { GOAL_DEFAULT, clampGoal } from '../goals.js';
 import { undoGoal } from '../store.js';
@@ -14,6 +14,15 @@ import { timeWheelHTML } from '../timewheel.js';
 import { cloudOn, cloudReady, syncNow } from '../cloud.js';
 
 let current = null;
+const recentlyDeleted = new Map();
+
+export function markDeleted(id, quest) {
+  recentlyDeleted.set(id, quest);
+  setTimeout(() => recentlyDeleted.delete(id), 60000);
+}
+export function unmarkDeleted(id) {
+  recentlyDeleted.delete(id);
+}
 
 export function render(params) {
   const q = current = findQuest(params.id);
@@ -21,10 +30,49 @@ export function render(params) {
     // opened from a notification or link before this device has the quest: wait for the account's copy
     // (the page redraws when it arrives) instead of saying it's gone
     const waiting = params.id && cloudOn() && !cloudReady();
-    if (waiting) return `<a class="back" href="#/quests">${ICON.back} Quests</a><div class="card empty"><b>Loading your quest…</b><span class="small">Getting the latest from your account.</span></div>`;
+    if (waiting) {
+      return `<a class="back" href="#/quests">${ICON.back} Quests</a>
+        <div class="card empty missing-card">
+          <span class="empty-mochi" data-sprite="box-peek" data-scale="1.1"></span>
+          <b>Loading your quest…</b>
+          <span class="small">Getting the latest from your account.</span>
+        </div>`;
+    }
     if (params.id && cloudOn()) syncNow();   // one more look at the account; it redraws if the quest turns up
-    return `<a class="back" href="#/quests">${ICON.back} Quests</a><div class="card empty"><b>Quest not found</b><span class="small">${params.id ? 'It may have been deleted, or it was made on another device that hasn’t synced yet.' : 'This link doesn’t point to a quest.'}</span>
-      <a class="btn white sm" href="#/quests" style="margin-top:10px">See all quests</a></div>`;
+
+    const wasDeleted = params.id && recentlyDeleted.has(params.id);
+    const last = wasDeleted ? recentlyDeleted.get(params.id) : null;
+
+    return `<div class="missing-view">
+      <a class="back" href="#/quests">${ICON.back} Quests</a>
+      <div class="missing-card">
+        <div class="missing-mochi">
+          <span class="empty-mochi" data-sprite="box-peek" data-scale="1.15"></span>
+        </div>
+        <div class="missing-pill">${wasDeleted ? 'Quest deleted' : 'Quest missing'}</div>
+        <h2 class="missing-title">${wasDeleted ? `"${esc(last?.title || 'Quest')}" was deleted` : 'This quest wandered off…'}</h2>
+        <p class="missing-text">
+          ${wasDeleted
+            ? 'You can restore it right now, or head back to your quests.'
+            : (params.id
+              ? 'It may have been completed, deleted, or is still syncing from another device.'
+              : 'This link doesn’t point to an active quest.')}
+        </p>
+        <div class="missing-btns">
+          ${wasDeleted ? `
+            <button class="btn block" data-act="restore-missing" data-id="${esc(params.id)}">
+              <span class="ic">${ICON.undo}</span> Restore this quest
+            </button>
+          ` : ''}
+          <a class="btn ${wasDeleted ? 'ghost' : ''} block" href="#/quests">
+            <span class="ic">${ICON.quests}</span> See all quests
+          </a>
+          <button class="btn ghost block" data-act="add">
+            <span class="ic">${ICON.plus}</span> Add a new quest
+          </button>
+        </div>
+      </div>
+    </div>`;
   }
   const st = dueStatus(q), done = q.subtasks.filter(s => s.done).length;
   const history = getState().history.filter(h => h.questId === q.id).length;
@@ -105,6 +153,7 @@ export function render(params) {
 export function mount(main) {
   const q = current; if (!q) return;
   const root = main.querySelector('.detail');
+  if (!root) return;
   bindPicker(root.querySelector('[data-picker]'), (spec, key) => {
     if (spec) requestPermission();
     setReminder(q.id, spec);
@@ -118,20 +167,20 @@ export function mount(main) {
     play('click', 0.5);
     toast(list.length ? `${list.length} reminder${list.length === 1 ? '' : 's'} saved` : 'Reminders off for this quest');
   });
-  root.querySelector('[data-addsub]').addEventListener('submit', e => {
+  root.querySelector('[data-addsub]')?.addEventListener('submit', e => {
     e.preventDefault();
     const v = e.target.t.value.trim(); if (!v) return;
     addSubtask(q.id, v); play('click', 0.5);
     requestAnimationFrame(() => document.querySelector('[data-addsub] input')?.focus());
   });
-  root.querySelector('.pick').addEventListener('click', e => {
+  root.querySelector('.pick')?.addEventListener('click', e => {
     const b = e.target.closest('[data-tier]'); if (!b) return;
     updateQuest(q.id, { tier: +b.dataset.tier }); play('click', 0.5);
   });
 }
 
 export const actions = {
-  'sub-toggle': el => { const s = current.subtasks.find(x => x.id === el.dataset.sid); updateSubtask(current.id, s.id, { done: !s.done }); play('click', 0.6); },
+  'sub-toggle': el => { const s = current.subtasks.find(x => x.id === el.dataset.sid); if (!s) return; const nowDone = !s.done; updateSubtask(current.id, s.id, { done: nowDone }); if (nowDone) { play('coin', 0.5); toast('+2 EXP · Subtask complete', 'good'); } else play('tap', 0.6); },
   'sub-del': el => removeSubtask(current.id, el.dataset.sid),
   'ink-new': el => openInk(current.id, { kind: el.dataset.kind }),
   'sketch-view': el => openSketch(current.id, el.dataset.kid),
@@ -156,15 +205,42 @@ export const actions = {
     toast(d > 0 ? `Duration set to ${fmtDuration(d)}` : 'Duration removed');
   },
   ics: () => { download(`${current.title.replace(/[^\w\- ]+/g, '').trim() || 'quest'}.ics`, buildICS([current]), 'text/calendar'); toast('Calendar file saved. Open it to add the event.'); },
+  'restore-missing': el => {
+    const id = el.dataset.id;
+    const q = recentlyDeleted.get(id);
+    if (q) {
+      recentlyDeleted.delete(id);
+      restoreQuest(q);
+      play('coin', 0.6);
+      toast(`Restored "${q.title}"`, 'good');
+      location.hash = '#/quest/' + q.id;
+    }
+  },
   delete: async () => {
-    if (!(await confirmBox(`Delete "${current.title}"?`))) return;
-    const t = current.title; deleteQuest(current.id); location.hash = '#/quests'; toast(`Deleted: ${t}`);
+    const q = current;
+    if (!q) return;
+    const title = q.title;
+    if (!(await confirmDelete(title))) return;
+    const copy = { ...q, subtasks: (q.subtasks || []).map(s => ({ ...s })) };
+    markDeleted(q.id, copy);
+    location.hash = '#/quests';
+    deleteQuest(q.id, { quiet: true });
+    play('tap', 0.5);
+    toast(`Deleted "${title}"`, '', {
+      undo: () => {
+        unmarkDeleted(copy.id);
+        restoreQuest(copy);
+        play('coin', 0.6);
+        toast(`Restored "${title}"`, 'good');
+      }
+    });
   },
 };
 const addDaysFromToday = n => { const d = new Date(); d.setDate(d.getDate() + n); return todayStr(d); };
 
 export function onChange(el) {
   const k = el.dataset.change, q = current;
+  if (!q) return;
   if (k === 'due') updateQuest(q.id, el.value ? { due: el.value } : { due: null, time: null, repeat: null });
   if (k === 'time') updateQuest(q.id, { time: el.value || null });
   if (k === 'repeat') { updateQuest(q.id, { repeat: el.value ? { freq: el.value } : null, goal: null }); if (el.value) { const d = describe({ freq: el.value }, q.due); toast(`Repeats ${d[0].toLowerCase() + d.slice(1)}`); } }
@@ -173,6 +249,7 @@ export function onChange(el) {
 // typing saves quietly (no re-render, so the cursor stays put)
 export function onInput(el) {
   const k = el.dataset.input, q = current;
+  if (!q) return;
   if (k === 'title' && el.value.trim()) updateQuest(q.id, { title: el.value.trim() }, { quiet: true });
   if (k === 'notes') updateQuest(q.id, { notes: el.value }, { quiet: true });
   if (k === 'sub-title') updateSubtask(q.id, el.dataset.sid, { title: el.value }, { quiet: true });

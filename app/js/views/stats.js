@@ -8,7 +8,7 @@ import { esc } from '../ui.js';
 let range = 30, showAll = false;
 
 export function render() {
-  const st = getState(), s = st.settings, sum = summary(st.history, st.sessions, s.target);
+  const st = getState(), s = st.settings, sum = summary(st.history, st.sessions, s.target, new Date(), st.quests);
   const days = lastDays(st.history, st.sessions, s.target, range);
   const max = Math.max(s.target * 1.25, ...days.map(d => d.count), 1);
   const tierMax = Math.max(1, ...sum.tiers);
