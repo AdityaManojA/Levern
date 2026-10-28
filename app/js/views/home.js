@@ -8,7 +8,7 @@ import { displayName } from '../account.js';
 function greeting() { const h = new Date().getHours(); return h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; }
 
 // a quiet line under Up next when it doesn't show every open quest: how many more, linking to them all
-const moreLink = n => n > 0 ? `<a class="more-q" href="#/quests">+${n} more quest${n === 1 ? '' : 's'}</a>` : '';
+const moreLink = n => n > 0 ? `<a class="more-q" href="#/quests?filter=all" data-act="more-quests" role="button">+${n} more quest${n === 1 ? '' : 's'} ›</a>` : '';
 export function render() {
   const st = getState(), s = st.settings, sum = summary(st.history, st.sessions, s.target, new Date(), st.quests);
   const open = st.quests.filter(q => !q.done);
@@ -22,7 +22,7 @@ export function render() {
   return `
     <div class="h-sub">${greeting()}${displayName(s) ? ', ' + esc(displayName(s)) : ''}</div>
     <h1 class="h-title">Up next</h1>
-    <div class="sec sec-top"><span></span><a href="#/quests">All quests</a></div>
+    <div class="sec sec-top"><span></span><a href="#/quests?filter=all" data-act="more-quests">All quests</a></div>
     ${next.length ? next.map(q => questRow(q)).join('') + moreLink(open.length - next.length) : `<div class="card empty"><span class="empty-mochi" data-sprite="box-peek" data-scale=".9"></span><b>All clear</b><span class="small">Add a quest with the + button.</span></div>`}
     <div class="statrow" aria-label="Today at a glance">
       <a class="mstat" href="#/stats" style="--acc:var(--sky)" aria-label="Today: ${sum.todayCount} of ${s.target}. Open your stats"><b>${sum.todayCount}/${s.target}</b><span>${left ? 'today' : 'target hit'}</span></a>

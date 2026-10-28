@@ -1314,8 +1314,35 @@ a.lb-name:hover, a.lb-n:hover { text-decoration: underline; }
 .tw-btn[aria-expanded="true"] { outline: none; box-shadow: 0 0 0 3px var(--butter); }
 
 /* Home: "+3 more quests" under Up next (S-011), quiet so the list stays the focus */
-.more-q { display: block; width: fit-content; margin: 2px auto 0; padding: 4px 10px; border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 600; text-decoration: none; }
-.more-q:hover { background: var(--paper); color: var(--ink); }
+.more-q {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  margin: 6px auto 12px;
+  padding: 8px 20px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1.5px solid var(--edge);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+.more-q:hover {
+  background: var(--paper);
+  border-color: var(--ink);
+}
+.more-q:active {
+  transform: scale(0.97);
+  background: var(--paper);
+}
 
 /* Leaderboard: the board options in a closed Settings dropdown, Show more, past seasons */
 .lb-settings { padding: 0 16px; }

@@ -133,6 +133,15 @@ cloud.onCloud(() => { if (cloud.cloudReady() !== cloudWasReady) { cloudWasReady 
 
 /* ---------- shared actions (data-act="...") ---------- */
 const ACTIONS = {
+  'more-quests': () => {
+    play('click', 0.4);
+    if (location.hash === '#/quests?filter=all') {
+      route = { name: 'quests', params: { filter: 'all' } };
+      draw(0);
+    } else {
+      location.hash = '#/quests?filter=all';
+    }
+  },
   toggle: el => completeQuest(el.dataset.id),
   open: el => { location.hash = '#/quest/' + el.dataset.id; },
   add: el => openAdd({ due: el.dataset.due }),
