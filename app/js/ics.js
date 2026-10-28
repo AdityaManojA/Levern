@@ -33,7 +33,8 @@ function fold(line) {
 const EVENT_MIN = 30;
 
 function eventLines(q, stamp) {
-  const L = ['BEGIN:VEVENT', `UID:taskflow-${q.id}@taskflow.app`, `DTSTAMP:${utc(stamp)}`, `SUMMARY:${esc(q.title)}`];
+  const safeId = String(q.id || '').replace(/[^a-zA-Z0-9_\-]/g, '');
+  const L = ['BEGIN:VEVENT', `UID:taskflow-${safeId}@taskflow.app`, `DTSTAMP:${utc(stamp)}`, `SUMMARY:${esc(q.title)}`];
   if (q.time) {
     const start = at(q.due, q.time);
     const dur = q.duration && q.duration > 0 ? q.duration : EVENT_MIN;
