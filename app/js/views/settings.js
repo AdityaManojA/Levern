@@ -43,6 +43,20 @@ const step = (k, v, unit = '') => `<div class="step"><button data-act="step" dat
 const LIMITS = { annoy: [3, 10], target: [1, 10], focusMin: [5, 90], breakMin: [1, 30], snoozeMin: [5, 60] };
 const STEPS = { annoy: 1, target: 1, focusMin: 5, breakMin: 1, snoozeMin: 5 };
 
+function themeInfo(rawT) {
+  const t = (rawT === 'mono-light') ? 'mono' : (rawT || 'light');
+  const map = {
+    'light': { label: 'Light', desc: 'Warm cream surfaces and soft pastels', bg: '#FFF8EE', card: '#FFFFFF', ink: '#1E1B18', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
+    'dark': { label: 'Dark', desc: 'Near-black layers with glowing accents', bg: '#0E1014', card: '#171A20', ink: '#EEE8DF', pri: ['#FF6B6B', '#FF9A3D', '#FFCB57', '#46D19E', '#5DB6F2', '#A68BFA'] },
+    'mono': { label: 'Monochrome Light', desc: 'Clean light theme in pure greys', bg: '#F5F5F4', card: '#FFFFFF', ink: '#141414', pri: ['#8A8A8A', '#A1A1A1', '#B5B5B5', '#C8C8C8', '#D9D9D9', '#EAEAEA'] },
+    'mono-light-accent': { label: 'Mono Light Accent', desc: 'Greyscale base with all 6 priority colors active', bg: '#F5F5F4', card: '#FFFFFF', ink: '#141414', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
+    'mono-dark': { label: 'Monochrome Dark', desc: 'Inverted deep dark theme in pure greys', bg: '#121212', card: '#1C1C1C', ink: '#F0F0F0', pri: ['#F0F0F0', '#D9D9D9', '#C4C4C4', '#A8A8A8', '#8C8C8C', '#707070'] },
+    'mono-dark-accent': { label: 'Mono Dark Accent', desc: 'Inverted dark greyscale with glowing priority accents', bg: '#121212', card: '#1C1C1C', ink: '#F0F0F0', pri: ['#FF6B6B', '#FF9A3D', '#FFCB57', '#46D19E', '#5DB6F2', '#A68BFA'] },
+    'auto': { label: 'Follow Device', desc: 'Follows your system light or dark mode', bg: '#FFF8EE', card: '#FFFFFF', ink: '#1E1B18', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
+  };
+  return map[t] || map['light'];
+}
+
 export function render() {
   const s = getState().settings, p = permission();
   const pText = { granted: 'Allowed. Reminders pop up even when Levern is in the background.', denied: 'Blocked in your browser settings for this site. Reminders still show in the app.',
@@ -60,8 +74,42 @@ export function render() {
     </div>
 
     <div class="sec">Look</div>
-    <div class="card">
-      <div class="srow"><div class="l"><b>Theme</b><small>Dark is easier on the eyes at night</small></div><div class="swatches" role="radiogroup" aria-label="Theme">${[['light', 'Light'], ['dark', 'Dark'], ['mono', 'Mono Light'], ['mono-dark', 'Mono Dark'], ['auto', 'Device']].map(([v, l]) => { const on = (v === 'mono') ? (s.theme === 'mono' || s.theme === 'mono-light') : ((s.theme || 'light') === v); return `<button class="sw sw-${v}${on ? ' on' : ''}" role="radio" data-act="theme" data-v="${v}" aria-checked="${on}"><i aria-hidden="true"></i><span>${l}</span></button>`; }).join('')}</div></div>
+    <div class="card theme-section">
+      <div class="srow" style="display:block;border-top:none;padding:2px 0 8px">
+        <div class="l" style="margin-bottom:8px"><b>Theme</b><small>Select an appearance or follow your device settings</small></div>
+        <select class="field theme-select" data-change="theme" aria-label="Theme">
+          <option value="light" ${(s.theme || 'light') === 'light' ? 'selected' : ''}>☀️ Light (Day)</option>
+          <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>🌙 Dark (Night)</option>
+          <option value="mono" ${s.theme === 'mono' || s.theme === 'mono-light' ? 'selected' : ''}>⚪ Monochrome Light</option>
+          <option value="mono-light-accent" ${s.theme === 'mono-light-accent' ? 'selected' : ''}>🎨 Mono Light Accent (Colors on Priorities only)</option>
+          <option value="mono-dark" ${s.theme === 'mono-dark' ? 'selected' : ''}>⚫ Monochrome Dark</option>
+          <option value="mono-dark-accent" ${s.theme === 'mono-dark-accent' ? 'selected' : ''}>✨ Mono Dark Accent (Colors on Priorities only)</option>
+          <option value="auto" ${s.theme === 'auto' ? 'selected' : ''}>📱 Follow Device</option>
+        </select>
+      </div>
+      ${(() => {
+        const info = themeInfo(s.theme || 'light');
+        const isDark = (s.theme || '').includes('dark');
+        return `<div class="theme-preview-card" style="background:${info.bg};color:${info.ink};border:2px solid var(--edge);border-radius:14px;padding:12px 14px;margin-top:6px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
+            <b style="font-size:13px">${info.label}</b>
+            <span class="small" style="opacity:0.8">${info.desc}</span>
+          </div>
+          <div style="background:${info.card};border:1.5px solid rgba(128,128,128,0.25);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:10px">
+            <div style="width:16px;height:16px;border-radius:5px;border:2px solid ${info.pri[0]};background:${isDark ? 'transparent' : info.pri[0]};flex:none"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:13px;line-height:1.2">Sample quest card</div>
+              <div class="small" style="opacity:0.75;font-size:11px">Due at 4:00 PM · P1 Critical</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+            <span class="small" style="font-weight:700;font-size:11px;opacity:0.85">Priorities:</span>
+            <div style="display:flex;gap:5px;flex:1">
+              ${info.pri.map((col, idx) => `<div title="P${idx+1}" style="flex:1;height:12px;border-radius:4px;background:${col};border:1px solid rgba(0,0,0,0.12)"></div>`).join('')}
+            </div>
+          </div>
+        </div>`;
+      })()}
     </div>
 
     <div class="sec">Goals</div>
@@ -266,6 +314,12 @@ export const actions = {
   reset: async () => { if (await confirmBox('Delete all quests, history and settings on this device?', 'Reset')) { resetAll(); toast('Everything reset'); setTimeout(() => mascot.react('cry', 'my settings…'), 400); } },
 };
 export function onChange(el) {
+  if (el.dataset.change === 'theme') {
+    setSetting('theme', el.value);
+    applyTheme();
+    play('click', 0.4);
+    rerender();
+  }
   if (el.dataset.change === 'volume') { setSetting('volume', +el.value, { quiet: true }); play('click'); }
   if (el.dataset.change === 'import') {
     const f = el.files[0]; if (!f) return;

@@ -216,10 +216,10 @@ test('parse: extractTags detects and normalizes hashtags in quest titles', async
 
 test('ambient: supports kind selection and play/stop state', async () => {
   const { setAmbientKind, getAmbientKind, isAmbientActive, stopAmbient } = await import('../js/ambient.js');
-  setAmbientKind('rain');
-  assert.equal(getAmbientKind(), 'rain');
-  setAmbientKind('purr');
-  assert.equal(getAmbientKind(), 'purr');
+  setAmbientKind('satie');
+  assert.equal(getAmbientKind(), 'satie');
+  setAmbientKind('bach');
+  assert.equal(getAmbientKind(), 'bach');
   stopAmbient();
   assert.equal(isAmbientActive(), false);
 });

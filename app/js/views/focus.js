@@ -68,13 +68,15 @@ export function render(params) {
       ${zc(false, `<div class="chips" style="justify-content:center;padding-bottom:12px">${chips}</div>${customBox}`)}
       <div class="ambient-control">
         <button type="button" class="chip chip-btn ${isAmbientActive() ? 'on' : ''}" data-act="ambient-toggle" aria-label="Toggle ambient sound">
-          ${isAmbientActive() ? '🔊' : '🔇'} Ambient: <b>${{ none: 'Off', rain: '🌧️ Rain', cafe: '☕ Cafe', classical: '🎻 Classical' }[getAmbientKind()] || 'Off'}</b>
+          ${isAmbientActive() ? '🔊' : '🔇'} Ambient: <b>${{ none: 'Off', satie: '🎻 Satie', debussy: '🎹 Debussy', bach: '🎼 Bach', beethoven: '🌙 Beethoven', chopin: '🌹 Chopin' }[getAmbientKind()] || 'Off'}</b>
         </button>
         <select class="field ambient-select" data-change="ambient-kind" aria-label="Select ambient audio">
           <option value="none" ${getAmbientKind() === 'none' ? 'selected' : ''}>Off</option>
-          <option value="rain" ${getAmbientKind() === 'rain' ? 'selected' : ''}>🌧️ Gentle Rain</option>
-          <option value="cafe" ${getAmbientKind() === 'cafe' ? 'selected' : ''}>☕ Cafe Background</option>
-          <option value="classical" ${getAmbientKind() === 'classical' ? 'selected' : ''}>🎻 Classical (Gymnopédie)</option>
+          <option value="satie" ${getAmbientKind() === 'satie' ? 'selected' : ''}>🎻 Satie: Gymnopédie No. 1</option>
+          <option value="debussy" ${getAmbientKind() === 'debussy' ? 'selected' : ''}>🎹 Debussy: Clair de lune</option>
+          <option value="bach" ${getAmbientKind() === 'bach' ? 'selected' : ''}>🎼 Bach: Prelude in C Major</option>
+          <option value="beethoven" ${getAmbientKind() === 'beethoven' ? 'selected' : ''}>🌙 Beethoven: Moonlight Sonata</option>
+          <option value="chopin" ${getAmbientKind() === 'chopin' ? 'selected' : ''}>🌹 Chopin: Nocturne Op. 9 No. 2</option>
         </select>
       </div>
       <div class="row-btns fbtns">

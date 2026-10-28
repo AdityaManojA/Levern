@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.12', date: '2026-10-28', title: 'Mono Accent Themes & 3m+ Classical Focus Music',
+    note: 'Added Mono Light & Dark Accent themes with vibrant priority colors, an upgraded theme picker with live card preview, and 5 full 3+ minute public-domain classical pieces.',
+    tip: 'Select your favorite classical piece in Focus mode for deep, continuous concentration!',
+    items: [
+      'Mono Accent Themes: Enjoy clean greyscale aesthetics while highlighting all 6 distinct priority colors on quest cards.',
+      'Upgraded Theme Picker: Replaced cluttered swatches with a clean dropdown menu and live preview card showing actual card surfaces and priority dots.',
+      '3+ Min Classical Repertoire: 5 zero-copyright, commercial-safe masterpieces: Satie’s Gymnopédie No. 1, Debussy’s Clair de lune, Bach’s Prelude in C, Beethoven’s Moonlight Sonata, and Chopin’s Nocturne Op. 9 No. 2.',
+      'Pure Classical Focus: Removed old noisy sound loops in favor of rich, continuous classical piano music.',
+    ],
+  },
+  {
     v: '1.11', date: '2026-10-28', title: 'Monochrome Dark, Focus History & Classical Audio',
     note: 'Introducing Monochrome Dark theme, past focus sessions log, copyright-free classical focus audio, and smoother new quest sheet controls.',
     tip: 'Check out Settings → Theme to try the new Mono Dark theme!',
