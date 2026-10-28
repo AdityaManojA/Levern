@@ -12,6 +12,20 @@ import { timeWheelHTML, fmtTime } from '../timewheel.js';
 import { playAmbient, stopAmbient, setAmbientKind, getAmbientKind, isAmbientActive } from '../ambient.js';
 
 let tick = null, pickQuest = '', pickMode = 'focus', lastRunning = null;
+const AMBIENT_LABELS = {
+  none: 'Off',
+  'gentle-rain': 'Light Rain',
+  raindrops: 'Light Rain',
+  forest: 'Forest Vibes',
+  'soft-noise': 'Soft White Noise',
+  satie: 'Satie',
+  debussy: 'Debussy',
+  bach: 'Bach',
+  beethoven: 'Beethoven',
+  chopin: 'Chopin',
+  mozart: 'Mozart',
+  pachelbel: 'Pachelbel',
+};
 // the custom length, while picking: { kind: 'for' | 'until', min: minutes, until: 'HH:MM' }, or null for the chips
 let custom = null;
 const MAX_MIN = 12 * 60;
@@ -68,16 +82,20 @@ export function render(params) {
       ${zc(false, `<div class="chips" style="justify-content:center;padding-bottom:12px">${chips}</div>${customBox}`)}
       <div class="ambient-control">
         <button type="button" class="chip chip-btn ${isAmbientActive() ? 'on' : ''}" data-act="ambient-toggle" aria-label="Toggle ambient sound">
-          ${isAmbientActive() ? '🔊' : '🔇'} Ambient: <b>${{ none: 'Off', raindrops: '🌧️ Raindrops', satie: '🎻 Satie', debussy: '🎹 Debussy', bach: '🎼 Bach', beethoven: '🌙 Beethoven', chopin: '🌹 Chopin' }[getAmbientKind()] || 'Off'}</b>
+          Ambient: <b>${AMBIENT_LABELS[getAmbientKind()] || 'Off'}</b>
         </button>
         <select class="field ambient-select" data-change="ambient-kind" aria-label="Select ambient audio">
           <option value="none" ${getAmbientKind() === 'none' ? 'selected' : ''}>Off</option>
-          <option value="raindrops" ${getAmbientKind() === 'raindrops' ? 'selected' : ''}>🌧️ Raindrops & Sweet Piano</option>
-          <option value="satie" ${getAmbientKind() === 'satie' ? 'selected' : ''}>🎻 Satie: Gymnopédie No. 1</option>
-          <option value="debussy" ${getAmbientKind() === 'debussy' ? 'selected' : ''}>🎹 Debussy: Clair de lune</option>
-          <option value="bach" ${getAmbientKind() === 'bach' ? 'selected' : ''}>🎼 Bach: Prelude in C Major</option>
-          <option value="beethoven" ${getAmbientKind() === 'beethoven' ? 'selected' : ''}>🌙 Beethoven: Moonlight Sonata</option>
-          <option value="chopin" ${getAmbientKind() === 'chopin' ? 'selected' : ''}>🌹 Chopin: Nocturne Op. 9 No. 2</option>
+          <option value="gentle-rain" ${getAmbientKind() === 'gentle-rain' || getAmbientKind() === 'raindrops' ? 'selected' : ''}>Light Rain</option>
+          <option value="forest" ${getAmbientKind() === 'forest' ? 'selected' : ''}>Forest Vibes</option>
+          <option value="soft-noise" ${getAmbientKind() === 'soft-noise' ? 'selected' : ''}>Soft White Noise</option>
+          <option value="satie" ${getAmbientKind() === 'satie' ? 'selected' : ''}>Satie: Gymnopédie No. 1</option>
+          <option value="debussy" ${getAmbientKind() === 'debussy' ? 'selected' : ''}>Debussy: Clair de lune</option>
+          <option value="bach" ${getAmbientKind() === 'bach' ? 'selected' : ''}>Bach: Prelude in C Major</option>
+          <option value="beethoven" ${getAmbientKind() === 'beethoven' ? 'selected' : ''}>Beethoven: Moonlight Sonata</option>
+          <option value="chopin" ${getAmbientKind() === 'chopin' ? 'selected' : ''}>Chopin: Nocturne Op. 9 No. 2</option>
+          <option value="mozart" ${getAmbientKind() === 'mozart' ? 'selected' : ''}>Mozart: Piano Sonata in C</option>
+          <option value="pachelbel" ${getAmbientKind() === 'pachelbel' ? 'selected' : ''}>Pachelbel: Canon in D</option>
         </select>
       </div>
       <div class="row-btns fbtns">
@@ -182,7 +200,7 @@ export const actions = {
   'ambient-toggle': () => {
     if (isAmbientActive()) stopAmbient();
     else {
-      if (getAmbientKind() === 'none') setAmbientKind('rain');
+      if (getAmbientKind() === 'none') setAmbientKind('satie');
       playAmbient();
     }
     rerender();

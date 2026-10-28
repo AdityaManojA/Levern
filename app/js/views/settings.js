@@ -46,12 +46,12 @@ const STEPS = { annoy: 1, target: 1, focusMin: 5, breakMin: 1, snoozeMin: 5 };
 function themeInfo(rawT) {
   const t = (rawT === 'mono-light') ? 'mono' : (rawT || 'light');
   const map = {
-    'light': { label: 'Light', desc: 'Warm cream surfaces and soft pastels', bg: '#FFF8EE', card: '#FFFFFF', ink: '#1E1B18', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
-    'dark': { label: 'Dark', desc: 'Near-black layers with glowing accents', bg: '#0E1014', card: '#171A20', ink: '#EEE8DF', pri: ['#FF6B6B', '#FF9A3D', '#FFCB57', '#46D19E', '#5DB6F2', '#A68BFA'] },
+    'light': { label: 'Light Mode', desc: 'Warm cream surfaces and soft pastels', bg: '#FFF8EE', card: '#FFFFFF', ink: '#1E1B18', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
+    'dark': { label: 'Dark Mode', desc: 'Near-black layers with glowing accents', bg: '#0E1014', card: '#171A20', ink: '#EEE8DF', pri: ['#FF6B6B', '#FF9A3D', '#FFCB57', '#46D19E', '#5DB6F2', '#A68BFA'] },
     'mono': { label: 'Monochrome Light', desc: 'Clean light theme in pure greys', bg: '#F5F5F4', card: '#FFFFFF', ink: '#141414', pri: ['#8A8A8A', '#A1A1A1', '#B5B5B5', '#C8C8C8', '#D9D9D9', '#EAEAEA'] },
-    'mono-light-accent': { label: 'Mono Light Accent', desc: 'Greyscale base with all 6 priority colors active', bg: '#F5F5F4', card: '#FFFFFF', ink: '#141414', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
+    'mono-light-accent': { label: 'Monochrome Light Accent', desc: 'Greyscale base with all 6 priority colors active', bg: '#F5F5F4', card: '#FFFFFF', ink: '#141414', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
     'mono-dark': { label: 'Monochrome Dark', desc: 'Inverted deep dark theme in pure greys', bg: '#121212', card: '#1C1C1C', ink: '#F0F0F0', pri: ['#F0F0F0', '#D9D9D9', '#C4C4C4', '#A8A8A8', '#8C8C8C', '#707070'] },
-    'mono-dark-accent': { label: 'Mono Dark Accent', desc: 'Inverted dark greyscale with glowing priority accents', bg: '#121212', card: '#1C1C1C', ink: '#F0F0F0', pri: ['#FF6B6B', '#FF9A3D', '#FFCB57', '#46D19E', '#5DB6F2', '#A68BFA'] },
+    'mono-dark-accent': { label: 'Monochrome Dark Accent', desc: 'Inverted dark greyscale with glowing priority accents', bg: '#121212', card: '#1C1C1C', ink: '#F0F0F0', pri: ['#FF6B6B', '#FF9A3D', '#FFCB57', '#46D19E', '#5DB6F2', '#A68BFA'] },
     'auto': { label: 'Follow Device', desc: 'Follows your system light or dark mode', bg: '#FFF8EE', card: '#FFFFFF', ink: '#1E1B18', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
   };
   return map[t] || map['light'];
@@ -78,12 +78,12 @@ export function render() {
       <div class="srow" style="display:block;border-top:none;padding:2px 0 8px">
         <div class="l" style="margin-bottom:8px"><b>Theme</b><small>Select an appearance or follow your device settings</small></div>
         <select class="field theme-select" data-change="theme" aria-label="Theme">
-          <option value="light" ${(s.theme || 'light') === 'light' ? 'selected' : ''}>☀️ Light (Day)</option>
-          <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>🌙 Dark (Night)</option>
-          <option value="mono" ${s.theme === 'mono' || s.theme === 'mono-light' ? 'selected' : ''}>⚪ Monochrome Light</option>
-          <option value="mono-light-accent" ${s.theme === 'mono-light-accent' ? 'selected' : ''}>Mono Light Accent (Colors on Priorities only)</option>
-          <option value="mono-dark" ${s.theme === 'mono-dark' ? 'selected' : ''}>⚫ Monochrome Dark</option>
-          <option value="mono-dark-accent" ${s.theme === 'mono-dark-accent' ? 'selected' : ''}>Mono Dark Accent (Colors on Priorities only)</option>
+          <option value="light" ${(s.theme || 'light') === 'light' ? 'selected' : ''}>Light Mode</option>
+          <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Dark Mode</option>
+          <option value="mono" ${s.theme === 'mono' || s.theme === 'mono-light' ? 'selected' : ''}>Monochrome Light</option>
+          <option value="mono-light-accent" ${s.theme === 'mono-light-accent' ? 'selected' : ''}>Monochrome Light Accent</option>
+          <option value="mono-dark" ${s.theme === 'mono-dark' ? 'selected' : ''}>Monochrome Dark</option>
+          <option value="mono-dark-accent" ${s.theme === 'mono-dark-accent' ? 'selected' : ''}>Monochrome Dark Accent</option>
           <option value="auto" ${s.theme === 'auto' ? 'selected' : ''}>Follow Device</option>
         </select>
       </div>

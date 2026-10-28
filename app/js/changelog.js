@@ -3,6 +3,18 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.14', date: '2026-10-28', title: 'Seamless Focus Music, Nature Ambiances & Cleaner Themes',
+    note: 'Focus music now loops continuously without awkward pauses or silences, new classical pieces and gentle nature sounds keep you in flow, and all emojis have been removed from the focus screen and theme selector for a calm, minimal workspace.',
+    tip: 'Try Forest Vibes or Mozart in Focus mode for long, uninterrupted work sessions!',
+    items: [
+      'Continuous, Seamless Music: All classical pieces now loop continuously with zero gaps or sudden silences at the end, giving you a smooth and uninterrupted background flow.',
+      'New Classical Pieces: Added Mozart’s Piano Sonata in C and Pachelbel’s Canon in D to your focus music collection.',
+      'Soothing Nature & White Noise: Gentle Light Rain, soothing Forest Vibes with distant birdsong, and warm Soft White Noise let you block out everyday distractions without overpowering your thoughts.',
+      'Emoji-Free Focus Mode: Removed icons and emojis from the audio controls and song selector for a distraction-free screen.',
+      'Pure Theme Names: Cleaned up theme labels and removed all emojis from the theme picker, with dedicated names for Light Mode, Dark Mode, Monochrome Light, Monochrome Light Accent, Monochrome Dark, and Monochrome Dark Accent.',
+    ],
+  },
+  {
     v: '1.13', date: '2026-10-28', title: 'Cookie Welcome, Upgraded Previews & Gentle Raindrops',
     note: 'Your cat choice now carries through the entire welcome tour, the theme selector features a realistic app preview mockup, relaxing raindrops with sweet piano join Focus mode, and all release notes are written clearly from your perspective as a user.',
     tip: 'Switch between Mochi and Cookie anytime under Settings → Cat, or try Raindrops in Focus mode!',

@@ -96,23 +96,27 @@ test('tour steps: step descriptions and finish action use active cat label', asy
   assert.ok(finishCardMochi.includes('Drag Mochi, or tap him, to finish'));
 });
 
-test('theme options: no emojis/sparkles on mono accent and follow device options', async () => {
+test('theme options: clean names and zero emojis on theme options', async () => {
   const { render } = await import('../js/views/settings.js');
   const html = render();
 
-  // Moon and Sun are fine
-  assert.ok(html.includes('>☀️ Light (Day)</option>') || html.includes('>☀️ Light</option>'));
-  assert.ok(html.includes('>🌙 Dark (Night)</option>') || html.includes('>🌙 Dark</option>'));
-  assert.ok(html.includes('>⚫ Monochrome Dark</option>'));
+  // Clean names
+  assert.ok(html.includes('>Light Mode</option>'));
+  assert.ok(html.includes('>Dark Mode</option>'));
+  assert.ok(html.includes('>Monochrome Dark</option>'));
 
-  // No sparkles, palettes or phone emojis for mono accents and follow device
+  // Zero emojis in theme select
+  assert.ok(!html.includes('>☀️'));
+  assert.ok(!html.includes('>🌙'));
+  assert.ok(!html.includes('>⚪'));
+  assert.ok(!html.includes('>⚫'));
   assert.ok(!html.includes('🎨'));
   assert.ok(!html.includes('✨'));
   assert.ok(!html.includes('📱'));
 
-  // Should have clean text labels
-  assert.ok(html.includes('>Mono Light Accent'));
-  assert.ok(html.includes('>Mono Dark Accent'));
+  // Clean text labels for accents and follow device
+  assert.ok(html.includes('>Monochrome Light Accent</option>'));
+  assert.ok(html.includes('>Monochrome Dark Accent</option>'));
   assert.ok(html.includes('>Follow Device</option>'));
 });
 
