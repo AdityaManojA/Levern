@@ -73,6 +73,12 @@ export function render() {
       <div class="srow"><div class="l"><b>Quick tour</b><small>${catName(s)} shows you around (30 seconds)</small></div><button class="mini" data-act="tour">Start</button></div>
     </div>
 
+    <div class="sec">Every day</div>
+    <div class="card nudges" data-tour="nudges">
+      <div class="l" style="margin-bottom:6px"><b>Every day</b><small class="small" style="display:block">Today's quests, water, meals and walks. Add as many times as you like; tap × on a time to remove it.</small></div>
+      ${nudges.editor()}
+    </div>
+
     <div class="sec">Look</div>
     <div class="card theme-section">
       <div class="srow" style="display:block;border-top:none;padding:2px 0 8px">
@@ -156,6 +162,16 @@ export function render() {
       })()}
     </div>
 
+    <div class="sec">Cat</div>
+    <div class="card" data-tour="mochi-settings">
+      <div class="srow"><div class="l"><b>Show Mochi / Cookie</b><small>The cat on the nav bar</small></div>${tog('mochi', s.mochi !== false, 'Show the cat')}</div>
+      <div class="srow"><div class="l"><b>Cat</b><small>Mochi, or Cookie, his orange twin brother</small></div><div class="seg coats" style="margin:0;width:auto">${Object.entries(COATS).map(([v, c]) => `<button class="${coatNow(s) === v ? 'on' : ''}" data-act="coat" data-v="${v}" aria-pressed="${coatNow(s) === v}" style="padding:5px 10px"><i class="coat-dot" style="background:${c.swatch}"></i>${c.label}</button>`).join('')}</div></div>
+      <div class="srow"><div class="l"><b>Roam around</b><small>Walks along the bar. Off: sits by the edge.</small></div>${tog('roam', s.roam !== false, 'The cat roams')}</div>
+      <div class="srow"><div class="l"><b>Walk speed</b></div><div class="seg" style="margin:0;width:auto">${[['slow', 'Slow'], ['normal', 'Normal'], ['zoomy', 'Zoomy']].map(([v, l]) => `<button class="${(s.speed || 'slow') === v ? 'on' : ''}" data-act="speed" data-v="${v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
+      <div class="srow"><div class="l"><b>${catName(s)}'s sounds</b><small>The little "mrp" when you tap him</small></div>${tog('mochiSound', s.mochiSound !== false, 'Cat sounds')}</div>
+      <div class="srow"><div class="l"><b>Patience</b><small>Taps before ${catName(s)} gets annoyed</small></div>${step('annoy', s.annoy || 5)}</div>
+    </div>
+
     <div class="sec">Goals</div>
     <div class="card">
       <div class="srow"><div class="l"><b>Daily quest target</b><small>Hit this to keep your streak (1–10)</small></div>${step('target', s.target)}</div>
@@ -167,13 +183,8 @@ export function render() {
       ${p === 'granted' ? '' : `<div class="srow" style="display:block"><div class="l"><b>Set up notifications</b><small>Steps for the device you're using</small></div><div style="margin-top:8px">${notifyCard()}</div></div>`}
       <div class="srow"><div class="l"><b>Snooze length</b></div>${step('snoozeMin', s.snoozeMin, ' min')}</div>
       <div class="srow"><div class="l"><b>Try it</b><small>Shows a sample notification in 10 seconds (nothing is added)</small></div><button class="mini" data-act="test-remind">Test</button></div>
-      <p class="small" style="margin-top:6px">Signed in with notifications on, reminders reach you even when Levern is closed. A quest's own reminders are set on the quest (Reminders), the ones below are every day.</p>
+      <p class="small" style="margin-top:6px">Signed in with notifications on, reminders reach you even when Levern is closed. Individual quest reminders are set on each quest.</p>
     </div>
-    <div class="card nudges" data-tour="nudges">
-      <div class="l" style="margin-bottom:6px"><b>Every day</b><small class="small" style="display:block">Today's quests, water, meals and walks. Add as many times as you like; tap × on a time to remove it.</small></div>
-      ${nudges.editor()}
-    </div>
-
     <div class="sec">Calendars</div>
     <div class="card">${calendarRows()}</div>
 
@@ -197,16 +208,6 @@ export function render() {
       <div class="srow"><div class="l"><b>Volume</b></div><input type="range" min="0" max="1" step="0.05" value="${s.volume}" data-change="volume" aria-label="Volume"></div>
     </div>
 
-    <div class="sec">Cat</div>
-    <div class="card" data-tour="mochi-settings">
-      <div class="srow"><div class="l"><b>Show Mochi / Cookie</b><small>The cat on the nav bar</small></div>${tog('mochi', s.mochi !== false, 'Show the cat')}</div>
-      <div class="srow"><div class="l"><b>Cat</b><small>Mochi, or Cookie, his orange twin brother</small></div><div class="seg coats" style="margin:0;width:auto">${Object.entries(COATS).map(([v, c]) => `<button class="${coatNow(s) === v ? 'on' : ''}" data-act="coat" data-v="${v}" aria-pressed="${coatNow(s) === v}" style="padding:5px 10px"><i class="coat-dot" style="background:${c.swatch}"></i>${c.label}</button>`).join('')}</div></div>
-      <div class="srow"><div class="l"><b>Roam around</b><small>Walks along the bar. Off: sits by the edge.</small></div>${tog('roam', s.roam !== false, 'The cat roams')}</div>
-      <div class="srow"><div class="l"><b>Walk speed</b></div><div class="seg" style="margin:0;width:auto">${[['slow', 'Slow'], ['normal', 'Normal'], ['zoomy', 'Zoomy']].map(([v, l]) => `<button class="${(s.speed || 'slow') === v ? 'on' : ''}" data-act="speed" data-v="${v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
-      <div class="srow"><div class="l"><b>${catName(s)}'s sounds</b><small>The little "mrp" when you tap him</small></div>${tog('mochiSound', s.mochiSound !== false, 'Cat sounds')}</div>
-      <div class="srow"><div class="l"><b>Patience</b><small>Taps before ${catName(s)} gets annoyed</small></div>${step('annoy', s.annoy || 5)}</div>
-    </div>
-
     <div class="sec">App</div>
     <div class="card">
       <div class="srow" style="display:block"><div class="l"><b>Install Levern</b>
@@ -219,11 +220,28 @@ export function render() {
     </div>
 
     <div class="sec">Your data</div>
-    <div class="card">
-      <p class="small" style="margin-bottom:10px">${account.user() ? 'Saved on this device and in your account. You can also export a backup file.' : 'Everything is saved on this device only. Sign in to keep it in your account, or export a backup to move it to another device.'}</p>
-      <div class="row-btns"><button class="btn white sm" data-act="export">Export backup</button><label class="btn white sm" style="cursor:pointer">Import backup<input type="file" accept="application/json,.json" data-change="import" hidden></label></div>
-      <div style="height:8px"></div>
-      <div class="row-btns"><button class="btn ghost sm" data-act="tidy-exp">Remove duplicate completions</button><button class="btn ghost sm" data-act="clear-done">Clear done quests</button><button class="btn ghost sm" data-act="reset">Reset everything</button></div>
+    <div class="card your-data-card">
+      <p class="small" style="margin-bottom:12px;opacity:0.85">${account.user() ? 'Saved on this device and safely synced with your account. You can also export a backup file.' : 'Everything is saved on this device only. Sign in to keep it in your account, or export a backup to move it to another device.'}</p>
+      <div class="srow">
+        <div class="l"><b>Export backup</b><small>Download a JSON backup of your quests, notes, and progress</small></div>
+        <button class="mini" data-act="export">Export</button>
+      </div>
+      <div class="srow">
+        <div class="l"><b>Import backup</b><small>Restore quests and settings from an existing backup file</small></div>
+        <label class="mini" style="cursor:pointer;display:inline-flex;align-items:center;justify-content:center">Import<input type="file" accept="application/json,.json" data-change="import" hidden></label>
+      </div>
+      <div class="srow">
+        <div class="l"><b>Clear done quests</b><small>Remove finished quests to keep your active list clean</small></div>
+        <button class="mini" data-act="clear-done">Clear</button>
+      </div>
+      <div class="srow">
+        <div class="l"><b>Remove duplicate completions</b><small>Clean up accidental multiple completions on the same day</small></div>
+        <button class="mini" data-act="tidy-exp">Tidy up</button>
+      </div>
+      <div class="srow">
+        <div class="l"><b>Reset everything</b><small>Permanently wipe all quests, history, and settings on this device</small></div>
+        <button class="mini danger-mini" data-act="reset">Reset…</button>
+      </div>
     </div>
 
     <div class="sec">Privacy</div>

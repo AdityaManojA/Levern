@@ -3,6 +3,16 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.15', date: '2026-10-28', title: 'Better Settings Layout, Easy Data Controls & Instant Offline Access',
+    note: 'Settings are now neatly arranged with your daily schedule near the top, Your Data features clean individual actions with clear descriptions, and your quests load immediately even when you turn off the network.',
+    tip: 'Review your backup and data options in Settings → Your Data anytime to keep an offline backup file!',
+    items: [
+      'Organized Settings Layout: Reordered settings so your daily nudges (Every day) appear right near the top before your visual preferences, and the cat controls sit neatly beneath the theme settings.',
+      'Clear, Easy Data Management: Upgraded the Your Data section with individual rows, clear descriptions for exporting, importing, and cleaning up quests, and a distinct red reset button so you always know what each option does.',
+      'Instant Offline Viewing: When your internet drops or you turn off network access, Levern now immediately displays your saved quests, notes, and progress from your device with zero loading delay. Any changes you make while offline are automatically saved and sync seamlessly once you reconnect.',
+    ],
+  },
+  {
     v: '1.14', date: '2026-10-28', title: 'Seamless Focus Music, Nature Ambiances & Cleaner Themes',
     note: 'Focus music now loops continuously without awkward pauses or silences, new classical pieces and gentle nature sounds keep you in flow, and all emojis have been removed from the focus screen and theme selector for a calm, minimal workspace.',
     tip: 'Try Forest Vibes or Mozart in Focus mode for long, uninterrupted work sessions!',

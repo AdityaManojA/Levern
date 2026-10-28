@@ -24,9 +24,10 @@ export const onCloud = fn => { listeners.add(fn); return () => listeners.delete(
 export const cloudInfo = () => info;
 export const cloudOn = () => !!account.user();
 // Until the account's copy has been read (or the attempt failed), a signed-in person's screens wait, so the
-// screen never shows an empty or out-of-date list before their own quests load.
-let ready = !account.user();
-export const cloudReady = () => ready;
+// screen never shows an empty or out-of-date list before their own quests load. Offline, local quests show immediately.
+const isOffline = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+let ready = !account.user() || isOffline();
+export const cloudReady = () => ready || isOffline();
 const becomeReady = () => { if (!ready) { ready = true; emit(); } };
 
 /* ---------- packing ---------- */
@@ -60,6 +61,12 @@ export function syncNow() {
   return inFlight;
 }
 async function runSync() {
+  if (isOffline()) {
+    info = { ...info, error: "Offline. Changes will be saved when you're back online." };
+    becomeReady();
+    emit();
+    return { ok: false };
+  }
   const u = account.user();
   if (!u) return { ok: false };
   if (busy) { again = true; return { ok: false }; }
@@ -228,7 +235,13 @@ export function startCloud() {
     else { unlisten?.(); unlisten = null; info = { lastSync: null, error: null }; ready = true; emit(); }
   });
   // offline or slow: never keep the screens waiting for more than a few seconds
-  if (!ready) setTimeout(becomeReady, 6000);
+  if (!ready && !isOffline()) setTimeout(becomeReady, 6000);
+  else becomeReady();
+  addEventListener('offline', () => {
+    info = { ...info, error: "Offline. Changes will be saved when you're back online." };
+    becomeReady();
+    emit();
+  });
   // coming back online or back to the app always checks the account too (the other phone may have changed
   // things while this one was asleep and its listener missed it), not only when this device has changes to send
   addEventListener('online', () => { if (account.user()) schedule(50); });
