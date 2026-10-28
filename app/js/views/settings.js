@@ -61,7 +61,7 @@ export function render() {
 
     <div class="sec">Look</div>
     <div class="card">
-      <div class="srow"><div class="l"><b>Theme</b><small>Dark is easier on the eyes at night</small></div><div class="swatches" role="radiogroup" aria-label="Theme">${[['light', 'Light'], ['dark', 'Dark'], ['mono', 'Mono'], ['auto', 'Device']].map(([v, l]) => `<button class="sw sw-${v}${(s.theme || 'light') === v ? ' on' : ''}" role="radio" data-act="theme" data-v="${v}" aria-checked="${(s.theme || 'light') === v}"><i aria-hidden="true"></i><span>${l}</span></button>`).join('')}</div></div>
+      <div class="srow"><div class="l"><b>Theme</b><small>Dark is easier on the eyes at night</small></div><div class="swatches" role="radiogroup" aria-label="Theme">${[['light', 'Light'], ['dark', 'Dark'], ['mono', 'Mono Light'], ['mono-dark', 'Mono Dark'], ['auto', 'Device']].map(([v, l]) => { const on = (v === 'mono') ? (s.theme === 'mono' || s.theme === 'mono-light') : ((s.theme || 'light') === v); return `<button class="sw sw-${v}${on ? ' on' : ''}" role="radio" data-act="theme" data-v="${v}" aria-checked="${on}"><i aria-hidden="true"></i><span>${l}</span></button>`; }).join('')}</div></div>
     </div>
 
     <div class="sec">Goals</div>

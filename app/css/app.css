@@ -21,7 +21,7 @@
 }
 /* Monochrome (Settings > Theme > Mono): the light theme in greys only. The pastels become greys of different
    lightness, so blocks and priorities still read apart (P1 darkest, P6 lightest), with ink text on all of them. */
-:root[data-theme="mono"] {
+:root:is([data-theme="mono"], [data-theme="mono-light"]) {
   --ink: #141414; --cream: #F5F5F4; --card: #FFFFFF; --muted: #666666; --paper: #E8E8E7;
   --mint: #D9D9D9; --coral: #C9C9C9; --lav: #E0E0E0; --butter: #E6E6E6; --sky: #D1D1D1;
   --p1: #8A8A8A; --p2: #A1A1A1; --p3: #B5B5B5; --p4: #C8C8C8; --p5: #D9D9D9; --p6: #EAEAEA;
@@ -29,10 +29,25 @@
   --tint-paper: #DEDEDD; --tint-paper2: #D3D3D2; --tint-sky: #F0F0F0; --tint-cream: #FAFAFA; --tint-mint: #F2F2F2; --tint-rose: #ECECEC; --tint-butter: #F4F4F4;
   --mint-dk: #A8A8A8; --mint-dk2: #9C9C9C; --ev: #B3B3B3;
 }
-/* the few colours written outside the tokens, and the pictures (the cats, the logo, rank badges), in grey too */
-:root[data-theme="mono"] :is(.mochi .act, [data-sprite], .empty-mochi, .pf-cat, img, .rank, .coat-dot, .gcal-logo) { filter: grayscale(1); }
-:root[data-theme="mono"] .btn.signout:hover { background: #000; }
-:root[data-theme="mono"] .tour-spot { box-shadow: 0 0 0 4px var(--butter), 0 0 0 9px rgba(20,20,20,.15), 0 0 0 200vmax rgba(var(--shade-rgb),.5); animation: none; }
+/* Monochrome Dark (Settings > Theme > Mono Dark): fully dark and inverted of monochrome light.
+   Near-black surfaces, crisp light-grey ink, and inverted priority greys (P1 brightest, P6 darkest). */
+:root[data-theme="mono-dark"] {
+  --ink: #F0F0F0; --cream: #121212; --card: #1C1C1C; --paper: #282828; --muted: #9E9E9E;
+  --edge: #383838; --line: 1.5px solid var(--edge);
+  --mint: #333333; --coral: #3A3A3A; --lav: #303030; --butter: #404040; --sky: #353535;
+  --p1: #F0F0F0; --p2: #D9D9D9; --p3: #C4C4C4; --p4: #A8A8A8; --p5: #8C8C8C; --p6: #707070;
+  --red: #F0F0F0; --on-ink: #121212; --ink-rgb: 240,240,240; --card-rgb: 28,28,28; --shade-rgb: 0,0,0;
+  --tint-paper: #282828; --tint-paper2: #303030; --tint-sky: #202020; --tint-cream: #161616;
+  --tint-mint: #222222; --tint-rose: #252525; --tint-butter: #292929;
+  --mint-dk: #9E9E9E; --mint-dk2: #B0B0B0; --ev: #A0A0A0;
+  color-scheme: dark;
+}
+/* Pictures, mascots and badges in greys across all monochrome themes */
+:root:is([data-theme="mono"], [data-theme="mono-light"], [data-theme="mono-dark"]) :is(.mochi .act, [data-sprite], .empty-mochi, .pf-cat, img, .rank, .coat-dot, .gcal-logo) { filter: grayscale(1); }
+:root:is([data-theme="mono"], [data-theme="mono-light"]) .btn.signout:hover { background: #000; color: #FFF; }
+:root[data-theme="mono-dark"] .btn.signout:hover { background: #FFF; color: #000; }
+:root:is([data-theme="mono"], [data-theme="mono-light"]) .tour-spot { box-shadow: 0 0 0 4px var(--butter), 0 0 0 9px rgba(20,20,20,.15), 0 0 0 200vmax rgba(var(--shade-rgb),.5); animation: none; }
+:root[data-theme="mono-dark"] .tour-spot { box-shadow: 0 0 0 4px var(--p2), 0 0 0 9px rgba(240,240,240,.15), 0 0 0 200vmax rgba(0,0,0,.6); animation: none; }
 /* Dark: "Night" from the Figma file (page "11 Dark theme"): designed for dark, not inverted. Near-black blue-grey
    layers (page, surface, raised), thin soft borders instead of ink outlines, and the pastels turned into glowing
    accents for numbers, bars and highlights; anything that is a pastel block by day is a tint of its accent by
@@ -106,6 +121,61 @@
 :root[data-theme="dark"] .toast.good::before { background: var(--a-mint); }
 :root[data-theme="dark"] .toast.remind::before { background: var(--a-butter); }
 :root[data-theme="dark"] input[type=checkbox]:checked { background: var(--a-mint); }
+
+/* Monochrome Dark controls & components */
+:root[data-theme="mono-dark"] ::selection { background: rgba(240,240,240,.28); }
+:root[data-theme="mono-dark"] .stat { border-color: color-mix(in srgb, var(--c, var(--edge)) 35%, transparent); }
+:root[data-theme="mono-dark"] .stat .v { color: var(--ink); }
+:root[data-theme="mono-dark"] .stat .k, :root[data-theme="mono-dark"] .stat .s { color: var(--muted); }
+:root[data-theme="mono-dark"] .q { background: var(--card); position: relative; padding-left: 24px; }
+:root[data-theme="mono-dark"] .q::before { content: ""; position: absolute; left: 10px; top: 12px; bottom: 12px; width: 4px; border-radius: 2px; background: var(--c); }
+:root[data-theme="mono-dark"] .q.overdue { box-shadow: none; }
+:root[data-theme="mono-dark"] .q .chk { background: transparent; border-color: var(--c); border-width: 2.5px; }
+:root[data-theme="mono-dark"] .q.done .chk { background: var(--c); }
+:root[data-theme="mono-dark"] .qm > span:first-child { color: var(--c); font-weight: 700; }
+:root[data-theme="mono-dark"] :is(.dq:not(.ev), .ritem:not(.upcoming)) { background: var(--card); box-shadow: inset 4px 0 0 var(--c); }
+:root[data-theme="mono-dark"] :is(.pick button, .tier-in i, .hero, .ob-q, .ob-chips span, .ob-use, .tour-chips span, .sub select, .sub .csel) {
+  background: color-mix(in srgb, var(--c) 14%, var(--card)); border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+:root[data-theme="mono-dark"] :is(.pick button, .tier-in i, .ob-chips span, .tour-chips span) { color: var(--c); }
+:root[data-theme="mono-dark"] .pick button.on { background: var(--c); color: #121212; outline-color: var(--c); }
+:root[data-theme="mono-dark"] .nav { background: var(--paper); }
+:root[data-theme="mono-dark"] .tab { color: var(--muted); }
+:root[data-theme="mono-dark"] .tab.on { color: var(--ink); }
+:root[data-theme="mono-dark"] .tab.on .ic { background: rgba(240,240,240,.16); border-color: transparent; }
+:root[data-theme="mono-dark"] .add { background: var(--ink); color: var(--on-ink); }
+:root[data-theme="mono-dark"] .btn:not(.white):not(.ghost):not(.dark):not(.signout):not(.danger) { background: var(--ink); color: var(--on-ink); border-color: transparent; }
+:root[data-theme="mono-dark"] :is(.btn.white, .iconbtn, .mini, .seg button, .seg a, .segopt span, .chip, .step button, .step-btn, .ropts button, .ritem .ract button) { background: var(--paper); }
+:root[data-theme="mono-dark"] .btn.dark, :root[data-theme="mono-dark"] .ritem .ract button.pri { background: var(--ink); color: var(--on-ink); border-color: transparent; }
+:root[data-theme="mono-dark"] .btn.danger { background: rgba(240,240,240,.12); color: var(--ink); border-color: var(--edge); }
+:root[data-theme="mono-dark"] :is(.seg .on, .chip-btn.on, .segopt input:checked + span, .daychips button.on, .ob-presets button.on, .ink-size.on, .ink-btn.on, .ccal-q button:hover) {
+  background: rgba(240,240,240,.16); color: var(--ink); border-color: var(--ink); }
+:root[data-theme="mono-dark"] .field:focus { box-shadow: 0 0 0 3px rgba(240,240,240,.35); }
+:root[data-theme="mono-dark"] .rcount { background: var(--ink); color: var(--on-ink); border-color: var(--cream); }
+:root[data-theme="mono-dark"] :is(.rchip.due, .ntime, .bell.has-due, .mcard-bell, .lb-1) { border-color: rgba(240,240,240,.4); color: var(--ink); }
+:root[data-theme="mono-dark"] .tag.goal { color: var(--muted); }
+:root[data-theme="mono-dark"] .tag.goal.met { color: var(--ink); }
+:root[data-theme="mono-dark"] .mbubble.mad { color: var(--ink); border-color: var(--edge); }
+:root[data-theme="mono-dark"] .day.today { border-color: rgba(240,240,240,.5); }
+:root[data-theme="mono-dark"] .day.today .dn { background: var(--ink); color: var(--on-ink); }
+:root[data-theme="mono-dark"] :is(.day.s, .day.sel) { background: rgba(240,240,240,.16); border-color: var(--ink); }
+:root[data-theme="mono-dark"] .bar { border: none; background: var(--paper); }
+:root[data-theme="mono-dark"] .bar > i { border-right: none; background: var(--p1); border-radius: 10px; }
+:root[data-theme="mono-dark"] .chart b { background: var(--p3); border-color: transparent; }
+:root[data-theme="mono-dark"] .chart b.hit { background: var(--p1); }
+:root[data-theme="mono-dark"] .toast.good::before { background: var(--ink); }
+:root[data-theme="mono-dark"] .toast.remind::before { background: var(--muted); }
+:root[data-theme="mono-dark"] input[type=checkbox]:checked { background: var(--ink); }
+:root[data-theme="mono-dark"] .toast-undo-btn { background: var(--ink); color: var(--on-ink); border-color: transparent; }
+:root[data-theme="mono-dark"] .del-confirm-icon { background: rgba(240,240,240,.18); color: var(--ink); border-color: transparent; }
+:root[data-theme="mono-dark"] .missing-pill { background: rgba(240,240,240,.18); color: var(--ink); border-color: rgba(240,240,240,.4); }
+:root[data-theme="mono-dark"] .del-chips input:checked + span { background: rgba(240,240,240,.16); color: var(--ink); border-color: var(--ink); }
+:root[data-theme="mono-dark"] .wn-v { background: rgba(240,240,240,.16); color: var(--ink); border-color: rgba(240,240,240,.5); }
+:root[data-theme="mono-dark"] .iconbtn.on { background: rgba(240,240,240,.16); color: var(--ink); border-color: var(--ink); }
+:root[data-theme="mono-dark"] .late-bang { background: rgba(240,240,240,.15); border-color: var(--ink); }
+:root[data-theme="mono-dark"] .late-bang span { color: var(--ink); }
+:root[data-theme="mono-dark"] .late-half { background: rgba(240,240,240,.1); border-color: var(--muted); color: var(--muted); }
+:root[data-theme="mono-dark"] .up-note { background: rgba(240,240,240,.1); border-color: var(--edge); }
+
 /* switching theme: everything changes at once, instead of every control fading at its own speed (js/theme.js) */
 :root.theme-swap *, :root.theme-swap *::before, :root.theme-swap *::after { transition: none !important; }
 /* no glow around the cats on the dark theme: their own outlines carry them */
@@ -152,7 +222,7 @@ html, .sheet, .rpanel, .clist, .ctime-l, textarea { scrollbar-width: thin; scrol
 .brand-ph { font-size: 11.5px; margin-top: 2px; }
 .ob-ph { text-align: center; font-size: 17px; margin: -2px 0 10px; }
 :root[data-theme="dark"] .brand-ph em, :root[data-theme="dark"] .ob-ph em { color: var(--a-ginger, #FF9A3D); }
-:root[data-theme="mono"] .brand-ph em, :root[data-theme="mono"] .ob-ph em { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+:root:is([data-theme="mono"], [data-theme="mono-light"], [data-theme="mono-dark"]) .brand-ph em, :root:is([data-theme="mono"], [data-theme="mono-light"], [data-theme="mono-dark"]) .ob-ph em { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
 .top-actions { display: flex; gap: 8px; }
 .iconbtn { position: relative; width: 40px; height: 40px; border: var(--line); border-radius: 14px; background: var(--card); display: grid; place-items: center; text-decoration: none; }
 .iconbtn:hover { background: var(--paper); }
@@ -1248,14 +1318,16 @@ a.lb-name:hover, a.lb-n:hover { text-decoration: underline; }
 .sec-top { margin-top: -6px; }
 
 /* Settings > Theme: four small swatches (each a preview of its page and accent) instead of a row of buttons */
-.swatches { display: flex; gap: 4px; flex: none; }
-.sw { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 46px; padding: 2px 0; border: 0; background: none; color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; }
+.swatches { display: flex; gap: 4px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+.sw { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 44px; padding: 2px 2px; border: 0; background: none; color: var(--muted); font-size: 11px; font-weight: 600; cursor: pointer; text-align: center; }
+.sw span { line-height: 1.1; max-width: 52px; }
 .sw i { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--edge); box-shadow: inset 0 0 0 3px var(--card); }
 .sw.on { color: var(--ink); }
 .sw.on i { outline: 2.5px solid var(--ink); outline-offset: 2px; }
 .sw-light i { background: linear-gradient(135deg, #FFF8EE 50%, #F4918A 50%); }
 .sw-dark i { background: linear-gradient(135deg, #0E1014 50%, #FF9A3D 50%); }
 .sw-mono i { background: linear-gradient(135deg, #F5F5F4 50%, #141414 50%); }
+.sw-mono-dark i { background: linear-gradient(135deg, #121212 50%, #F0F0F0 50%); }
 .sw-auto i { background: linear-gradient(90deg, #FFF8EE 50%, #0E1014 50%); }
 
 /* the header button of the page you're on (Stats, Leaderboard, Settings) */
@@ -1271,7 +1343,8 @@ a.lb-name:hover, a.lb-n:hover { text-decoration: underline; }
   background: color-mix(in srgb, var(--og) 14%, transparent); color: var(--og); font-size: 9px; font-weight: 800; letter-spacing: .08em; line-height: 13px; }
 h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
 :root[data-theme="dark"] .og { --og: #FFCB57; }
-:root[data-theme="mono"] .og { --og: #141414; }
+:root:is([data-theme="mono"], [data-theme="mono-light"]) .og { --og: #141414; }
+:root[data-theme="mono-dark"] .og { --og: #F0F0F0; }
 
 /* Aura: last season's top three wear it all season (1 gold, 2 silver, 3 aurora): a colour ring that keeps turning,
    a shimmering name and a twinkling sparkle. On leaderboard rows, the podium and the profile card. */
@@ -1295,8 +1368,9 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
 @keyframes aura-twinkle { from { opacity: .35; transform: scale(.7) rotate(0deg); } to { opacity: 1; transform: scale(1.1) rotate(45deg); } }
 :root[data-theme="dark"] .aura-name { background-image: linear-gradient(90deg, var(--au-b), var(--au-c), var(--au-b)); }
 :root[data-theme="dark"] .lb-row.me.aura { --au-bg: color-mix(in srgb, #FF9A3D 12%, var(--card)); }
-:root[data-theme="mono"] .aura::before, :root[data-theme="mono"] .aura-sp { filter: grayscale(1); }
-:root[data-theme="mono"] .aura-name { background-image: linear-gradient(90deg, #141414, #8A8A8A, #141414); }
+:root:is([data-theme="mono"], [data-theme="mono-light"], [data-theme="mono-dark"]) .aura::before, :root:is([data-theme="mono"], [data-theme="mono-light"], [data-theme="mono-dark"]) .aura-sp { filter: grayscale(1); }
+:root:is([data-theme="mono"], [data-theme="mono-light"]) .aura-name { background-image: linear-gradient(90deg, #141414, #8A8A8A, #141414); }
+:root[data-theme="mono-dark"] .aura-name { background-image: linear-gradient(90deg, #F0F0F0, #8A8A8A, #F0F0F0); }
 @media (prefers-reduced-motion: reduce) { .aura::before, .aura-name, .aura-sp { animation: none; } }
 
 /* Leaderboard loading: a shimmering grey skeleton of the podium and rows the first time; on Refresh the board stays
