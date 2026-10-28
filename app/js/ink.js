@@ -89,7 +89,7 @@ export function toSvg(sketch, { title = '' } = {}) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sketch.w} ${sketch.h}" role="img" aria-label="${title ? escAttr(title) : sketch.kind === 'writing' ? 'Handwriting' : 'Sketch'}">${paths}</svg>`;
 }
 const safeColor = c => /^#[0-9a-f]{3,8}$/i.test(c || '') ? c : INKS[0];
-const escAttr = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const escAttr = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // does a circle at (x, y) with radius rad touch the stroke? (the eraser)
 export function hitsStroke(stroke, x, y, rad) {

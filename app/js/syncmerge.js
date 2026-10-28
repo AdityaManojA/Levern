@@ -17,13 +17,15 @@ export const canon = v => JSON.stringify(v, (k, x) => (x && typeof x === 'object
 export function sanitizeQuest(q) {
   if (!q || typeof q !== 'object') return null;
   const subtasks = Array.isArray(q.subtasks)
-    ? q.subtasks.filter(s => s && typeof s === 'object')
+    ? q.subtasks.slice(0, 100).filter(s => s && typeof s === 'object').map(s => ({ ...s, title: typeof s.title === 'string' ? s.title.slice(0, 200) : '' }))
     : [];
-  const notes = typeof q.notes === 'string' ? q.notes : (q.notes != null ? String(q.notes) : '');
+  const title = typeof q.title === 'string' ? q.title.slice(0, 500) : (q.title != null ? String(q.title).slice(0, 500) : '');
+  const notes = typeof q.notes === 'string' ? q.notes.slice(0, 10000) : (q.notes != null ? String(q.notes).slice(0, 10000) : '');
   const rawTier = Number(q.tier);
   const tier = (!Number.isFinite(rawTier) || rawTier < 0) ? 3 : Math.min(5, Math.floor(rawTier));
   return {
     ...q,
+    title,
     subtasks,
     notes,
     tier,

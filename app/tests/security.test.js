@@ -23,20 +23,46 @@ test('security: buildICS sanitizes quest IDs against CRLF injection', () => {
   assert.match(uidLine, /^UID:taskflow-[a-zA-Z0-9_\-]+@taskflow\.app$/);
 });
 
-test('security: firebase.json enforces modern defensive security headers on getlevern', () => {
+test('security: firebase.json enforces modern defensive security headers on all sites', () => {
   const config = JSON.parse(readFileSync('firebase.json', 'utf8'));
-  const getlevern = config.hosting.find(h => h.site === 'getlevern');
-  assert.ok(getlevern, 'getlevern hosting config exists');
+  for (const siteName of ['getlevern', 'taskflow-dailytracker', 'levern-app']) {
+    const site = config.hosting.find(h => h.site === siteName);
+    assert.ok(site, `${siteName} hosting config exists`);
+    const headers = site.headers.find(h => h.source === '**')?.headers || [];
+    const map = Object.fromEntries(headers.map(h => [h.key, h.value]));
 
-  const headers = getlevern.headers.find(h => h.source === '**')?.headers || [];
-  const map = Object.fromEntries(headers.map(h => [h.key, h.value]));
+    assert.equal(map['X-Content-Type-Options'], 'nosniff', `${siteName} must have nosniff`);
+    assert.equal(map['X-Frame-Options'], 'DENY', `${siteName} must have DENY`);
+    assert.ok(map['Strict-Transport-Security']?.includes('max-age=31536000'), `${siteName} must have HSTS`);
+    assert.equal(map['Referrer-Policy'], 'strict-origin-when-cross-origin', `${siteName} must have Referrer-Policy`);
+    assert.ok(map['Permissions-Policy'], `${siteName} must have Permissions-Policy`);
+    assert.ok(map['Content-Security-Policy'], `${siteName} must have CSP`);
+  }
+});
 
-  assert.equal(map['X-Content-Type-Options'], 'nosniff');
-  assert.equal(map['X-Frame-Options'], 'DENY');
-  assert.ok(map['Strict-Transport-Security']?.includes('max-age=31536000'), 'HSTS configured with 1 year');
-  assert.equal(map['Referrer-Policy'], 'strict-origin-when-cross-origin');
-  assert.ok(map['Permissions-Policy'], 'Permissions-Policy configured');
-  assert.ok(map['Content-Security-Policy'], 'CSP configured');
+test('security: escAttr in ink.js escapes single quotes as well as HTML characters', async () => {
+  const ink = await import('../js/ink.js');
+  const svg = ink.toSvg({ w: 100, h: 100, strokes: [] }, { title: `Test 'onclick='alert(1)` });
+  assert.ok(!svg.includes(`'onclick=`), 'Must escape single quote in attributes');
+  assert.ok(svg.includes('&#39;'), 'Must replace single quote with &#39;');
+});
+
+test('security: sanitizeQuest caps oversized strings and array sizes', async () => {
+  const { sanitizeQuest } = await import('../js/syncmerge.js');
+  const hugeTitle = 'A'.repeat(2000);
+  const hugeNotes = 'B'.repeat(50000);
+  const lotsOfSubs = Array.from({ length: 300 }, (_, i) => ({ id: `s${i}`, title: 'Subtask ' + i }));
+  const sanitized = sanitizeQuest({
+    id: 'quest-1',
+    title: hugeTitle,
+    notes: hugeNotes,
+    subtasks: lotsOfSubs,
+    tier: 1
+  });
+
+  assert.ok(sanitized.title.length <= 500, 'Title must be capped at 500 chars');
+  assert.ok(sanitized.notes.length <= 10000, 'Notes must be capped at 10000 chars');
+  assert.ok(sanitized.subtasks.length <= 100, 'Subtasks must be capped at 100');
 });
 
 test('security: functions .env allows getlevern origin for OAuth', () => {
