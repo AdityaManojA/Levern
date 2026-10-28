@@ -60,7 +60,13 @@ export function emailName(email) {
 // Who the greeting is for: the leaderboard name they chose, else a name from their email.
 export function displayName(settings) {
   const board = String(settings?.boardName || '').trim();
-  return (board && isClean(board) ? board : '') || emailName(current?.email) || greetName(settings?.name);
+  if (board && isClean(board)) return board;
+  const active = typeof localStorage !== 'undefined' ? read() : current;
+  const email = (active?.email || '').trim();
+  const fromEmail = emailName(email);
+  if (fromEmail) return fromEmail;
+  const fallback = String(settings?.name || '').trim();
+  return (fallback && isClean(fallback) ? greetName(fallback) || fallback : '');
 }
 export const onAccount = fn => { listeners.add(fn); return () => listeners.delete(fn); };
 // the signed-in Firebase user once the session is restored (null when signed out)

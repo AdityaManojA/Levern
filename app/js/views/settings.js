@@ -11,7 +11,7 @@ import { COATS, CAT_VOICE } from '../mochi.js';
 // the cat on the bar: Mochi ('black') or Cookie; older coats ('ginger' became Cookie, grey and brown were Mochi)
 const coatNow = s => (s.mochiColor === 'ginger' || s.mochiColor === 'cookie' ? 'cookie' : 'black');
 const catName = s => (coatNow(s) === 'cookie' ? 'Cookie' : 'Mochi');
-import { mySeasonExp } from '../board.js';
+import { mySeasonExp, setBoardName } from '../board.js';
 import { applyTheme } from '../theme.js';
 import { APP_VERSION, CHANGELOG } from '../changelog.js';
 import { deleteAccount } from '../cloud.js';
@@ -68,6 +68,13 @@ export function render() {
     <div class="sec">You</div>
     <div class="card settings-account">
       ${accountRow()}
+      <div class="srow">
+        <div class="l">
+          <b>Name</b>
+          <small>${esc(s.boardName || (account.user()?.email ? account.emailName(account.user().email) : (s.name || 'Not set')))}</small>
+        </div>
+        <button class="mini" data-act="change-name">Change…</button>
+      </div>
       ${account.user() ? `<div class="srow"><div class="l"><b>Delete account</b><small>Removes your account and everything Levern keeps for you</small></div><button class="mini danger-mini" data-act="acct-delete">Delete…</button></div>` : ''}
       <div class="srow"><div class="l"><b>Welcome screens</b><small>See the introduction again</small></div><button class="mini" data-act="onboard">Show again</button></div>
       <div class="srow"><div class="l"><b>Quick tour</b><small>${catName(s)} shows you around (30 seconds)</small></div><button class="mini" data-act="tour">Start</button></div>
@@ -301,6 +308,7 @@ function accountRow() {
 }
 
 export const actions = {
+  'change-name': () => nameDialog(),
   'acct-delete': () => deleteFlow(),
   'acct-in': async el => {
     el.disabled = true; el.textContent = 'Signing in…';
@@ -396,6 +404,42 @@ export function onInput(el) {
 }
 function rerender() { swap(render({})); }
 export { show, supported };
+
+function nameDialog() {
+  const d = document.getElementById('dialog');
+  if (!d) return;
+  const s = getState().settings;
+  const cur = s.boardName || '';
+  const emailFallback = account.user()?.email ? account.emailName(account.user().email) : '';
+
+  d.innerHTML = `<form method="dialog" class="name-edit-form" style="padding:4px">
+    <h3 style="margin-top:0">Change your name</h3>
+    <p class="small">This name appears on the leaderboard and in your home greeting. If left empty, Levern falls back to the name from your email address.</p>
+    <div style="margin:16px 0">
+      <input class="field" name="boardName" maxlength="24" value="${esc(cur)}" placeholder="${esc(emailFallback || 'Enter your name')}" style="width:100%" autocomplete="off" enterkeyhint="done" autofocus>
+    </div>
+    <div class="row-btns">
+      <button value="cancel" class="btn ghost">Cancel</button>
+      <button value="save" class="btn dark">Save</button>
+    </div>
+  </form>`;
+
+  const f = d.querySelector('form');
+  d.onclose = () => {
+    if (d.returnValue !== 'save') return;
+    const val = f.boardName.value.trim();
+    if (!setBoardName(val)) {
+      toast("That name isn't allowed. Please try another.");
+      return;
+    }
+    if (val) setSetting('name', val, { quiet: true });
+    play('click', 0.5);
+    toast(val ? `Name set to ${val}` : 'Name cleared (using email name)');
+    rerender();
+  };
+  d.returnValue = '';
+  d.showModal();
+}
 
 // Delete account: what goes, a way to keep a copy, an optional reason (anonymous, read only on the backend), and a
 // tick to confirm before the button works. Then cloud.deleteAccount() removes it all.
