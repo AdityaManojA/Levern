@@ -30,6 +30,16 @@ const multiBlock = m => `<label class="check-row" style="margin-top:8px"><input 
   </div>` : ''}`;
 
 
+export function addQuestHeaderHTML() {
+  return `<div class="sheet-h">
+    <div class="sheet-h-left">
+      <button type="button" class="iconbtn sheet-close" data-close aria-label="Close">${ICON.x}</button>
+      <b>New quest</b>
+    </div>
+    <button type="submit" class="btn sm sheet-save" data-save>Save</button>
+  </div>`;
+}
+
 export function openAdd(prefill = {}) {
   // a new quest with a due date reminds at its due time by default; the user can add more before it
   const f = { title: '', tier: 3, due: prefill.due || null, time: null, duration: null, repeat: null, subtasks: [], remindKey: 'none', alerts: DEFAULT_ALERTS.slice(), goal: null };
@@ -38,7 +48,7 @@ export function openAdd(prefill = {}) {
   const ink = { pad: null, rd: null, kind: 'writing', lang: null, refresh: null };
 
   const s = sheet.open(`<form data-addform autocomplete="off">
-    <div class="sheet-h"><b>New quest</b><button type="button" class="mini" data-close>Close</button></div>
+    ${addQuestHeaderHTML()}
     <input class="field" name="title" placeholder="What do you need to do?" aria-label="Quest" enterkeyhint="done">
     <div data-tour="voice" class="tour-wrap"><button type="button" class="mic" data-mic ${speechSupported ? '' : 'disabled'} ${getState().settings.voice ? '' : 'hidden'}>
       <span class="orb">${ICON.mic}</span>

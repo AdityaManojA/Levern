@@ -189,7 +189,7 @@ test('constants: exports correct collection, storage, and service worker names',
   assert.equal(FIRESTORE_COLLECTIONS.PROFILES, 'taskflowProfiles');
   assert.equal(STORAGE_KEYS.STATE, 'taskflow.v1');
   assert.equal(STORAGE_KEYS.EVENTS, 'taskflow-events');
-  assert.equal(SW_CONFIG.CACHE_VERSION, 'taskflow-v78');
+  assert.equal(SW_CONFIG.CACHE_VERSION, 'taskflow-v79');
 });
 
 test('stats: micro-EXP awards 2 EXP per subtask capped at 10 EXP per quest', async () => {
@@ -282,4 +282,19 @@ test('dates: at constructs exact local timestamps across dates and times without
   assert.equal(dMidnight.getDate(), 22);
   assert.equal(dMidnight.getHours(), 0);
   assert.equal(dMidnight.getMinutes(), 0);
+});
+
+test('add view: header contains matching theme x close on left and save button on right', async () => {
+  globalThis.window = globalThis.window || {};
+  globalThis.document = globalThis.document || { querySelector: () => null, addEventListener: () => {} };
+  globalThis.localStorage = globalThis.localStorage || { getItem: () => null, setItem: () => {} };
+  const { addQuestHeaderHTML } = await import('../js/views/add.js');
+  const html = addQuestHeaderHTML();
+  assert.ok(html.includes('sheet-h-left'));
+  assert.ok(html.includes('data-close'));
+  assert.ok(html.includes('sheet-close'));
+  assert.ok(html.includes('<svg') && html.includes('viewBox="0 0 24 24"'));
+  assert.ok(html.includes('sheet-save'));
+  assert.ok(html.includes('Save'));
+  assert.ok(!html.includes('>Close<'));
 });

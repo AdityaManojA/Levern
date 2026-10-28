@@ -348,8 +348,12 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .sheet.open > * { animation: rise .55s var(--ease) both; }
 .sheet.open > *:nth-child(n+3) { animation-delay: 40ms; }
 .grab { width: 44px; height: 5px; border-radius: 3px; background: var(--ink); opacity: .3; margin: 0 auto 10px; }
-.sheet-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.sheet-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
 .sheet-h b { font-size: 21px; }
+.sheet-h-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sheet-h-left b { font-size: 21px; white-space: nowrap; }
+.sheet-close { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
+.sheet-save { min-height: 36px; padding: 0 16px; font-size: 14px; border-radius: 18px; flex-shrink: 0; font-weight: 700; }
 .mic { width: 100%; margin: 10px 0 2px; border: var(--line); border-radius: 20px; background: var(--sky); padding: 12px 14px; display: flex; align-items: center; gap: 12px; text-align: left; }
 .mic .orb { width: 48px; height: 48px; border-radius: 50%; border: var(--line); background: var(--card); flex: none; display: grid; place-items: center; }
 .mic.listening .orb { animation: pulse .8s ease-in-out infinite alternate; background: var(--butter); }
@@ -536,7 +540,7 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .tab .ic { transition: background .35s var(--ease), border-color .35s var(--ease), transform .35s var(--ease); }
 .tab.on .ic { animation: pill .45s var(--ease); }
 @keyframes pill { from { transform: scale(.85); background: transparent; } }
-.tab:active .ic, .add:active, .btn:active, .chk:active, .mini:active, .chip-btn:active { transform: scale(.95); }
+.tab:active .ic, .add:active, .btn:active, .chk:active, .mini:active, .chip-btn:active, .iconbtn:active { transform: scale(.95); }
 .btn, .mini, .chip, .chk, .iconbtn, .seg button, .pick button, .ropts button { transition: background .3s var(--ease), color .3s var(--ease), transform .2s var(--ease), box-shadow .3s var(--ease), opacity .3s var(--ease); }
 .add { transition: transform .25s var(--ease), box-shadow .3s var(--ease); }
 
