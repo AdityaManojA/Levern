@@ -3,6 +3,18 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.11', date: '2026-10-28', title: 'Monochrome Dark, Focus History & Classical Audio',
+    note: 'Introducing Monochrome Dark theme, past focus sessions log, copyright-free classical focus audio, and smoother new quest sheet controls.',
+    tip: 'Check out Settings → Theme to try the new Mono Dark theme!',
+    items: [
+      'Monochrome Dark: A fully inverted, crisp greyscale theme designed for late-night focus sessions.',
+      'Past Focus Sessions: Expand the history dropdown below the focus timer to view your completed sessions and earned EXP.',
+      'Classical Focus Audio: Procedural classical ambiance inspired by Erik Satie’s Gymnopédie No. 1.',
+      'New Quest Controls: Added a prominent Save button and quick-close header icon for easier quest creation.',
+      'Smooth Mascot & Viewport: Fixed desktop scroll jitter and perfected mascot perch animations.',
+    ],
+  },
+  {
     v: '1.10', date: '2026-10-27', title: 'Durations, Micro-EXP, Tags & Ambient Audio',
     note: 'Quests now support durations (e.g. 2 hours at the gym), Micro-EXP for subtasks, hashtag organization, ambient focus sound loops, and interactive mobile notification actions.',
     tip: 'Try #tags like #work or #fitness in your quest titles, and switch on ambient audio in Focus mode!',

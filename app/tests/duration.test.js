@@ -122,18 +122,18 @@ test('calendars: ics and googleLink reflect quest duration', () => {
 });
 
 test('changelog & updatepop: version 1.10 announces duration and notifies once per user per update', () => {
-  const top = CHANGELOG[0];
-  assert.equal(top.v, '1.10');
-  assert.match(top.title.toLowerCase(), /duration/);
+  const entry = CHANGELOG.find(c => c.v === '1.10');
+  assert.ok(entry);
+  assert.match(entry.title.toLowerCase(), /duration/);
 
   assert.equal(newer('1.10', '1.09'), true);
   assert.equal(newer('1.10', '1.10'), false);
 
   const missing = unseen('1.09');
-  assert.equal(missing[0].v, '1.10');
+  assert.ok(missing.some(m => m.v === '1.10'));
 
   // Once marked seen, unseen returns empty
-  const seenAfter = unseen('1.10');
+  const seenAfter = unseen(CHANGELOG[0].v);
   assert.equal(seenAfter.length, 0);
 });
 
@@ -166,10 +166,10 @@ test('reload update notification: triggers once on reload, never again for the s
   };
   globalThis.requestAnimationFrame = fn => fn();
 
-  // First reload: update has not been seen for v1.10 -> returns true and shows notification
+  // First reload: update has not been seen for current version -> returns true and shows notification
   const firstReload = maybeShowUpdate({ onboardingOpen: false, force: true });
   assert.equal(firstReload, true);
-  assert.equal(memStore.get('levern-update-seen'), '1.10');
+  assert.equal(memStore.get('levern-update-seen'), CHANGELOG[0].v);
 
   // Subsequent reload: already marked seen -> returns false and does NOT show again
   const secondReload = maybeShowUpdate({ onboardingOpen: false, force: true });
