@@ -3,26 +3,36 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
-    v: '1.12', date: '2026-10-28', title: 'Mono Accent Themes & 3m+ Classical Focus Music',
-    note: 'Added Mono Light & Dark Accent themes with vibrant priority colors, an upgraded theme picker with live card preview, and 5 full 3+ minute public-domain classical pieces.',
+    v: '1.13', date: '2026-10-28', title: 'Cookie Welcome, Cleaner Look & Plain Language',
+    note: 'Your cat choice now carries through the entire welcome tour, the theme selector is simpler and calmer, and all release notes are written clearly from your perspective as a user.',
+    tip: 'Switch between Mochi and Cookie anytime under Settings → Cat!',
+    items: [
+      'Welcome with Cookie: If Cookie is your cat, he greets you by name during the welcome tour instead of introducing himself as Mochi.',
+      'Calmer Theme Menu: Cleaned up extra emojis and sparkles in the theme picker so it is easy to find your favorite look without visual clutter.',
+      'Clear, Everyday Descriptions: All updates are now explained simply from a user perspective so you always know what is new and how it helps you.',
+    ],
+  },
+  {
+    v: '1.12', date: '2026-10-28', title: 'Mono Accent Themes & Classical Focus Music',
+    note: 'Added Mono Light & Dark Accent themes that spotlight your priority colors, an easier theme selector with a live card preview, and 5 relaxing full-length classical pieces for focus.',
     tip: 'Select your favorite classical piece in Focus mode for deep, continuous concentration!',
     items: [
-      'Mono Accent Themes: Enjoy clean greyscale aesthetics while highlighting all 6 distinct priority colors on quest cards.',
-      'Upgraded Theme Picker: Replaced cluttered swatches with a clean dropdown menu and live preview card showing actual card surfaces and priority dots.',
-      '3+ Min Classical Repertoire: 5 zero-copyright, commercial-safe masterpieces: Satie’s Gymnopédie No. 1, Debussy’s Clair de lune, Bach’s Prelude in C, Beethoven’s Moonlight Sonata, and Chopin’s Nocturne Op. 9 No. 2.',
-      'Pure Classical Focus: Removed old noisy sound loops in favor of rich, continuous classical piano music.',
+      'Mono Accent Themes: A clean, quiet greyscale style that highlights your 6 quest priority colors so urgent tasks stand out immediately.',
+      'Upgraded Theme Picker: A simple dropdown menu and live preview card so you can see exactly how cards and colors look before choosing.',
+      'Long Classical Focus Music: 5 relaxing, full-length classical pieces (over 3 minutes each) to help you get into deep flow: Satie’s Gymnopédie No. 1, Debussy’s Clair de lune, Bach’s Prelude in C, Beethoven’s Moonlight Sonata, and Chopin’s Nocturne.',
+      'Better Focus Sound: Replaced short, repetitive ambient loops with peaceful classical piano music.',
     ],
   },
   {
     v: '1.11', date: '2026-10-28', title: 'Monochrome Dark, Focus History & Classical Audio',
-    note: 'Introducing Monochrome Dark theme, past focus sessions log, copyright-free classical focus audio, and smoother new quest sheet controls.',
+    note: 'Introducing a Monochrome Dark theme for night work, a log of your past focus sessions, peaceful classical focus music, and an easier way to save new quests.',
     tip: 'Check out Settings → Theme to try the new Mono Dark theme!',
     items: [
-      'Monochrome Dark: A fully inverted, crisp greyscale theme designed for late-night focus sessions.',
-      'Past Focus Sessions: Expand the history dropdown below the focus timer to view your completed sessions and earned EXP.',
-      'Classical Focus Audio: Procedural classical ambiance inspired by Erik Satie’s Gymnopédie No. 1.',
-      'New Quest Controls: Added a prominent Save button and quick-close header icon for easier quest creation.',
-      'Smooth Mascot & Viewport: Fixed desktop scroll jitter and perfected mascot perch animations.',
+      'Monochrome Dark: A deep, eye-friendly dark theme in pure greys, perfect for working in low light.',
+      'Past Focus Sessions: A dropdown below the focus timer lets you review all your completed focus sessions and points earned.',
+      'Peaceful Focus Audio: Calming piano music inspired by Erik Satie’s Gymnopédie No. 1 to keep you relaxed and focused.',
+      'Easier Quest Creation: A clear Save button and matching "x" button when creating quests so you never lose your edits.',
+      'Smoother Mascot & Scrolling: Fixed page jitter on desktop and made sure your cat sits smoothly when sheets open.',
     ],
   },
   {
@@ -30,12 +40,12 @@ export const CHANGELOG = [
     note: 'Quests now support durations (e.g. 2 hours at the gym), Micro-EXP for subtasks, hashtag organization, ambient focus sound loops, and interactive mobile notification actions.',
     tip: 'Try #tags like #work or #fitness in your quest titles, and switch on ambient audio in Focus mode!',
     items: [
-      'Quest durations & grace window: Quests with a duration stay active without penalty until the full duration ends.',
-      'Micro-EXP for subtasks: Earn 2 EXP per completed subtask (up to 10 EXP per quest) to stay motivated on larger tasks.',
+      'Quest Durations: Set how long a task takes (like "2 hours at the gym"); overdue warnings wait until your full session is finished.',
+      'Points for Subtasks: Earn 2 EXP every time you check off a subtask, keeping you motivated on bigger projects.',
       'Hashtags & Project Spaces: Add #tags to quest titles and click tags to filter your quests instantly.',
-      'Ambient Focus Audio: Relax with procedural background sounds (cat purring, rain, cafe, white noise) during focus sessions.',
+      'Background Focus Sounds: Relax with gentle background ambiance while your focus timer runs.',
       'Notification Quick Actions & Badge: Mark quests Done or Snooze directly from mobile notifications, with dynamic app badge counts.',
-      'Reliability & Performance: IndexedDB events cache, single audio spritesheet, and Firestore anti-cheat drift protections.',
+      'Fast & Reliable Sync: Offline saving is faster and smoother, sound effects play instantly, and your scores sync safely.',
     ],
   },
   {
@@ -87,7 +97,7 @@ export const CHANGELOG = [
       'A shorter welcome: four screens instead of nine.',
       'An open quest no longer shows its priority twice.',
       'Test reminder shows a sample notification without adding a quest.',
-      'The Developer page and API are gone.',
+      'Removed unused settings to keep the menu simple and uncluttered.',
     ],
   },
   {
@@ -143,7 +153,7 @@ export const CHANGELOG = [
       'Profiles: tap a name on the leaderboard. Make yours public from the Leaderboard to show your ranks, past seasons, streaks, totals and a year of activity; it stays private until you do.',
       'Delete your account and all your data from Settings, any time.',
       'This page: every update, listed here.',
-      'Fixed: the leaderboard flickering and hiding the podium, and a background sync that kept running for nothing.',
+      'Fixed: the leaderboard now loads smoothly without flickering, and uses less battery in the background.',
       'Fixed: example quests (like “Submit lab report” or “Water the plants”) showing up among your own quests after signing in. They are removed from your account and devices.',
     ],
   },

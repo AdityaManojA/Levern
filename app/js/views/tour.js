@@ -6,7 +6,7 @@ import { getState, findQuest } from '../store.js';
 import { sheet, play, esc } from '../ui.js';
 import { openAdd } from './add.js';
 import { mascot } from '../mascot.js';
-import { portrait } from '../mochi.js';
+import { portrait, catLabel } from '../mochi.js';
 import { reduced, EASE } from '../motion.js';
 import { TIER_COLORS } from '../store.js';
 
@@ -19,12 +19,20 @@ const STEPS = [
   // with no quest to open, this step is skipped (an empty #/quest/ would land on "Quest not found")
   { route: () => (subtaskQuest() ? '#/quest/' + encodeURIComponent(subtaskQuest()) : '#/quests?filter=all'), target: '[data-tour="subtasks"]', title: 'Break it down', text: 'Split a quest into subtasks. Each subtask can have its own priority.' },
   { route: '#/calendar', target: '[data-tour="calendar"]', title: 'Plan your week', text: 'See what’s due each day, repeats included. Send everything to Google or Apple Calendar from Settings.' },
-  { route: '#/focus', target: '.focus-card', title: 'Focus mode', text: 'Pick a quest, start the timer and earn 1 EXP for every 5 minutes. Mochi naps while you focus.' },
+  { route: '#/focus', target: '.focus-card', title: 'Focus mode', text: () => `Pick a quest, start the timer and earn 1 EXP for every 5 minutes. ${catLabel()} naps while you focus.` },
   { route: '#/home', target: '#nav', title: 'Get around', text: 'Home, Quests, Calendar and Focus. The + in the middle adds a quest from anywhere.' },
-  { route: '#/settings', target: '[data-tour="mochi-settings"]', title: 'Make it yours', text: 'Set your daily target, reminders, calendars and sounds, rename priorities and tune Mochi here.' },
-  { route: '#/home', target: 'mochi', title: 'Meet Mochi', text: 'Mochi walks along the nav bar, naps, and reacts to what you do. Tap him, he likes it.' },
-  { route: '#/home', target: 'mochi', title: 'Pick him up', text: 'Drag Mochi anywhere along the bar and let go. He lands where you drop him, and he loves it.', last: true, drag: true },
+  { route: '#/settings', target: '[data-tour="mochi-settings"]', title: 'Make it yours', text: () => `Set your daily target, reminders, calendars and sounds, rename priorities and tune ${catLabel()} here.` },
+  { route: '#/home', target: 'mochi', title: () => `Meet ${catLabel()}`, text: () => `${catLabel()} walks along the nav bar, naps, and reacts to what you do. Tap him, he likes it.` },
+  { route: '#/home', target: 'mochi', title: () => `Pick ${catLabel()} up`, text: () => `Drag ${catLabel()} anywhere along the bar and let go. He lands where you drop him, and he loves it.`, last: true, drag: true },
 ];
+
+export function getTourSteps() {
+  return STEPS.map(s => ({
+    ...s,
+    title: typeof s.title === 'function' ? s.title() : s.title,
+    text: typeof s.text === 'function' ? s.text() : s.text,
+  }));
+}
 
 function subtaskQuest() {
   const qs = getState().quests.filter(q => !q.done);
@@ -51,15 +59,22 @@ function build() {
   });
 }
 
-function card() {
-  const s = STEPS[i], hasMochi = !!el('mochi');
-  return `<div class="tour-head"><span class="tour-av"><span data-av></span></span><span class="small">Step ${i + 1} of ${STEPS.length}</span></div>
-    <h2 class="tour-title" tabindex="-1">${esc(s.title)}</h2>
-    <p class="tour-text">${esc(s.text)}</p>
+export function tourCardHTML(stepIndex = i, hasMochi = !!el('mochi')) {
+  const s = STEPS[stepIndex] || STEPS[0];
+  const cat = catLabel();
+  const title = typeof s.title === 'function' ? s.title() : s.title;
+  const text = typeof s.text === 'function' ? s.text() : s.text;
+  return `<div class="tour-head"><span class="tour-av"><span data-av></span></span><span class="small">Step ${stepIndex + 1} of ${STEPS.length}</span></div>
+    <h2 class="tour-title" tabindex="-1">${esc(title)}</h2>
+    <p class="tour-text">${esc(text)}</p>
     ${s.extra ? s.extra() : ''}
-    <div class="tour-dots">${STEPS.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>
-    ${s.last && hasMochi ? `<div class="tour-tapmochi">${s.drag ? 'Drag him, or tap him, to finish' : 'Tap Mochi to finish the tour'}</div>`
+    <div class="tour-dots">${STEPS.map((_, k) => `<i class="${k <= stepIndex ? 'on' : ''}"></i>`).join('')}</div>
+    ${s.last && hasMochi ? `<div class="tour-tapmochi">${s.drag ? `Drag ${cat}, or tap him, to finish` : `Tap ${cat} to finish the tour`}</div>`
       : `<div class="tour-foot"><button type="button" class="link" data-tour-skip>${s.last ? '' : 'Skip tour'}</button><button type="button" class="btn sm" data-tour-next>${s.last ? 'Finish' : 'Next'}</button></div>`}`;
+}
+
+function card() {
+  return tourCardHTML(i, !!el('mochi'));
 }
 
 const wait = ms => new Promise(r => setTimeout(r, ms));

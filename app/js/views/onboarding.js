@@ -7,7 +7,7 @@ import { markCurrentSeen } from '../updatepop.js';
 import { dayExp } from '../stats.js';
 import { esc, play, toast, confirmBox } from '../ui.js';
 import { EASE, EASE_IN, reduced } from '../motion.js';
-import { portrait, sprite } from '../mochi.js';
+import { portrait, sprite, catLabel } from '../mochi.js';
 import * as account from '../account.js';
 import * as cloud from '../cloud.js';
 import * as nudges from '../nudges.js';
@@ -67,12 +67,17 @@ function screen(name) {
       <div class="ob-label" style="margin-top:16px">Notifications</div>
       <p class="ob-p muted small">So reminders reach you on time, even when Levern is in the background.</p>
       ${notifyCard()}`;
-    case 'tour': return `
+    case 'tour': return tourPromptHTML();
+  }
+}
+
+export function tourPromptHTML() {
+  const cat = catLabel();
+  return `
       <div class="ob-center">
-        <div class="ob-speech"><b>Hi, I'm Mochi!</b><p>Want a quick tour? It takes about 30 seconds. I'll show you where your quests live and how to make the app yours.</p></div>
+        <div class="ob-speech"><b>Hi, I'm ${cat}!</b><p>Want a quick tour? It takes about 30 seconds. I'll show you where your quests live and how to make the app yours.</p></div>
         <div class="ob-circle ob-circle-sm" style="background:var(--sky)"><span class="ob-mochi" data-anim="wave" data-scale="1.2"></span></div>
       </div>`;
-  }
 }
 
 function footer() {

@@ -81,10 +81,10 @@ export function render() {
           <option value="light" ${(s.theme || 'light') === 'light' ? 'selected' : ''}>☀️ Light (Day)</option>
           <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>🌙 Dark (Night)</option>
           <option value="mono" ${s.theme === 'mono' || s.theme === 'mono-light' ? 'selected' : ''}>⚪ Monochrome Light</option>
-          <option value="mono-light-accent" ${s.theme === 'mono-light-accent' ? 'selected' : ''}>🎨 Mono Light Accent (Colors on Priorities only)</option>
+          <option value="mono-light-accent" ${s.theme === 'mono-light-accent' ? 'selected' : ''}>Mono Light Accent (Colors on Priorities only)</option>
           <option value="mono-dark" ${s.theme === 'mono-dark' ? 'selected' : ''}>⚫ Monochrome Dark</option>
-          <option value="mono-dark-accent" ${s.theme === 'mono-dark-accent' ? 'selected' : ''}>✨ Mono Dark Accent (Colors on Priorities only)</option>
-          <option value="auto" ${s.theme === 'auto' ? 'selected' : ''}>📱 Follow Device</option>
+          <option value="mono-dark-accent" ${s.theme === 'mono-dark-accent' ? 'selected' : ''}>Mono Dark Accent (Colors on Priorities only)</option>
+          <option value="auto" ${s.theme === 'auto' ? 'selected' : ''}>Follow Device</option>
         </select>
       </div>
       ${(() => {
