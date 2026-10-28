@@ -24,6 +24,7 @@ let V = MOCHI, A = V.anims, catName = 'mochi';
 const has = n => Object.prototype.hasOwnProperty.call(A, n);
 // small sprites elsewhere follow the nav-bar cat; with no cat on the bar they follow the setting
 export const hasAnim = n => { if (!M) useCat(); return has(n); };
+export const animEdge = a => a?.edge ?? (a && (A['edge-peek'] === a || a.name === 'edge-peek' || a.v === MOCHI.anims['edge-peek']?.v || a.v === COOKIE.anims['edge-peek']?.v) ? a.gy : null);
 // ?v= is the strip's version (design/mochi/v3/sync.py): a changed strip is fetched fresh, never mixed with old sizes
 const urlOf = (v, n) => v.base + 'strips/' + n + '.' + (v.ext || 'png') + (v.anims[n] && v.anims[n].v ? '?v=' + v.anims[n].v : '');
 const baseUrl = n => urlOf(V, n);
@@ -186,13 +187,14 @@ export function createMochi(env) {
     act.style.backgroundPosition = `${-(M.fi - 1) * a.w}px 0`;
     el.style.width = a.w + 'px'; el.style.height = a.h + 'px';
     let y = groundY() - a.gy;
-    if (M.perch === 'sheet' && a.edge != null) y = sheetEl().getBoundingClientRect().top - a.edge;
+    const edge = animEdge(a);
+    if (M.perch === 'sheet' && edge != null) y = sheetEl().getBoundingClientRect().top - edge;
     y += M.lift;
     const o = origin();
     el.style.transform = `translate(${M.cx - a.ax - o.x}px, ${y - o.y}px)`;
     flip.style.transform = mirrored(a, M.fi) ? 'scaleX(-1)' : '';
     // On the bar, anything drawn below his paws (a hanging tail, a flop) is cut off, so he never covers the tab icons and labels
-    el.style.clipPath = (M.perch === 'sheet' && a.edge != null) ? `inset(0 0 ${Math.max(0, a.h - a.edge + M.lift)}px 0)`
+    el.style.clipPath = (M.perch === 'sheet' && edge != null) ? `inset(0 0 ${Math.max(0, a.h - edge + M.lift)}px 0)`
       : (M.perch === 'nav' && !M.held && !M.lift) ? `inset(0 0 ${Math.max(0, a.h - a.gy)}px 0)` : '';
     if (M.holding && !M.hidden) {
       const cw = card.offsetWidth || 150, ch = card.offsetHeight || 40;
@@ -218,7 +220,7 @@ export function createMochi(env) {
   // lands on one exact pose, so the copy would show as a second Cookie beside him. Never after a throw either: he
   // has moved since that frame.
   function ghost() {
-    if (M.landed) { M.landed = false; return; }
+    if (M.landed || M.perch === 'sheet') { M.landed = false; return; }
     if (!shown || M.sprint || catName === 'cookie') return;
     ghostEl?.remove();
     const g = el.cloneNode(true); g.removeAttribute('id'); g.className = 'mochi ghost'; g.removeAttribute('tabindex');
@@ -677,14 +679,34 @@ export function createMochi(env) {
         Object.assign(M, { perch: 'sheet', busy: true, state: 'idle', dir: -1 });
         const [a, b] = bounds(); M.cx = (a + b) / 2;
         el.classList.add('over');
+        if (reduced()) {
+          M.lift = 0; M.liftTo = 0;
+          play('edge-peek', { loop: A['edge-peek'].loop });
+          return;
+        }
+        el.style.visibility = 'hidden';
         M.lift = A['edge-peek'].h; M.liftTo = M.lift;
         play('edge-peek', { loop: A['edge-peek'].loop });
         clearTimeout(M.perchT);
-        M.perchT = setTimeout(() => { M.liftRate = 10; M.liftTo = 0; }, 360);
+        M.perchT = setTimeout(() => {
+          if (M.perch !== 'sheet') return;
+          el.style.visibility = '';
+          M.liftRate = 12; M.liftTo = 0;
+        }, 520);
       } else if (M.perch === 'sheet') {
-        clearTimeout(M.perchT); M.liftRate = 24; M.liftTo = A['edge-peek'].h;
-        setTimeout(() => { M.perch = 'nav'; el.classList.remove('over'); M.lift = 0; M.liftTo = 0; const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); card.style.visibility = '';
-          if (M.holding) holdPose(true); else { goRest(); schedule(1.5, 3); } }, 180);
+        clearTimeout(M.perchT);
+        if (reduced()) {
+          M.perch = 'nav'; el.classList.remove('over'); el.style.visibility = ''; M.lift = 0; M.liftTo = 0;
+          const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); card.style.visibility = '';
+          if (M.holding) holdPose(true); else { goRest(); schedule(1.5, 3); }
+          return;
+        }
+        M.liftRate = 24; M.liftTo = A['edge-peek'].h;
+        setTimeout(() => {
+          M.perch = 'nav'; el.classList.remove('over'); el.style.visibility = ''; M.lift = 0; M.liftTo = 0;
+          const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); card.style.visibility = '';
+          if (M.holding) holdPose(true); else { goRest(); schedule(1.5, 3); }
+        }, 180);
       }
     },
     react(name, text, mad) {
