@@ -22,7 +22,7 @@ export const STORAGE_KEYS = Object.freeze({
 });
 
 export const SW_CONFIG = Object.freeze({
-  CACHE_VERSION: 'taskflow-v79',
+  CACHE_VERSION: 'taskflow-v80',
   DB_NAME: 'taskflow-sw',
   DB_STORE: 'kv',
   SYNC_TAG: 'taskflow-reminders',

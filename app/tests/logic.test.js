@@ -189,7 +189,7 @@ test('constants: exports correct collection, storage, and service worker names',
   assert.equal(FIRESTORE_COLLECTIONS.PROFILES, 'taskflowProfiles');
   assert.equal(STORAGE_KEYS.STATE, 'taskflow.v1');
   assert.equal(STORAGE_KEYS.EVENTS, 'taskflow-events');
-  assert.equal(SW_CONFIG.CACHE_VERSION, 'taskflow-v79');
+  assert.equal(SW_CONFIG.CACHE_VERSION, 'taskflow-v80');
 });
 
 test('stats: micro-EXP awards 2 EXP per subtask capped at 10 EXP per quest', async () => {

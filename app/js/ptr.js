@@ -85,16 +85,5 @@ export function setupPullToRefresh({ current, refresh }) {
   addEventListener('touchend', () => { if (start && start.pulling) release(); else start = null; });
   addEventListener('touchcancel', () => { if (start) reset(true); });
 
-  // mouse: press on an empty part of the page at the top and drag down
-  addEventListener('pointerdown', e => {
-    if (e.pointerType !== 'mouse' || e.button !== 0 || !canStart(e.target) || e.target.closest('button, a, [data-act], .q')) return;
-    start = { y: e.clientY, x: e.clientX, pulling: false, mouse: true };
-  });
-  addEventListener('pointermove', e => {
-    if (!start || !start.mouse) return;
-    const dy = e.clientY - start.y;
-    if (!start.pulling) { if (dy > 10) { start.pulling = true; document.body.classList.add('ptr-drag'); } else return; }
-    show(Math.max(0, dy - 10) * 0.9);
-  });
-  addEventListener('pointerup', () => { if (start && start.mouse) { document.body.classList.remove('ptr-drag'); if (start.pulling) release(); else start = null; } });
+  // Pull-to-refresh is touch-only so desktop mouse interaction/scrolling never causes unwanted view translation
 }
