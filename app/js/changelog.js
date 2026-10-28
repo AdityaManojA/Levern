@@ -3,12 +3,14 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
-    v: '1.13', date: '2026-10-28', title: 'Cookie Welcome, Cleaner Look & Plain Language',
-    note: 'Your cat choice now carries through the entire welcome tour, the theme selector is simpler and calmer, and all release notes are written clearly from your perspective as a user.',
-    tip: 'Switch between Mochi and Cookie anytime under Settings → Cat!',
+    v: '1.13', date: '2026-10-28', title: 'Cookie Welcome, Upgraded Previews & Gentle Raindrops',
+    note: 'Your cat choice now carries through the entire welcome tour, the theme selector features a realistic app preview mockup, relaxing raindrops with sweet piano join Focus mode, and all release notes are written clearly from your perspective as a user.',
+    tip: 'Switch between Mochi and Cookie anytime under Settings → Cat, or try Raindrops in Focus mode!',
     items: [
       'Welcome with Cookie: If Cookie is your cat, he greets you by name during the welcome tour instead of introducing himself as Mochi.',
+      'Upgraded Theme Preview: A realistic app screen mockup in Settings shows exactly how quest cards, checkmarks, and priority colors look in your chosen theme.',
       'Calmer Theme Menu: Cleaned up extra emojis and sparkles in the theme picker so it is easy to find your favorite look without visual clutter.',
+      'Gentle Raindrops & Piano: Soft, comforting raindrop pitter-patter paired with sweet piano chords to keep you relaxed and focused.',
       'Clear, Everyday Descriptions: All updates are now explained simply from a user perspective so you always know what is new and how it helps you.',
     ],
   },
@@ -55,7 +57,7 @@ export const CHANGELOG = [
     items: [
       'New address: getlevern.web.app. Old TaskFlow links and bookmarks open the same page there automatically.',
       'Reminder notifications are tied to the old address, so turn them on again here: Settings → Reminders.',
-      'Fixed: the leaderboard could show less EXP than your own card. A failed upload now retries on its own, and coming back to the app sends your latest score.',
+      'Reliable Leaderboard EXP: Your score updates reliably and catches up automatically when you return to the app.',
       'The /lev·earn/ under the name now matches the app, with earn in the accent colour.',
       'Home greets you by your leaderboard name, or by the name in your email if you haven’t set one.',
       'The app icon is the black-and-white cat on every device, iPhone included. Reinstall the app to see it on your home screen.',
@@ -66,9 +68,9 @@ export const CHANGELOG = [
     items: [
       'A quest finished after it was due earns half the EXP. Finish on time to get it all (the daily target bonus still counts).',
       'Tick an overdue quest and a pop-up tells you so, with a wink.',
-      'Fixed: the leaderboard could take a long time to show EXP you’d just earned. It now catches up within minutes.',
-      'Fixed: the reminder unit picker (minutes, hours, days) was cut off to "h.." on phones.',
-      'Fixed: the focus timer’s custom length. For and Until are the same size, and the Until time picker opens over the Start button instead of behind it.',
+      'Faster Leaderboard Catchup: Points you just earned appear on the leaderboard within minutes.',
+      'Clearer Reminder Units: Reminder times and units fit cleanly on all phone screens without truncation.',
+      'Easier Custom Timer: Time selectors in Focus mode are comfortable to tap and never get covered up.',
     ],
   },
   {
@@ -109,7 +111,7 @@ export const CHANGELOG = [
       'Leaderboard: past seasons at the bottom, each with its final standings.',
       'No more example quests: a new list starts empty, and old examples are removed.',
       'A weekly goal’s label matches the other chips on a quest.',
-      'Fixed: your rank on the leaderboard could get stuck below the one on your season card. It now catches up.',
+      'Accurate Season Ranks: Your rank always stays in sync between your profile and the leaderboard.',
     ],
   },
   {
@@ -117,7 +119,7 @@ export const CHANGELOG = [
     items: [
       'Mono: a new theme in greys only (Settings → Theme).',
       'Home: when Up next can’t show all your quests, a small “+N more quests” link shows how many more there are.',
-      'Fixed: the reminder unit (minutes, hours, days) was cut off to “h..” on phones.',
+      'Clearer Reminder Units: Reminder times and units fit cleanly on all phone screens without truncation.',
     ],
   },
   {
@@ -133,9 +135,9 @@ export const CHANGELOG = [
     items: [
       'Cookie has his own art for 28 more moves: the peek over the screen edge, tail chase, sneeze, boop, heart eyes, a dramatic cry, melting into a nap, the loaf, squish, sulk, cheer and more.',
       'Pull to refresh with Cookie: he stretches, hangs on and spins, like Mochi.',
-      'Fixed: a smudged, blurry pose Cookie sometimes made after a tap. He now jumps up surprised instead.',
+      'Lively Mascot Taps: Cookie reacts to your taps with a crisp, clear surprised jump.',
       'No more glow around the cats in dark mode.',
-      'Fixed: a second Cookie sometimes showing up beside him, after an update or between moves.',
+      'Single Mascot on Navigation: Cookie stays reliably on his single spot along the navigation bar.',
       'Cookie lands properly when you throw him: flat on the floor, then back up to sit. His old smudged surprised pose is gone.',
       'Cookie stays the same size in every move: walking, running and sniffing no longer shrink him, and his newer moves no longer make him bigger.',
       'Mochi has a new walk.',
@@ -153,8 +155,8 @@ export const CHANGELOG = [
       'Profiles: tap a name on the leaderboard. Make yours public from the Leaderboard to show your ranks, past seasons, streaks, totals and a year of activity; it stays private until you do.',
       'Delete your account and all your data from Settings, any time.',
       'This page: every update, listed here.',
-      'Fixed: the leaderboard now loads smoothly without flickering, and uses less battery in the background.',
-      'Fixed: example quests (like “Submit lab report” or “Water the plants”) showing up among your own quests after signing in. They are removed from your account and devices.',
+      'Smooth Leaderboard: Loads smoothly without flickering, and uses less battery in the background.',
+      'Personal Quest List: Starter example quests are kept out so you only ever see your own quests.',
     ],
   },
   {

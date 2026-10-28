@@ -90,22 +90,66 @@ export function render() {
       ${(() => {
         const info = themeInfo(s.theme || 'light');
         const isDark = (s.theme || '').includes('dark');
-        return `<div class="theme-preview-card" style="background:${info.bg};color:${info.ink};border:2px solid var(--edge);border-radius:14px;padding:12px 14px;margin-top:6px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
-            <b style="font-size:13px">${info.label}</b>
-            <span class="small" style="opacity:0.8">${info.desc}</span>
+        return `<div class="theme-preview-card" style="background:${info.bg};color:${info.ink};border:2px solid var(--edge);border-radius:16px;padding:14px;margin-top:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(128,128,128,0.18)">
+            <div>
+              <b style="font-size:13px">${info.label}</b>
+              <div class="small" style="opacity:0.8">${info.desc}</div>
+            </div>
+            <span class="small" style="font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(128,128,128,0.15)">Live Preview</span>
           </div>
-          <div style="background:${info.card};border:1.5px solid rgba(128,128,128,0.25);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:10px">
-            <div style="width:16px;height:16px;border-radius:5px;border:2px solid ${info.pri[0]};background:${isDark ? 'transparent' : info.pri[0]};flex:none"></div>
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:700;font-size:13px;line-height:1.2">Sample quest card</div>
-              <div class="small" style="opacity:0.75;font-size:11px">Due at 4:00 PM · P1 Critical</div>
+
+          <div class="theme-mini-phone" style="background:${info.bg};border:1.5px solid rgba(128,128,128,0.25);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;opacity:0.85">
+              <span>Today's Quests</span>
+              <span class="small">2 done · 35 EXP</span>
+            </div>
+
+            <div class="theme-mini-card" style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px">
+              <div style="width:14px;height:14px;border-radius:4px;border:2px solid ${info.pri[0]};background:${isDark ? 'transparent' : info.pri[0] + '33'};flex:none"></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;font-weight:600;line-height:1.2">Launch project update</div>
+                <div style="font-size:10px;opacity:0.75;display:flex;align-items:center;gap:4px;margin-top:2px">
+                  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${info.pri[0]}"></span>
+                  <span>Due 4:00 PM · P1 Critical</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="theme-mini-card" style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px">
+              <div style="width:14px;height:14px;border-radius:4px;border:2px solid ${info.pri[2]};background:${isDark ? 'transparent' : info.pri[2] + '33'};flex:none"></div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;font-weight:600;line-height:1.2">Review team feedback</div>
+                <div style="font-size:10px;opacity:0.75;display:flex;align-items:center;gap:4px;margin-top:2px">
+                  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${info.pri[2]}"></span>
+                  <span>Tomorrow · P3 Medium</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="theme-mini-card" style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px;opacity:0.65">
+              <div style="width:14px;height:14px;border-radius:4px;background:${isDark ? '#46D19E' : '#22C55E'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:900;flex:none">✓</div>
+              <div style="flex:1;min-width:0;text-decoration:line-through;font-size:12px;font-weight:500">Morning run & stretch</div>
+              <span style="font-size:10px;font-weight:700;color:var(--mint, #22c55e)">+10 EXP</span>
+            </div>
+
+            <div style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:5px 12px;display:flex;justify-content:space-around;font-size:10px;font-weight:600;opacity:0.8">
+              <span style="color:${info.pri[0]};font-weight:700">Quests</span>
+              <span>Focus</span>
+              <span>Stats</span>
+              <span>Settings</span>
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-            <span class="small" style="font-weight:700;font-size:11px;opacity:0.85">Priorities:</span>
-            <div style="display:flex;gap:5px;flex:1">
-              ${info.pri.map((col, idx) => `<div title="P${idx+1}" style="flex:1;height:12px;border-radius:4px;background:${col};border:1px solid rgba(0,0,0,0.12)"></div>`).join('')}
+
+          <div style="margin-top:10px">
+            <div style="font-size:11px;font-weight:700;opacity:0.85;margin-bottom:6px">Priorities:</div>
+            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:5px">
+              ${['P1 Critical', 'P2 High', 'P3 Medium', 'P4 Normal', 'P5 Low', 'P6 Someday'].map((label, idx) => `
+                <div style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:6px;padding:4px 6px;display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600">
+                  <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${info.pri[idx]};flex:none"></span>
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span>
+                </div>
+              `).join('')}
             </div>
           </div>
         </div>`;

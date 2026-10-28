@@ -306,6 +306,65 @@ function genChopin(data, len, sr) {
   }
 }
 
+// 6. Raindrops & Sweet Comforting Piano (~195s / 3:15)
+// Delicate, soft raindrop pitter-patter paired with sweet, heartwarming piano chords.
+function genRain(data, len, sr) {
+  // A. Sweet comforting piano chord progression
+  const chords = [
+    { bass: 50, notes: [62, 66, 69, 73], mel: [78, 76] }, // Dmaj9
+    { bass: 45, notes: [57, 60, 64, 69], mel: [73, 71] }, // F#m7 / A
+    { bass: 43, notes: [55, 59, 62, 67], mel: [71, 74] }, // Gmaj7
+    { bass: 45, notes: [57, 62, 64, 69], mel: [76, 74] }, // Asus4
+    { bass: 50, notes: [62, 66, 69, 73], mel: [81, 78] }, // Dmaj9 high
+    { bass: 47, notes: [59, 62, 66, 71], mel: [78, 74] }, // Bm7
+    { bass: 43, notes: [55, 59, 62, 67], mel: [74, 73] }, // Gmaj7
+    { bass: 45, notes: [57, 61, 64, 69], mel: [71, 69] }, // A
+  ];
+
+  const chordDur = 4.8;
+  let t = 0.0;
+  for (let cycle = 0; cycle < 5 && t < 190; cycle++) {
+    for (const c of chords) {
+      if (t >= 192) break;
+      renderPianoNote(data, len, sr, t, c.bass, chordDur * 0.9, 0.28);
+      c.notes.forEach((m, idx) => {
+        renderPianoNote(data, len, sr, t + idx * 0.45, m, 2.5, 0.16);
+      });
+      c.mel.forEach((m, idx) => {
+        renderPianoNote(data, len, sr, t + 1.8 + idx * 1.4, m, 2.2, 0.24);
+      });
+      t += chordDur;
+    }
+  }
+
+  // B. Gentle, delicate raindrop pitter-patter (soft acoustic water droplets)
+  let dropT = 0.05;
+  let seed = 42;
+  const pseudoRand = () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  };
+
+  while (dropT < (len / sr) - 0.2) {
+    const interval = 0.14 + pseudoRand() * 0.28;
+    dropT += interval;
+    const startIdx = Math.floor(dropT * sr);
+    if (startIdx >= len) break;
+
+    const startFreq = 1600 + pseudoRand() * 1100;
+    const dropDuration = 0.025 + pseudoRand() * 0.035;
+    const dropSamples = Math.floor(dropDuration * sr);
+    const dropVol = 0.05 + pseudoRand() * 0.07;
+
+    for (let i = 0; i < dropSamples && (startIdx + i) < len; i++) {
+      const dt = i / sr;
+      const f = startFreq * (1 - dt * 15);
+      const env = Math.exp(-dt * 90);
+      data[startIdx + i] += Math.sin(2 * Math.PI * f * dt) * env * dropVol * 0.35;
+    }
+  }
+}
+
 export function playAmbient(kind = currentKind) {
   if (kind === 'classical') kind = 'satie';
   if (!kind || kind === 'none') {
@@ -321,7 +380,8 @@ export function playAmbient(kind = currentKind) {
   }
 
   if (!BUFFERS.has(kind)) {
-    if (kind === 'satie') BUFFERS.set('satie', createLoopBuffer(genSatie, 195.0));
+    if (kind === 'raindrops') BUFFERS.set('raindrops', createLoopBuffer(genRain, 195.0));
+    else if (kind === 'satie') BUFFERS.set('satie', createLoopBuffer(genSatie, 195.0));
     else if (kind === 'debussy') BUFFERS.set('debussy', createLoopBuffer(genDebussy, 200.0));
     else if (kind === 'bach') BUFFERS.set('bach', createLoopBuffer(genBach, 195.0));
     else if (kind === 'beethoven') BUFFERS.set('beethoven', createLoopBuffer(genBeethoven, 210.0));
@@ -352,7 +412,7 @@ export function stopAmbient() {
 
 export function setAmbientKind(kind) {
   if (kind === 'classical') kind = 'satie';
-  const valid = ['satie', 'debussy', 'bach', 'beethoven', 'chopin'];
+  const valid = ['raindrops', 'satie', 'debussy', 'bach', 'beethoven', 'chopin'];
   if (!valid.includes(kind)) kind = 'none';
   currentKind = kind;
   if (enabled && currentKind !== 'none') {
