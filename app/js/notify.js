@@ -3,7 +3,7 @@
 import { kv } from './storage.js';
 import { dlog } from './debuglog.js';
 
-export const supported = 'Notification' in window;
+export const supported = typeof window !== 'undefined' && 'Notification' in window;
 let reg = null;
 const listeners = new Set();
 

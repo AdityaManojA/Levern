@@ -3,7 +3,7 @@
 // The timer runs off timestamps saved in the store, so it survives reloads and background tabs.
 import { getState, findQuest, startTimer, pauseTimer, resumeTimer, stopTimer, timerElapsed, logSession, sortQuests, tierLabel, TIER_COLORS, setSetting } from '../store.js';
 import { focusExp } from '../stats.js';
-import { toStr, minutesUntil } from '../dates.js';
+import { toStr, minutesUntil, fmtStamp } from '../dates.js';
 import { swap } from '../motion.js';
 import { esc, ICON, toast, play } from '../ui.js';
 import { show } from '../notify.js';
@@ -34,6 +34,8 @@ export function render(params) {
   const today = toStr(new Date());
   const sessions = st.sessions.filter(x => toStr(new Date(x.endedAt)) === today);
   const mins = sessions.reduce((a, x) => a + x.minutes, 0);
+  const allSessions = st.sessions || [];
+  const totalMins = allSessions.reduce((a, x) => a + (x.minutes || 0), 0);
   const R = 46, C = 2 * Math.PI * R;
   // Parts that only belong to one state live in collapsible wrappers (.zc). They are drawn in the state
   // the screen was in before, then eased to the new state on the next frame (see mount), so pressing
@@ -66,14 +68,13 @@ export function render(params) {
       ${zc(false, `<div class="chips" style="justify-content:center;padding-bottom:12px">${chips}</div>${customBox}`)}
       <div class="ambient-control">
         <button type="button" class="chip chip-btn ${isAmbientActive() ? 'on' : ''}" data-act="ambient-toggle" aria-label="Toggle ambient sound">
-          ${isAmbientActive() ? '🔊' : '🔇'} Ambient: <b>${{ none: 'Off', purr: '🐱 Purr', rain: '🌧️ Rain', cafe: '☕ Cafe', whitenoise: '💨 White Noise' }[getAmbientKind()] || 'Off'}</b>
+          ${isAmbientActive() ? '🔊' : '🔇'} Ambient: <b>${{ none: 'Off', rain: '🌧️ Rain', cafe: '☕ Cafe', classical: '🎻 Classical' }[getAmbientKind()] || 'Off'}</b>
         </button>
         <select class="field ambient-select" data-change="ambient-kind" aria-label="Select ambient audio">
           <option value="none" ${getAmbientKind() === 'none' ? 'selected' : ''}>Off</option>
-          <option value="purr" ${getAmbientKind() === 'purr' ? 'selected' : ''}>🐱 Cat Purring</option>
           <option value="rain" ${getAmbientKind() === 'rain' ? 'selected' : ''}>🌧️ Gentle Rain</option>
-          <option value="cafe" ${getAmbientKind() === 'cafe' ? 'selected' : ''}>☕ Cafe Murmur</option>
-          <option value="whitenoise" ${getAmbientKind() === 'whitenoise' ? 'selected' : ''}>💨 White Noise</option>
+          <option value="cafe" ${getAmbientKind() === 'cafe' ? 'selected' : ''}>☕ Cafe Background</option>
+          <option value="classical" ${getAmbientKind() === 'classical' ? 'selected' : ''}>🎻 Classical (Gymnopédie)</option>
         </select>
       </div>
       <div class="row-btns fbtns">
@@ -88,7 +89,32 @@ export function render(params) {
     </div>`)}
     ${sessions.length ? zc(false, `<div class="sec">Today's sessions</div><div class="card">${sessions.slice().reverse().map(x => { const sq = findQuest(x.questId);
       return `<div class="hist"><span>${sq ? esc(sq.title) : 'Focus'}</span><span class="small">${x.minutes} min · ${new Date(x.endedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div>`; }).join('')}</div>`) : ''}
-    ${zc(false, '<p class="small" style="margin-top:8px">Stopping early still counts the minutes you focused (from 1 minute).</p>')}`;
+    ${zc(false, '<p class="small" style="margin-top:8px">Stopping early still counts the minutes you focused (from 1 minute).</p>')}
+    ${zc(false, `<details class="card past-focus-details">
+      <summary class="past-focus-summary">
+        <span class="past-focus-sum-title">See Past Focus Sessions</span>
+        <span class="small past-focus-meta">${allSessions.length} session${allSessions.length === 1 ? '' : 's'}${allSessions.length ? ` · ${totalMins} min` : ''}</span>
+      </summary>
+      <div class="past-focus-body">
+        ${allSessions.length
+          ? allSessions.slice().reverse().map(x => {
+              const sq = findQuest(x.questId);
+              const exp = focusExp(x.minutes || 0);
+              return `<div class="past-focus-row">
+                <div class="past-focus-left">
+                  <span class="past-focus-title">${sq ? esc(sq.title) : 'Focus (no quest)'}</span>
+                  <span class="past-focus-time">${fmtStamp(x.endedAt)}</span>
+                </div>
+                <div class="past-focus-right">
+                  <span class="past-focus-mins">${x.minutes} min</span>
+                  ${exp > 0 ? `<span class="past-focus-exp">+${exp} EXP</span>` : ''}
+                </div>
+              </div>`;
+            }).join('')
+          : '<p class="small" style="text-align:center;padding:14px 0;margin:0;color:var(--muted)">No focus sessions recorded yet. Completed sessions will show here.</p>'
+        }
+      </div>
+    </details>`)}`;
 }
 
 function finish(early) {
@@ -143,7 +169,8 @@ export function checkTimer() {
   const t = getState().timer;
   if (t && !t.pausedAt && timerElapsed(t) >= t.minutes * 60000) finish(false);
 }
-setInterval(checkTimer, 5000);
+const checkTimerInterval = setInterval(checkTimer, 5000);
+checkTimerInterval?.unref?.();
 
 export const actions = {
   fmode: el => { pickMode = el.dataset.m; rerender(); },
@@ -152,7 +179,7 @@ export const actions = {
   'ambient-toggle': () => {
     if (isAmbientActive()) stopAmbient();
     else {
-      if (getAmbientKind() === 'none') setAmbientKind('purr');
+      if (getAmbientKind() === 'none') setAmbientKind('rain');
       playAmbient();
     }
     rerender();
@@ -176,6 +203,7 @@ export const actions = {
 export function onChange(el) {
   const k = el.dataset.change;
   if (k === 'fquest') pickQuest = el.value;
+  if (k === 'ambient-kind') { setAmbientKind(el.value); rerender(); return; }
   if (!custom) return;
   if (k === 'fch' || k === 'fcm') {
     const box = el.closest('.fc-len'), [h, m] = [...box.querySelectorAll('input')].map(i => Math.max(0, Math.floor(+i.value || 0)));

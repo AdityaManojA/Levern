@@ -4,7 +4,7 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v81';
+const VERSION = 'taskflow-v82';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/constants.js', 'js/ambient.js', 'js/alerts.js', 'js/debuglog.js', 'js/goals.js', 'js/leaderboardnudge.js', 'js/multi.js', 'js/notifyhelp.js', 'js/push.js', 'js/signinlog.js', 'js/timewheel.js',
