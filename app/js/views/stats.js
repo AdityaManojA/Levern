@@ -24,7 +24,7 @@ export function render() {
     <div class="grid2 grid4">
       <div class="stat" style="background:var(--mint)"><div class="k">Quests done</div><div class="v">${sum.totalDone}</div><div class="s">all time</div></div>
       <div class="stat" style="background:var(--coral)"><div class="k">Streak</div><div class="v">${sum.current}</div><div class="s">best ${sum.best} day${sum.best === 1 ? '' : 's'}</div></div>
-      <div class="stat" style="background:var(--butter)"><div class="k">EXP</div><div class="v">${sum.exp.toLocaleString()}</div><div class="s">+${sum.todayExp} today</div></div>
+      <div class="stat" style="background:var(--butter)"><div class="k">EXP</div><div class="v">${sum.exp.toLocaleString()}</div><div class="s">+${sum.todayExp} today${sum.isDailyCapReached ? ' · 55 cap' : ''}</div></div>
       <div class="stat" style="background:var(--sky)"><div class="k">Focus</div><div class="v">${Math.floor(sum.focusMin / 60)}h ${sum.focusMin % 60}m</div><div class="s">all time</div></div>
     </div>
     <div class="card">

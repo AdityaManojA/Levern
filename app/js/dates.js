@@ -9,6 +9,40 @@ export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', '
 export const toStr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const fromStr = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 export const todayStr = (now = new Date(Date.now())) => toStr(now);
+
+// Indian Standard Time (IST, UTC+05:30) helpers for daily EXP cap, fair play, and midnight reset
+export const IST_OFFSET_MS = 5.5 * 3600000;
+export function toStrIST(date = new Date()) {
+  const ms = typeof date === 'number' ? date : (date instanceof Date ? date.getTime() : Date.now());
+  const d = new Date(ms + IST_OFFSET_MS);
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}
+export const todayStrIST = (now = new Date()) => toStrIST(now);
+
+// Next 12:00 AM IST (midnight) timestamp in ms
+export function nextMidnightIST(now = new Date()) {
+  const ms = typeof now === 'number' ? now : (now instanceof Date ? now.getTime() : Date.now());
+  const todayIST = toStrIST(ms);
+  const nextIST = addDays(todayIST, 1);
+  const [y, m, d] = nextIST.split('-').map(Number);
+  return Date.UTC(y, m - 1, d, 0, 0, 0, 0) - IST_OFFSET_MS;
+}
+
+// Milliseconds until the next 12:00 AM IST reset
+export function msUntilResetIST(now = new Date()) {
+  const ms = typeof now === 'number' ? now : (now instanceof Date ? now.getTime() : Date.now());
+  return Math.max(0, nextMidnightIST(ms) - ms);
+}
+
+// Friendly duration string until next 12:00 AM IST, e.g. "5h 22m" or "30m"
+export function formatTimeUntilResetIST(now = new Date()) {
+  const remMs = msUntilResetIST(now);
+  const mins = Math.floor(remMs / 60000);
+  const h = Math.floor(mins / 60), m = mins % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
 export function addDays(s, n) { const d = fromStr(s); d.setDate(d.getDate() + n); return toStr(d); }
 export function addMonths(s, n) {
   const d = fromStr(s), day = d.getDate();

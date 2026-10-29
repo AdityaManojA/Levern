@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.16', date: '2026-10-29', title: 'Fair Play Daily EXP Cap & Smooth Scoped Quest Lists',
+    note: 'Daily EXP is now paced at 55 full points per day with reduced XP after the cap to encourage genuine focus and fair leaderboard progression, plus refreshing from home directly checks for app updates and quest lists scroll cleanly while tabs stay pinned.',
+    tip: 'Your daily EXP cap resets every night at 12:00 AM Indian Standard Time (midnight)!',
+    items: [
+      'Fair Play Daily 55 EXP Cap: You earn full points on up to 55 EXP each day across quests, focus timers, and subtasks. Points earned beyond 55 in a day grant reduced XP to protect leaderboard integrity and keep pacing calm.',
+      'Daily Cap Reminder: A helpful pop-up lets you know as soon as you reach the 55 EXP cap, with the exact refresh time (tomorrow at 12:00 AM IST / midnight).',
+      'Pinned Header & Scoped Quest Scrolling: Scrolling through Today, Upcoming, Someday, Done, or All now moves only the quest cards, keeping your filter tabs, tags, and search toolbar comfortably pinned in view.',
+      'Instant Refresh & In-App Updates: Pulling down on the Home screen or list now runs a complete cloud sync, calendar refresh, and automatically checks for and activates the newest app update without manual browser refreshes.',
+    ],
+  },
+  {
     v: '1.15', date: '2026-10-28', title: 'Better Settings Layout, Easy Data Controls & Instant Offline Access',
     note: 'Settings are now neatly arranged with your daily schedule near the top, Your Data features clean individual actions with clear descriptions, and your quests load immediately even when you turn off the network.',
     tip: 'Review your backup and data options in Settings → Your Data anytime to keep an offline backup file!',

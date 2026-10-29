@@ -1,16 +1,27 @@
 // Stats and history, computed from the completion log and focus sessions.
 // history: [{ questId, title, tier, doneAt }]   sessions: [{ questId, minutes, endedAt }]
-import { toStr, todayStr, addDays, fromStr } from './dates.js';
+import { toStr, todayStr, addDays, fromStr, toStrIST, todayStrIST, nextMidnightIST, formatTimeUntilResetIST } from './dates.js';
 
 // Daily EXP (design brief): 20 x share of the daily target done, +10 bonus when the target is hit. A quest finished
 // after it was due counts as half (LATE) toward the share: on time pays more. The bonus goes by the quests done.
 // count: the day's quests weighed that way; done: how many were done (defaults to count)
 export const LATE = 0.5;
 export const dayExp = (count, target, done = count) => Math.round(20 * Math.min(1, count / target)) + (done >= target ? 10 : 0);
+
+// Daily EXP Cap & Fair Play Protection (IST):
+// Users can earn up to 55 points per day at full rate.
+// Beyond 55 points, extra points are awarded at reduced XP (50% rate).
+export const DAILY_EXP_CAP = 55;
+export const REDUCED_EXP_RATE = 0.5;
+
+export function applyDailyCap(rawExp, cap = DAILY_EXP_CAP, rate = REDUCED_EXP_RATE) {
+  if (rawExp <= cap) return rawExp;
+  return cap + Math.floor((rawExp - cap) * rate);
+}
 // each day's quests weighed for EXP: 1 on time, LATE when done after it was due (history entries marked late)
 export function weightsByDay(history) {
   const m = new Map();
-  for (const h of history) { const d = toStr(new Date(h.doneAt)); m.set(d, (m.get(d) || 0) + (h.late ? LATE : 1)); }
+  for (const h of history) { const d = toStrIST(h.doneAt); m.set(d, (m.get(d) || 0) + (h.late ? LATE : 1)); }
   return m;
 }
 // Focus EXP: 1 point per 5 focused minutes (a 25 min session = 5 EXP).
@@ -26,10 +37,10 @@ export function subtasksExp(quests = []) {
   return exp;
 }
 
-export function todaySubtasksExp(quests = [], today = todayStr()) {
+export function todaySubtasksExp(quests = [], today = todayStrIST()) {
   let exp = 0;
   for (const q of quests) {
-    const doneToday = (q.subtasks || []).filter(s => s.done && (!s.doneAt || toStr(new Date(s.doneAt)) === today)).length;
+    const doneToday = (q.subtasks || []).filter(s => s.done && (!s.doneAt || toStrIST(s.doneAt) === today)).length;
     exp += Math.min(10, doneToday * 2);
   }
   return exp;
@@ -37,13 +48,13 @@ export function todaySubtasksExp(quests = [], today = todayStr()) {
 
 export function countsByDay(history) {
   const m = new Map();
-  for (const h of history) { const d = toStr(new Date(h.doneAt)); m.set(d, (m.get(d) || 0) + 1); }
+  for (const h of history) { const d = toStrIST(h.doneAt); m.set(d, (m.get(d) || 0) + 1); }
   return m;
 }
 
 // Current streak: consecutive days hitting the target, ending today (or yesterday while today is still open).
 export function streaks(history, target, now = new Date()) {
-  const by = countsByDay(history), today = todayStr(now);
+  const by = countsByDay(history), today = todayStrIST(now);
   const kept = d => (by.get(d) || 0) >= target;
   let d = kept(today) ? today : addDays(today, -1), current = 0;
   while (kept(d)) { current++; d = addDays(d, -1); }
@@ -55,23 +66,66 @@ export function streaks(history, target, now = new Date()) {
 
 export function lastDays(history, sessions, target, n, now = new Date()) {
   const by = countsByDay(history), w = weightsByDay(history), fm = new Map();
-  for (const s of sessions) { const d = toStr(new Date(s.endedAt)); fm.set(d, (fm.get(d) || 0) + s.minutes); }
-  const today = todayStr(now);
+  for (const s of sessions) { const d = toStrIST(s.endedAt); fm.set(d, (fm.get(d) || 0) + s.minutes); }
+  const today = todayStrIST(now);
   return Array.from({ length: n }, (_, i) => {
     const date = addDays(today, i - n + 1), count = by.get(date) || 0, focus = fm.get(date) || 0;
-    return { date, count, focus, exp: (count ? dayExp(w.get(date), target, count) : 0) + focusExp(focus) };
+    const raw = (count ? dayExp(w.get(date), target, count) : 0) + focusExp(focus);
+    return { date, count, focus, exp: applyDailyCap(raw) };
   });
 }
 
 export function summary(history, sessions, target, now = new Date(), quests = []) {
+  const today = todayStrIST(now);
   const by = countsByDay(history), w = weightsByDay(history);
+
+  const fm = new Map();
+  for (const s of sessions) {
+    const d = toStrIST(s.endedAt);
+    fm.set(d, (fm.get(d) || 0) + s.minutes);
+  }
+
+  const sm = new Map();
+  for (const q of quests) {
+    const subs = q.subtasks || [];
+    const qDays = new Map();
+    for (const sub of subs) {
+      if (!sub.done) continue;
+      const d = sub.doneAt ? toStrIST(sub.doneAt) : today;
+      qDays.set(d, (qDays.get(d) || 0) + 1);
+    }
+    for (const [d, count] of qDays) {
+      sm.set(d, (sm.get(d) || 0) + Math.min(10, count * 2));
+    }
+  }
+
+  const allDays = new Set([...by.keys(), ...fm.keys(), ...sm.keys()]);
+  if (!allDays.has(today)) allDays.add(today);
+
   let exp = 0;
-  for (const [d, c] of by) exp += dayExp(w.get(d), target, c);
+  for (const d of allDays) {
+    const c = by.get(d) || 0;
+    const qExp = c ? dayExp(w.get(d), target, c) : 0;
+    const fExp = focusExp(fm.get(d) || 0);
+    const sExp = sm.get(d) || 0;
+    exp += applyDailyCap(qExp + fExp + sExp);
+  }
+
   const focusMin = sessions.reduce((a, s) => a + s.minutes, 0);
-  for (const s of sessions) exp += focusExp(s.minutes);
   const subExp = subtasksExp(quests);
-  exp += subExp;
-  const today = todayStr(now), month = today.slice(0, 7);
+
+  const todayCount = by.get(today) || 0;
+  const todayFocus = fm.get(today) || 0;
+  const todaySubExp = sm.get(today) || 0;
+  const todayQuestExp = todayCount ? dayExp(w.get(today), target, todayCount) : 0;
+  const todayFocusExp = focusExp(todayFocus);
+  const todayRawExp = todayQuestExp + todayFocusExp + todaySubExp;
+  const todayExp = applyDailyCap(todayRawExp);
+  const isDailyCapReached = todayRawExp >= DAILY_EXP_CAP;
+  const nextResetMs = nextMidnightIST(now);
+  const nextResetLabel = 'Tomorrow at 12:00 AM IST';
+
+  const month = today.slice(0, 7);
   const daysInMonthSoFar = +today.slice(8, 10);
   const keptThisMonth = [...by.entries()].filter(([d, c]) => d.startsWith(month) && c >= target).length;
   const tiers = [0, 0, 0, 0, 0, 0];
@@ -81,12 +135,10 @@ export function summary(history, sessions, target, now = new Date(), quests = []
     const validTier = Number.isInteger(t) && t >= 0 && t <= 5 ? t : 3;
     tiers[validTier]++;
   }
-  const todayCount = by.get(today) || 0;
-  const todayFocus = sessions.filter(s => toStr(new Date(s.endedAt)) === today).reduce((a, s) => a + s.minutes, 0);
-  const todaySubExp = todaySubtasksExp(quests, today);
+
   return {
-    totalDone: history.length, exp, focusMin, todayCount, todayFocus, subExp,
-    todayExp: (todayCount ? dayExp(w.get(today), target, todayCount) : 0) + sessions.filter(s => toStr(new Date(s.endedAt)) === today).reduce((a, s) => a + focusExp(s.minutes), 0) + todaySubExp,
+    totalDone: history.length, exp, todayRawExp, todayExp, dailyCap: DAILY_EXP_CAP, isDailyCapReached,
+    nextResetMs, nextResetLabel, focusMin, todayCount, todayFocus, subExp, todaySubExp,
     keptThisMonth, daysInMonthSoFar, tiers, ...streaks(history, target, now),
   };
 }
@@ -103,13 +155,42 @@ export const seasonRange = n => ({ start: n <= 1 ? FIRST_SEASON_FROM : SEASON_EP
 // EXP earned inside one season (same rules as the all-time EXP)
 export function seasonExp(history, sessions, target, n = seasonOf(), quests = []) {
   const { start, end } = seasonRange(n), inside = ms => ms >= start && ms < end;
-  let exp = 0;
-  const w = weightsByDay(history);
-  for (const [d, c] of countsByDay(history)) if (inside(fromStr(d).getTime())) exp += dayExp(w.get(d), target, c);
-  for (const s of sessions) if (inside(s.endedAt)) exp += focusExp(s.minutes);
+
+  const inSeasonHist = history.filter(h => inside(h.doneAt));
+  const by = countsByDay(inSeasonHist);
+  const w = weightsByDay(inSeasonHist);
+
+  const fm = new Map();
+  for (const s of sessions) {
+    if (!inside(s.endedAt)) continue;
+    const d = toStrIST(s.endedAt);
+    fm.set(d, (fm.get(d) || 0) + s.minutes);
+  }
+
+  const sm = new Map();
   for (const q of quests) {
-    const doneInSeason = (q.subtasks || []).filter(s => s.done && (!s.doneAt || inside(s.doneAt))).length;
-    exp += Math.min(10, doneInSeason * 2);
+    const subs = q.subtasks || [];
+    const qDays = new Map();
+    for (const sub of subs) {
+      if (!sub.done) continue;
+      const ms = sub.doneAt || Date.now();
+      if (!inside(ms)) continue;
+      const d = toStrIST(ms);
+      qDays.set(d, (qDays.get(d) || 0) + 1);
+    }
+    for (const [d, count] of qDays) {
+      sm.set(d, (sm.get(d) || 0) + Math.min(10, count * 2));
+    }
+  }
+
+  const allSeasonDays = new Set([...by.keys(), ...fm.keys(), ...sm.keys()]);
+  let exp = 0;
+  for (const d of allSeasonDays) {
+    const c = by.get(d) || 0;
+    const qExp = c ? dayExp(w.get(d), target, c) : 0;
+    const fExp = focusExp(fm.get(d) || 0);
+    const sExp = sm.get(d) || 0;
+    exp += applyDailyCap(qExp + fExp + sExp);
   }
   return exp;
 }

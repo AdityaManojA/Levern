@@ -27,6 +27,8 @@ const DEFAULT_SETTINGS = {
   // updateSeen: the newest version whose What's new pop-up this person has seen (updatepop.js), synced so every
   // device knows
   updateSeen: '',
+  // dailyCapSeen: date string (YYYY-MM-DD in IST) when the 55 EXP daily cap popup was shown
+  dailyCapSeen: '',
 };
 
 let adapter = localAdapter('taskflow.v1');

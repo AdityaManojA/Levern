@@ -6,6 +6,7 @@ import { summary } from './stats.js';
 import { mascot } from './mascot.js';
 import { sfx } from './sound.js';
 import { latePopup } from './latepop.js';
+import { checkDailyCapAndNotify } from './dailycappop.js';
 
 export function completeQuest(id) {
   const q = store.findQuest(id); if (!q) return;
@@ -22,6 +23,7 @@ export function completeQuest(id) {
   if (r.blocked) { play('tap', 0.6); return toast(`Already done for today. Next one: ${fmtDate(r.next)}`); }
   const st = store.getState();
   if (!r.done) { play('tap', 0.8); mascot.react('suspicious', 'hmm… sure?'); return toast('Marked as not done'); }
+  setTimeout(checkDailyCapAndNotify, 400);
   const after = before + 1;
   // done late: still counts, for half the EXP, and a pop-up says so (with a wink); hitting the target still celebrates
   if (r.late) {

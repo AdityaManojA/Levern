@@ -1497,6 +1497,67 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
 :root[data-theme="dark"] .late-half { background: color-mix(in srgb, var(--a-butter) 18%, var(--card)); border-color: var(--a-butter); color: var(--a-butter); }
 @media (prefers-reduced-motion: reduce) { .late-bang { animation: none; } }
 
+/* Daily EXP Cap Pop-up (js/dailycappop.js): fair play alert for 55 EXP soft cap */
+.daily-cap-pop .rankup-card {
+  width: min(360px, 100%);
+  padding: 24px 22px 20px;
+}
+.daily-cap-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 999px;
+  background: var(--butter);
+  border: 2px solid var(--edge);
+  box-shadow: 0 4px 14px rgba(var(--shade-rgb), .08);
+  margin-bottom: 2px;
+}
+.daily-cap-val {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+.daily-cap-lbl {
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  opacity: 0.85;
+  margin-top: 2px;
+}
+.daily-cap-reset {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--tint-butter);
+  border: 1.5px solid var(--edge);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+  text-align: center;
+}
+:root[data-theme="dark"] .daily-cap-badge {
+  background: color-mix(in srgb, var(--a-butter) 22%, var(--card));
+  border-color: var(--a-butter);
+}
+:root[data-theme="dark"] .daily-cap-badge .daily-cap-val,
+:root[data-theme="dark"] .daily-cap-badge .daily-cap-lbl {
+  color: var(--a-butter);
+}
+:root[data-theme="dark"] .daily-cap-reset {
+  background: color-mix(in srgb, var(--a-butter) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--a-butter) 40%, transparent);
+}
+
 /* What's new pop-up (js/updatepop.js): the rank-up card, wider, with the release notes and a link to the full list */
 .updatepop .up-card { width: min(440px, 100%); text-align: left; align-items: stretch; max-height: min(86vh, 720px); }
 .updatepop .rankup-k, .updatepop h3 { text-align: center; }

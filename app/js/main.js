@@ -21,6 +21,7 @@ import * as whatsnew from './views/whatsnew.js';
 import * as profileView from './views/profile.js';
 import { startProfile } from './profile.js';
 import { startRankups } from './rankup.js';
+import { startDailyCapListener } from './dailycappop.js';
 import { startBoard } from './board.js';
 import { startTheme } from './theme.js';
 import { startNameCheck } from './namecheck.js';
@@ -232,6 +233,7 @@ startAccount();
 startBoard();
 startProfile();
 startRankups();
+startDailyCapListener();
 startTheme();
 go();
 // Mochi lives on the nav bar
