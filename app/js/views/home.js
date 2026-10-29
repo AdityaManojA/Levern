@@ -47,13 +47,13 @@ export function render() {
       <div class="week-head">
         <div>
           <h3 class="week-title">Quests done this week</h3>
-          <div class="week-sub">${hitCount} of 7 days target hit${hitCount >= 5 ? ' 🔥' : ''}</div>
+          <div class="week-sub">${hitCount} of 7 days target hit</div>
         </div>
         <span class="week-badge">${totalWeekDone} done</span>
       </div>
       <div class="week-graph" style="height:115px">
         <div class="week-target-line" style="bottom:${targetPct}%" title="Daily target: ${s.target}">
-          <span class="week-target-pill">Goal ${s.target} 🎯</span>
+          <span class="week-target-pill">Goal ${s.target}</span>
         </div>
         <div class="week-cols">
           ${week.map((d, i) => {
@@ -73,7 +73,7 @@ export function render() {
                   ${isHit ? '<span class="week-star" aria-hidden="true">★</span>' : ''}
                   ${d.count > 0 ? `<span class="week-val" aria-hidden="true">${d.count}</span>` : ''}
                 </div>
-                <div class="week-tip" role="tooltip">${dayName}: <b>${d.count}</b> done${isHit ? ' · 🎯' : ''}</div>
+                <div class="week-tip" role="tooltip">${dayName}: <b>${d.count}</b> done${isHit ? ' · Target hit' : ''}</div>
               </div>
               <div class="week-lbl ${isToday ? 'is-today' : ''}">
                 <span>${dayLetter}</span>

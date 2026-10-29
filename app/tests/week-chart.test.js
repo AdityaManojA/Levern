@@ -51,7 +51,9 @@ test('week-chart: renders animated weekly chart card with headers and goal targe
   assert.ok(html.includes('class="week-badge"'), 'Should render .week-badge with total done');
   assert.ok(html.includes('class="week-target-line"'), 'Should render .week-target-line');
   assert.ok(html.includes('class="week-target-pill"'), 'Should render .week-target-pill');
-  assert.ok(html.includes('Goal 3 🎯'), 'Target pill should show goal target with 🎯');
+  assert.ok(html.includes('Goal 3'), 'Target pill should show goal target');
+  assert.ok(!html.includes('🎯'), 'Target pill should have zero emojis');
+  assert.ok(!html.includes('🔥'), 'Subtitle should have zero emojis');
 });
 
 test('week-chart: renders 7 day columns with correct hit, zero, star, and today indicators', async () => {
