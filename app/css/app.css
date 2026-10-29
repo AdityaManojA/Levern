@@ -403,6 +403,18 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 /* daily reminders: times as chips, × to remove, "+ Add a time" opens the time picker */
 .nrow + .nrow { border-top: 2px solid rgba(var(--ink-rgb),.08); }
 .nrow .srow { border-top: none; }
+.nudge-mode-row { display: flex; align-items: center; padding-bottom: 4px; }
+.sm-seg { display: inline-flex; background: rgba(var(--ink-rgb),.05); border: var(--line); border-radius: 999px; padding: 2px; }
+.sm-seg button { border: none; background: transparent; padding: 3px 12px; font-size: 12px; font-weight: 700; border-radius: 999px; cursor: pointer; color: var(--muted); }
+.sm-seg button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(var(--shade-rgb), .12); }
+.nudge-interval-box { display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; border-radius: 14px; background: var(--tint-butter); border: 2px solid var(--edge); margin-bottom: 12px; }
+.nudge-cfg-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.nudge-cfg-row select { font-size: 13px; font-weight: 700; padding: 4px 8px; border-radius: 8px; }
+.nudge-time-pair { display: inline-flex; align-items: center; gap: 6px; }
+.nudge-time-pair .time-field { width: auto; font-size: 13px; font-weight: 700; padding: 4px 8px; border-radius: 8px; }
+.nudge-to { font-size: 12px; font-weight: 700; color: var(--muted); }
+.nudge-summary { font-size: 12.5px; line-height: 1.4; color: var(--ink); opacity: 0.8; }
+:root[data-theme="dark"] .nudge-interval-box { background: color-mix(in srgb, var(--a-butter) 12%, var(--card)); border-color: color-mix(in srgb, var(--a-butter) 40%, transparent); }
 .ntimes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 0 12px; }
 .ntime { display: inline-flex; align-items: center; gap: 2px; border: 2px solid var(--edge); border-radius: 999px; background: var(--butter); padding: 2px 4px 2px 10px; font-size: 13px; font-weight: 700; }
 .ntime button { width: 22px; height: 22px; border: none; background: none; border-radius: 50%; font-size: 15px; line-height: 1; display: grid; place-items: center; }

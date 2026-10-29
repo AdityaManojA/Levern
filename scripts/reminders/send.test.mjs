@@ -47,6 +47,24 @@ test('the daily summary goes out at the chosen time', () => {
   assert.ok(m.some(x => x.key === 'daily-2026-10-20-18:03'));
 });
 
+test('interval nudges trigger during their active time range', () => {
+  // NOW is 18:03 in Asia/Kolkata (window is 18:00 to 18:15)
+  // Water nudge with intervalMode from 10:00 to 20:00 every 60 min includes 18:00
+  const settings = {
+    nudges: {
+      water: {
+        on: true,
+        intervalMode: true,
+        start: '10:05',
+        end: '20:05',
+        interval: 60,
+      },
+    },
+  };
+  const m = dueNow({ quests: [], settings, tz: 'Asia/Kolkata', now: NOW });
+  assert.ok(m.some(x => x.key === 'water-2026-10-20-18:05' && x.title === 'Drink water'));
+});
+
 test('a done quest never produces a message', () => {
   const quests = [{ id: 'a', title: 'Gym', due: '2026-10-20', time: '18:00', done: true }];
   assert.equal(dueNow({ quests, tz: 'Asia/Kolkata', now: NOW }).length, 0);

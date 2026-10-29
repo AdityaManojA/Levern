@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.17', date: '2026-10-29', title: 'Cookie as Default Cat & Flexible Interval Wellness Reminders',
+    note: 'Cookie is now the default companion for all new setups (with Mochi easily switchable in Settings), and you can now set recurring interval reminders with custom start and sleep hours for drinking water, eating, and taking walks.',
+    tip: 'Try switching to Fixed intervals under Settings → Every day to get reminders spaced throughout your waking hours!',
+    items: [
+      'Cookie as Default Companion: Cookie is now your default cat companion welcoming you right out of the box, with Mochi always available in Settings → Cat.',
+      'Interval Wellness Reminders: Drink water, Eat something, and Take a walk now feature an optional Fixed intervals mode alongside Specific times.',
+      'Custom Active Hours: Set your wake-up time and bedtime (such as 10:00 AM to 12:00 AM midnight), and Levern will space reminders evenly at your chosen pace (30m, 45m, 1h, 1.5h, 2h, 3h, or 4h).',
+      'Reliable Delivery Everywhere: Interval nudges trigger smoothly across in-app notifications, device push alerts, and background offline sync.',
+    ],
+  },
+  {
     v: '1.16', date: '2026-10-29', title: 'Fair Play Daily EXP Cap & Smooth Scoped Quest Lists',
     note: 'Daily EXP is now paced at 55 full points per day with reduced XP after the cap to encourage genuine focus and fair leaderboard progression, plus refreshing from home directly checks for app updates and quest lists scroll cleanly while tabs stay pinned.',
     tip: 'Your daily EXP cap resets every night at 12:00 AM Indian Standard Time (midnight)!',

@@ -44,13 +44,50 @@ export const NUDGE_DEFAULTS = {
   eat: { label: 'Eat something', defaults: ['08:30', '13:00', '20:00'], on: false },
   walk: { label: 'Take a walk', defaults: ['11:00', '16:00'], on: false },
 };
+
+export function generateIntervalTimes(start = '10:00', end = '22:00', intervalMins = 60) {
+  const [sh, sm] = (start || '10:00').split(':').map(Number);
+  const [eh, em] = (end || '22:00').split(':').map(Number);
+  const interval = Math.max(15, Number(intervalMins) || 60);
+
+  let startTotalMins = (sh || 0) * 60 + (sm || 0);
+  let endTotalMins = (eh || 0) * 60 + (em || 0);
+
+  if (endTotalMins === 0 && startTotalMins > 0) {
+    endTotalMins = 1440;
+  } else if (endTotalMins < startTotalMins) {
+    endTotalMins += 1440;
+  }
+
+  const times = [];
+  const pad = n => String(n).padStart(2, '0');
+  for (let m = startTotalMins; m <= endTotalMins; m += interval) {
+    const wrappedM = m % 1440;
+    const h = Math.floor(wrappedM / 60);
+    const min = wrappedM % 60;
+    times.push(`${pad(h)}:${pad(min)}`);
+    if (m === endTotalMins) break;
+  }
+
+  return [...new Set(times)];
+}
+
 export function nudgeList(settings) {
   const s = settings?.nudges || {};
-  return Object.entries(NUDGE_DEFAULTS).map(([k, d]) => ({
-    kind: k, label: d.label,
-    on: s[k]?.on ?? d.on,
-    times: (s[k]?.times?.length ? s[k].times : d.defaults).slice().sort(),
-  }));
+  return Object.entries(NUDGE_DEFAULTS).map(([k, d]) => {
+    const raw = s[k] || {};
+    let times = raw.times;
+    if (raw.intervalMode && raw.start && raw.end && raw.interval) {
+      times = generateIntervalTimes(raw.start, raw.end, raw.interval);
+    } else if (!times || !times.length) {
+      times = d.defaults;
+    }
+    return {
+      kind: k, label: d.label,
+      on: raw.on ?? d.on,
+      times: (times || []).slice().sort(),
+    };
+  });
 }
 
 // the messages due right now for one person. Returns [{ key, title, body, url }]
