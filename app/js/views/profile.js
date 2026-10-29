@@ -6,7 +6,7 @@ import { isOg, entries, topThreeFrom, OG_UNTIL } from '../board.js';
 import { rankChip, rankChipNamed, ogChip, auraOf, auraName, auraSpark } from './common.js';
 import { TIER_COLORS, getState } from '../store.js';
 import { addDays } from '../dates.js';
-import { esc } from '../ui.js';
+import { esc, play, toast, confirmBox } from '../ui.js';
 import { swap } from '../motion.js';
 import { seasonOf } from '../stats.js';
 
@@ -55,7 +55,15 @@ function full(p, me) {
         <div class="small">Since ${esc(month(p.since))} · Season ${p.season}</div>
         <div class="pf-ranks">${rankChip(p.seasonExp)}<span class="small">best ever</span>${rankChipNamed(p.bestRank)}</div></div>
     </div>
-    ${me ? `<div class="card pf-vis small">${pub ? 'Your profile is <b>public</b>: anyone signed in can open it from the leaderboard.' : 'Your profile is <b>private</b>: others only see your board name and rank.'} <a href="#/leaderboard">Change</a></div>` : ''}
+    ${me ? `<div class="card pf-vis" style="padding:10px 16px;margin-bottom:14px">
+      <div class="srow" style="border-top:none;padding:2px 0">
+        <div class="l">
+          <b>Make my profile public</b>
+          <small>${pub ? 'Anyone signed in can open your profile from the leaderboard' : 'Off. Others only see your board name and rank'}</small>
+        </div>
+        <button class="tog" role="switch" aria-checked="${pub}" aria-label="Make my profile public" data-act="pf-public"></button>
+      </div>
+    </div>` : ''}
     <div class="grid2 grid4">
       <div class="stat" style="background:var(--sky)"><div class="k">Quests done</div><div class="v">${fmt(p.quests)}</div><div class="s">all time</div></div>
       <div class="stat" style="background:var(--coral)"><div class="k">Streak</div><div class="v">${fmt(p.streak)}</div><div class="s">days · best ${fmt(p.bestStreak)}</div></div>
@@ -79,3 +87,19 @@ export function render(params = {}) {
   return `${back}<div class="card lb-note"><b>No profile here</b><p class="small">This person isn't on the board anymore.</p></div>`;
 }
 export function unmount() { shownId = null; state = 'idle'; }
+
+export const actions = {
+  'pf-public': async el => {
+    const next = !profile.isPublic();
+    if (next && !(await confirmBox('Make your profile public? Anyone signed in can see your board name, ranks, streaks, totals and a year of activity (never your quest titles, notes or email).', 'Make public'))) return;
+    el.setAttribute('aria-checked', next);
+    play('click', 0.5);
+    try {
+      await profile.setPublic(next);
+      toast(next ? 'Your profile is public' : 'Your profile is private');
+    } catch (e) {
+      toast('Could not update your profile. Check your connection.');
+    }
+    swap(render({ id: shownId || 'me' }));
+  }
+};

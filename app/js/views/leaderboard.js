@@ -133,15 +133,17 @@ export function render() {
     <div class="h-sub">Who's on top</div>
     <h1 class="h-title">Leaderboard</h1>
     <a class="lb-back" href="#/home">‹ Home</a>
-    <details class="card lb-join lb-settings" ${settingsOpen ? 'open' : ''}>
+    <details class="card lb-settings" ${settingsOpen ? 'open' : ''} style="margin-bottom:10px">
       <summary><b>Settings</b><span class="small">${signed ? (on ? `On the board as ${esc(board.myBoardName())}` : 'Not on the board') : 'Sign in first'}</span></summary>
-      <div class="srow"><div class="l"><b>Show me on the board</b><small>${signed ? (on ? `Your name and ${fmt(mine)} EXP are shown` : 'Off. Nothing about you is shared') : 'Sign in first'}</small></div>
-        <button class="tog" role="switch" aria-checked="${on}" aria-label="Show me on the board" data-act="lb-toggle" ${signed ? '' : 'disabled'}></button></div>
       <div class="srow"><div class="l"><b>Make my profile public</b><small>${signed ? (profile.isPublic() ? 'Anyone signed in can open your profile' : 'Off. Others only see your board name and rank') : 'Sign in first'}</small></div>
         <button class="tog" role="switch" aria-checked="${profile.isPublic()}" aria-label="Make my profile public" data-act="lb-public" ${signed ? '' : 'disabled'}></button></div>
       ${nameRow(signed)}
       ${signed ? '<div class="srow"><div class="l"><b>My profile</b><small>Your ranks, streaks and a year of activity</small></div><a class="mini" href="#/profile/me">Open</a></div>' : ''}
     </details>
+    <div class="card lb-join">
+      <div class="srow" style="border-top:none;padding:2px 0"><div class="l"><b>Show me on the board</b><small>${signed ? (on ? `Your name and ${fmt(mine)} EXP are shown` : 'Off. Nothing about you is shared') : 'Sign in first'}</small></div>
+        <button class="tog" role="switch" aria-checked="${on}" aria-label="Show me on the board" data-act="lb-toggle" ${signed ? '' : 'disabled'}></button></div>
+    </div>
     <div class="seg lb-tabs" role="tablist">
       <button role="tab" aria-selected="${mode === 'season'}" class="${mode === 'season' ? 'on' : ''}" data-act="lb-mode" data-mode="season">Season ${seasonOf()}</button>
       <button role="tab" aria-selected="${mode === 'legacy'}" class="${mode === 'legacy' ? 'on' : ''}" data-act="lb-mode" data-mode="legacy">Legacy</button>
