@@ -35,12 +35,12 @@ const variant = (...names) => { const ok = names.filter(has); return ok[Math.flo
 // Settings → Cat: Mochi (stored as 'black', his coat) or Cookie. Older coats: 'ginger' (Mochi recoloured orange) is
 // Cookie now; grey and brown were Mochi recoloured and are Mochi again.
 export const COATS = {
-  black: { label: 'Mochi', swatch: '#1E1B18' },
   cookie: { label: 'Cookie', swatch: '#E58B3A', cat: 'cookie' },
+  black: { label: 'Mochi', swatch: '#1E1B18' },
 };
 // Cookie's voice: the same sounds, a little lower
 export const CAT_VOICE = { mochi: 1, cookie: 0.86 };
-const coat = () => { const c = S().mochiColor; return c === 'cookie' || c === 'ginger' ? 'cookie' : 'black'; };
+const coat = () => { const c = S().mochiColor; return c === 'black' ? 'black' : 'cookie'; };
 // switch to the cat the coat asks for; true when it changed
 function useCat() {
   const name = COATS[coat()].cat || 'mochi';

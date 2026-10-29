@@ -9,8 +9,8 @@ import * as cal from '../calendars.js';
 import { mascot } from '../mascot.js';
 import { COATS, CAT_VOICE } from '../mochi.js';
 // the cat on the bar: Mochi ('black') or Cookie; older coats ('ginger' became Cookie, grey and brown were Mochi)
-const coatNow = s => (s.mochiColor === 'ginger' || s.mochiColor === 'cookie' ? 'cookie' : 'black');
-const catName = s => (coatNow(s) === 'cookie' ? 'Cookie' : 'Mochi');
+export const coatNow = s => (s.mochiColor === 'black' ? 'black' : 'cookie');
+export const catName = s => (coatNow(s) === 'cookie' ? 'Cookie' : 'Mochi');
 import { mySeasonExp, setBoardName } from '../board.js';
 import { applyTheme } from '../theme.js';
 import { APP_VERSION, CHANGELOG } from '../changelog.js';
@@ -188,7 +188,7 @@ export function render() {
     <div class="sec">Cat</div>
     <div class="card" data-tour="mochi-settings">
       <div class="srow"><div class="l"><b>Show Mochi / Cookie</b><small>The cat on the nav bar</small></div>${tog('mochi', s.mochi !== false, 'Show the cat')}</div>
-      <div class="srow"><div class="l"><b>Cat</b><small>Mochi, or Cookie, his orange twin brother</small></div><div class="seg coats" style="margin:0;width:auto">${Object.entries(COATS).map(([v, c]) => `<button class="${coatNow(s) === v ? 'on' : ''}" data-act="coat" data-v="${v}" aria-pressed="${coatNow(s) === v}" style="padding:5px 10px"><i class="coat-dot" style="background:${c.swatch}"></i>${c.label}</button>`).join('')}</div></div>
+      <div class="srow"><div class="l"><b>Cat</b><small>Cookie, or Mochi, his black twin brother</small></div><div class="seg coats" style="margin:0;width:auto">${Object.entries(COATS).map(([v, c]) => `<button class="${coatNow(s) === v ? 'on' : ''}" data-act="coat" data-v="${v}" aria-pressed="${coatNow(s) === v}" style="padding:5px 10px"><i class="coat-dot" style="background:${c.swatch}"></i>${c.label}</button>`).join('')}</div></div>
       <div class="srow"><div class="l"><b>Roam around</b><small>Walks along the bar. Off: sits by the edge.</small></div>${tog('roam', s.roam !== false, 'The cat roams')}</div>
       <div class="srow"><div class="l"><b>Walk speed</b></div><div class="seg" style="margin:0;width:auto">${[['slow', 'Slow'], ['normal', 'Normal'], ['zoomy', 'Zoomy']].map(([v, l]) => `<button class="${(s.speed || 'slow') === v ? 'on' : ''}" data-act="speed" data-v="${v}" style="padding:5px 10px">${l}</button>`).join('')}</div></div>
       <div class="srow"><div class="l"><b>${catName(s)}'s sounds</b><small>The little "mrp" when you tap him</small></div>${tog('mochiSound', s.mochiSound !== false, 'Cat sounds')}</div>

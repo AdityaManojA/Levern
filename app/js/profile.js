@@ -33,7 +33,7 @@ export function mine() {
   const best = hist.reduce((b, h) => (!b || rankStep(h.exp) > rankStep(b.exp) ? h : b), null);
   const days = [...countsByDay(st.history).keys()].sort();
   return {
-    name: myBoardName(), cat: s.mochiColor === 'cookie' || s.mochiColor === 'ginger' ? 'cookie' : 'mochi',
+    name: myBoardName(), cat: s.mochiColor === 'black' ? 'mochi' : 'cookie',
     since: days[0] ? days[0].slice(0, 7) : todayStr().slice(0, 7),
     season, seasonRank: rankLabel(sExp), seasonExp: sExp, bestRank: best.rank, bestSeason: best.season,
     seasons: hist.map(h => ({ s: h.season, r: h.rank, e: h.exp })),

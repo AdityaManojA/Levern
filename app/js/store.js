@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS = {
   // boardName: what the leaderboard shows (empty = name). theme: 'light', 'dark', 'mono' or 'auto' (follow the device)
   boardName: '', theme: 'light',
   // mochiColor: his coat, one of mochi.js COATS
-  mochi: true, roam: true, speed: 'slow', mochiSound: true, annoy: 5, mochiColor: 'black',
+  mochi: true, roam: true, speed: 'slow', mochiSound: true, annoy: 5, mochiColor: 'cookie',
   // profilePublic: anyone signed in can open your profile (off until you turn it on).
   // rankSeen: the season rank you were last told about ({ season, step }); rankHistory: your best rank per season
   // ({ [season]: { rank, exp } }); both keep the rank-up pop-up and the profile's season history.
