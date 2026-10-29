@@ -78,5 +78,11 @@ export function ripple(row) {
 // replace a screen's markup in place (filters, tabs inside a screen) with the morph treatment
 export function swap(html) {
   const view = document.getElementById('view'), y = scrollY;
-  morph(view, () => { view.innerHTML = html; scrollTo(0, y); });
+  const qlist = document.getElementById('qlist'), qy = qlist ? qlist.scrollTop : 0;
+  morph(view, () => {
+    view.innerHTML = html;
+    scrollTo(0, y);
+    const nq = document.getElementById('qlist');
+    if (nq && qy) nq.scrollTop = qy;
+  });
 }

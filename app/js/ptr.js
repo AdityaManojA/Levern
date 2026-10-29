@@ -69,8 +69,9 @@ export function setupPullToRefresh({ current, refresh }) {
     setTimeout(() => mascot.react('happy-spin'), 200);
   }
 
+  const atTop = () => scrollY <= 0 && (!document.getElementById('qlist') || document.getElementById('qlist').scrollTop <= 0);
   // where a pull may begin: top of a list screen, not on a field or while a sheet/overlay is open
-  const canStart = target => PAGES.has(current()) && scrollY <= 0 && !busy && !target.closest('input, textarea, select, .sheet, .rpanel, .onboard, .tour, .mochi')
+  const canStart = target => PAGES.has(current()) && atTop() && !busy && !target.closest('input, textarea, select, .sheet, .rpanel, .onboard, .tour, .mochi')
     && !document.body.classList.contains('ob-lock') && !document.body.classList.contains('touring') && !document.querySelector('.sheet.open');
 
   // touch: needs a non-passive listener so the page doesn't rubber-band or trigger the browser's own refresh
@@ -78,7 +79,7 @@ export function setupPullToRefresh({ current, refresh }) {
   addEventListener('touchmove', e => {
     if (!start) return;
     const dy = e.touches[0].clientY - start.y, dx = e.touches[0].clientX - start.x;
-    if (!start.pulling) { if (dy > 8 && Math.abs(dy) > Math.abs(dx) * 1.3 && scrollY <= 0) start.pulling = true; else if (Math.abs(dx) > 10 || dy < -4) { start = null; return; } else return; }
+    if (!start.pulling) { if (dy > 8 && Math.abs(dy) > Math.abs(dx) * 1.3 && atTop()) start.pulling = true; else if (Math.abs(dx) > 10 || dy < -4) { start = null; return; } else return; }
     e.preventDefault();
     show(Math.max(0, dy - 8) * 0.9);
   }, { passive: false });

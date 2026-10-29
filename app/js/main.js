@@ -84,16 +84,20 @@ function draw(keep) {
     // signed in: wait for the account's quests rather than show this device's old copy for a moment
     main.innerHTML = '<p class="sync-wait" role="status">Loading your quests…</p>';
     main.dataset.view = route.name;
+    document.body.dataset.view = route.name;
     renderNav();
     scrollTo(0, keep);
     return;
   }
+  const qlistScroll = route.name === 'quests' ? $('#qlist')?.scrollTop : 0;
   main.innerHTML = v.render(route.params);
   main.dataset.view = route.name;
+  document.body.dataset.view = route.name;
   renderNav();
   if (v.mount) v.mount(main, route.params);
   spriteStops = [...main.querySelectorAll('[data-sprite]')].map(el => sprite(el, el.dataset.sprite, { scale: +el.dataset.scale || 1 }));
   scrollTo(0, keep);
+  if (route.name === 'quests' && qlistScroll && $('#qlist')) $('#qlist').scrollTop = qlistScroll;
   if (remindersPanel.isOpen()) remindersPanel.render();
   paintBadges();
 }

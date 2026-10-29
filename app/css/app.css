@@ -220,7 +220,7 @@ input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; wid
   background: var(--ink); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E") center / 12px no-repeat; }
 /* scrollbars: thin, warm, rounded with stable gutter to eliminate layout shift */
 html { overflow-y: scroll; scrollbar-gutter: stable; }
-html, .sheet, .rpanel, .clist, .ctime-l, textarea { scrollbar-width: thin; scrollbar-color: rgba(var(--ink-rgb),.28) transparent; }
+html, .sheet, .rpanel, .clist, .ctime-l, textarea, #qlist { scrollbar-width: thin; scrollbar-color: rgba(var(--ink-rgb),.28) transparent; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(var(--ink-rgb),.22); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
@@ -257,6 +257,47 @@ html, .sheet, .rpanel, .clist, .ctime-l, textarea { scrollbar-width: thin; scrol
 
 /* room at the bottom for the bar and for Mochi sitting on it (--mochi-h), so the last card scrolls clear of both */
 .view { --mochi-h: 104px; flex: 1; padding: 4px 16px calc(var(--nav-h) + 14px + var(--mochi-h) + var(--safe-b)); outline: none; }
+
+/* Quests view: only the quests list (#qlist) scrolls; header, tabs, and toolbar stay pinned */
+html:has(.view[data-view="quests"]),
+body:has(.view[data-view="quests"]),
+body[data-view="quests"] {
+  height: 100%;
+  overflow: hidden;
+}
+
+body:has(.view[data-view="quests"]) .app,
+body[data-view="quests"] .app {
+  height: 100%;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.view[data-view="quests"] {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.view[data-view="quests"] .quests-pinned {
+  flex: none;
+  background: var(--cream);
+  z-index: 10;
+}
+
+.view[data-view="quests"] #qlist {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-top: 2px;
+  padding-bottom: calc(var(--nav-h) + 14px + var(--mochi-h) + var(--safe-b));
+}
 .h-sub { font-size: 13px; color: var(--muted); font-weight: 600; }
 .h-title { font-size: 28px; font-weight: 700; margin: 2px 0 14px; line-height: 1.15; }
 .sec { font-size: 13px; font-weight: 700; margin: 18px 0 8px; display: flex; justify-content: space-between; align-items: center; }

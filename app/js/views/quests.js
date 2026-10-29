@@ -65,21 +65,39 @@ export function render(params) {
 
   const count = f => all.filter(q => inFilter(q, f)).length;
   return `
-    <div class="h-sub">Your tasks. Tap one to open it, hold to edit.</div>
-    <h1 class="h-title">Quests</h1>
-    <div class="seg" role="tablist">${FILTERS.map(([k, l]) => `<button role="tab" aria-selected="${k === filter}" class="${k === filter ? 'on' : ''}" data-act="filter" data-f="${k}">${l}<span class="n">${count(k)}</span></button>`).join('')}</div>
-    ${tagBar}
-    <div class="toolbar">
-      <input class="search" type="search" placeholder="Search quests" value="${esc(query)}" data-input="search" aria-label="Search quests">
-      <select class="field" style="width:auto" data-change="sort" aria-label="Sort">${Object.entries(SORTS).map(([k, l]) => `<option value="${k}" ${k === sort ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <div class="quests-pinned">
+      <div class="h-sub">Your tasks. Tap one to open it, hold to edit.</div>
+      <h1 class="h-title">Quests</h1>
+      <div class="seg" role="tablist">${FILTERS.map(([k, l]) => `<button role="tab" aria-selected="${k === filter}" class="${k === filter ? 'on' : ''}" data-act="filter" data-f="${k}">${l}<span class="n">${count(k)}</span></button>`).join('')}</div>
+      ${tagBar}
+      <div class="toolbar">
+        <input class="search" type="search" placeholder="Search quests" value="${esc(query)}" data-input="search" aria-label="Search quests">
+        <select class="field" style="width:auto" data-change="sort" aria-label="Sort">${Object.entries(SORTS).map(([k, l]) => `<option value="${k}" ${k === sort ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      </div>
     </div>
-    <div id="qlist">${body}</div>`;
+    <div id="qlist" class="quests-scroll">${body}</div>`;
 }
 
 export const actions = {
-  filter: el => { filter = el.dataset.f; rerender(); },
-  'tag-select': el => { activeTag = el.dataset.tag || null; rerender(); },
-  'tag-click': (el, ev) => { ev?.stopPropagation(); activeTag = el.dataset.tag || null; rerender(); },
+  filter: el => {
+    filter = el.dataset.f;
+    const ql = document.getElementById('qlist');
+    if (ql) ql.scrollTop = 0;
+    rerender(true);
+  },
+  'tag-select': el => {
+    activeTag = el.dataset.tag || null;
+    const ql = document.getElementById('qlist');
+    if (ql) ql.scrollTop = 0;
+    rerender(true);
+  },
+  'tag-click': (el, ev) => {
+    ev?.stopPropagation();
+    activeTag = el.dataset.tag || null;
+    const ql = document.getElementById('qlist');
+    if (ql) ql.scrollTop = 0;
+    rerender(true);
+  },
 };
 export function onChange(el) { if (el.dataset.change === 'sort') { sort = el.value; rerender(); } }
 let searchDebounce = null;
@@ -102,4 +120,10 @@ export function onInput(el) {
     }
   }, 150);
 }
-function rerender() { swap(render({})); }
+function rerender(resetScroll = false) {
+  const ql = document.getElementById('qlist');
+  const sy = (!resetScroll && ql) ? ql.scrollTop : 0;
+  swap(render({}));
+  const fresh = document.getElementById('qlist');
+  if (fresh && sy) fresh.scrollTop = sy;
+}
