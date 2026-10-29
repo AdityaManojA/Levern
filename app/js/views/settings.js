@@ -43,8 +43,22 @@ const step = (k, v, unit = '') => `<div class="step"><button data-act="step" dat
 const LIMITS = { annoy: [3, 10], target: [1, 10], focusMin: [5, 90], breakMin: [1, 30], snoozeMin: [5, 60] };
 const STEPS = { annoy: 1, target: 1, focusMin: 5, breakMin: 1, snoozeMin: 5 };
 
-function themeInfo(rawT) {
+export function themeInfo(rawT) {
   const t = (rawT === 'mono-light') ? 'mono' : (rawT || 'light');
+  const isDarkPref = typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
+  if (t === 'auto') {
+    return isDarkPref ? {
+      label: 'Follow Device (Dark)',
+      desc: 'Following system dark mode',
+      bg: '#0E1014', card: '#171A20', ink: '#EEE8DF',
+      pri: ['#FF6B6B', '#FF9A3D', '#FFCB57', '#46D19E', '#5DB6F2', '#A68BFA']
+    } : {
+      label: 'Follow Device (Light)',
+      desc: 'Following system light mode',
+      bg: '#FFF8EE', card: '#FFFFFF', ink: '#1E1B18',
+      pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2']
+    };
+  }
   const map = {
     'light': { label: 'Light Mode', desc: 'Warm cream surfaces and soft pastels', bg: '#FFF8EE', card: '#FFFFFF', ink: '#1E1B18', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
     'dark': { label: 'Dark Mode', desc: 'Near-black layers with glowing accents', bg: '#0E1014', card: '#171A20', ink: '#EEE8DF', pri: ['#FF6B6B', '#FF9A3D', '#FFCB57', '#46D19E', '#5DB6F2', '#A68BFA'] },
@@ -55,6 +69,74 @@ function themeInfo(rawT) {
     'auto': { label: 'Follow Device', desc: 'Follows your system light or dark mode', bg: '#FFF8EE', card: '#FFFFFF', ink: '#1E1B18', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
   };
   return map[t] || map['light'];
+}
+
+export function renderThemePreview(rawT) {
+  const info = themeInfo(rawT || 'light');
+  const isDark = (rawT || '').includes('dark') || (rawT === 'auto' && typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches);
+  return `<div class="theme-preview-card" style="background:${info.bg};color:${info.ink};border:2px solid var(--edge);border-radius:16px;padding:14px;margin-top:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(128,128,128,0.18)">
+      <div>
+        <b style="font-size:13px">${info.label}</b>
+        <div class="small" style="opacity:0.8">${info.desc}</div>
+      </div>
+      <span class="small" style="font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(128,128,128,0.15)">Live Preview</span>
+    </div>
+
+    <div class="theme-mini-phone" style="background:${info.bg};border:1.5px solid rgba(128,128,128,0.25);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;opacity:0.85">
+        <span>Today's Quests</span>
+        <span class="small">2 done · 35 EXP</span>
+      </div>
+
+      <div class="theme-mini-card" style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px">
+        <div style="width:14px;height:14px;border-radius:4px;border:2px solid ${info.pri[0]};background:${isDark ? 'transparent' : info.pri[0] + '33'};flex:none"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;line-height:1.2">Launch project update</div>
+          <div style="font-size:10px;opacity:0.75;display:flex;align-items:center;gap:4px;margin-top:2px">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${info.pri[0]}"></span>
+            <span>Due 4:00 PM · P1 Critical</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="theme-mini-card" style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px">
+        <div style="width:14px;height:14px;border-radius:4px;border:2px solid ${info.pri[2]};background:${isDark ? 'transparent' : info.pri[2] + '33'};flex:none"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;line-height:1.2">Review team feedback</div>
+          <div style="font-size:10px;opacity:0.75;display:flex;align-items:center;gap:4px;margin-top:2px">
+            <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${info.pri[2]}"></span>
+            <span>Tomorrow · P3 Medium</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="theme-mini-card" style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px;opacity:0.65">
+        <div style="width:14px;height:14px;border-radius:4px;background:${isDark ? '#46D19E' : '#22C55E'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:900;flex:none">✓</div>
+        <div style="flex:1;min-width:0;text-decoration:line-through;font-size:12px;font-weight:500">Morning run & stretch</div>
+        <span style="font-size:10px;font-weight:700;color:var(--mint, #22c55e)">+10 EXP</span>
+      </div>
+
+      <div style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:5px 12px;display:flex;justify-content:space-around;font-size:10px;font-weight:600;opacity:0.8">
+        <span style="color:${info.pri[0]};font-weight:700">Quests</span>
+        <span>Focus</span>
+        <span>Stats</span>
+        <span>Settings</span>
+      </div>
+    </div>
+
+    <div style="margin-top:10px">
+      <div style="font-size:11px;font-weight:700;opacity:0.85;margin-bottom:6px">Priorities:</div>
+      <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:5px">
+        ${['P1 Critical', 'P2 High', 'P3 Medium', 'P4 Normal', 'P5 Low', 'P6 Someday'].map((label, idx) => `
+          <div style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:6px;padding:4px 6px;display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${info.pri[idx]};flex:none"></span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  </div>`;
 }
 
 export function render() {
@@ -100,73 +182,7 @@ export function render() {
           <option value="auto" ${s.theme === 'auto' ? 'selected' : ''}>Follow Device</option>
         </select>
       </div>
-      ${(() => {
-        const info = themeInfo(s.theme || 'light');
-        const isDark = (s.theme || '').includes('dark');
-        return `<div class="theme-preview-card" style="background:${info.bg};color:${info.ink};border:2px solid var(--edge);border-radius:16px;padding:14px;margin-top:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(128,128,128,0.18)">
-            <div>
-              <b style="font-size:13px">${info.label}</b>
-              <div class="small" style="opacity:0.8">${info.desc}</div>
-            </div>
-            <span class="small" style="font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(128,128,128,0.15)">Live Preview</span>
-          </div>
-
-          <div class="theme-mini-phone" style="background:${info.bg};border:1.5px solid rgba(128,128,128,0.25);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px">
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;opacity:0.85">
-              <span>Today's Quests</span>
-              <span class="small">2 done · 35 EXP</span>
-            </div>
-
-            <div class="theme-mini-card" style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px">
-              <div style="width:14px;height:14px;border-radius:4px;border:2px solid ${info.pri[0]};background:${isDark ? 'transparent' : info.pri[0] + '33'};flex:none"></div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:12px;font-weight:600;line-height:1.2">Launch project update</div>
-                <div style="font-size:10px;opacity:0.75;display:flex;align-items:center;gap:4px;margin-top:2px">
-                  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${info.pri[0]}"></span>
-                  <span>Due 4:00 PM · P1 Critical</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="theme-mini-card" style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px">
-              <div style="width:14px;height:14px;border-radius:4px;border:2px solid ${info.pri[2]};background:${isDark ? 'transparent' : info.pri[2] + '33'};flex:none"></div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:12px;font-weight:600;line-height:1.2">Review team feedback</div>
-                <div style="font-size:10px;opacity:0.75;display:flex;align-items:center;gap:4px;margin-top:2px">
-                  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${info.pri[2]}"></span>
-                  <span>Tomorrow · P3 Medium</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="theme-mini-card" style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px;opacity:0.65">
-              <div style="width:14px;height:14px;border-radius:4px;background:${isDark ? '#46D19E' : '#22C55E'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:900;flex:none">✓</div>
-              <div style="flex:1;min-width:0;text-decoration:line-through;font-size:12px;font-weight:500">Morning run & stretch</div>
-              <span style="font-size:10px;font-weight:700;color:var(--mint, #22c55e)">+10 EXP</span>
-            </div>
-
-            <div style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:8px;padding:5px 12px;display:flex;justify-content:space-around;font-size:10px;font-weight:600;opacity:0.8">
-              <span style="color:${info.pri[0]};font-weight:700">Quests</span>
-              <span>Focus</span>
-              <span>Stats</span>
-              <span>Settings</span>
-            </div>
-          </div>
-
-          <div style="margin-top:10px">
-            <div style="font-size:11px;font-weight:700;opacity:0.85;margin-bottom:6px">Priorities:</div>
-            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:5px">
-              ${['P1 Critical', 'P2 High', 'P3 Medium', 'P4 Normal', 'P5 Low', 'P6 Someday'].map((label, idx) => `
-                <div style="background:${info.card};border:1px solid rgba(128,128,128,0.2);border-radius:6px;padding:4px 6px;display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600">
-                  <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${info.pri[idx]};flex:none"></span>
-                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${label}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>`;
-      })()}
+      ${renderThemePreview(s.theme || 'light')}
     </div>
 
     <div class="sec">Cat</div>
@@ -370,7 +386,14 @@ export const actions = {
   install: () => install(),
   hear: el => play(el.dataset.s, 1, +el.dataset.rate || 1),
   speed: el => { setSetting('speed', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
-  theme: el => { setSetting('theme', el.dataset.v); applyTheme(); play('click', 0.4); },
+  theme: el => {
+    const val = el.dataset.v;
+    setSetting('theme', val, { quiet: true });
+    applyTheme();
+    play('click', 0.4);
+    const prev = document.querySelector('.theme-preview-card');
+    if (prev) prev.outerHTML = renderThemePreview(val);
+  },
   coat: el => { setSetting('mochiColor', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
   export: () => { download(`levern-backup-${todayStr()}.json`, exportData(), 'application/json'); toast('Backup saved'); },
   'tidy-exp': async () => {
@@ -385,10 +408,12 @@ export const actions = {
 };
 export function onChange(el) {
   if (el.dataset.change === 'theme') {
-    setSetting('theme', el.value);
+    const val = el.value;
+    setSetting('theme', val, { quiet: true });
     applyTheme();
     play('click', 0.4);
-    rerender();
+    const prev = document.querySelector('.theme-preview-card');
+    if (prev) prev.outerHTML = renderThemePreview(val);
   }
   if (el.dataset.change === 'volume') { setSetting('volume', +el.value, { quiet: true }); play('click'); }
   if (el.dataset.change === 'import') {

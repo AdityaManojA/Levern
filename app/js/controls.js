@@ -20,6 +20,17 @@ let uid = 0;
 const nid = p => `tf-${p}-${++uid}`;
 const pad = n => String(n).padStart(2, '0');
 
+export function scrollChildIntoView(container, item) {
+  if (!container || !item) return;
+  const iRect = item.getBoundingClientRect();
+  const cRect = container.getBoundingClientRect();
+  if (iRect.top < cRect.top) {
+    container.scrollTop += Math.round(iRect.top - cRect.top);
+  } else if (iRect.bottom > cRect.bottom) {
+    container.scrollTop += Math.round(iRect.bottom - cRect.bottom);
+  }
+}
+
 /* ---------- native value plumbing ---------- */
 const proto = el => el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
 const nativeSet = (el, v) => Object.getOwnPropertyDescriptor(proto(el), 'value').set.call(el, v);
@@ -62,26 +73,34 @@ function openPop(trigger, pop) {
   if (!reduced()) pop.animate([{ opacity: 0, transform: `translateY(${pop.dataset.side === 'top' ? 6 : -6}px) scale(.98)` }, { opacity: 1, transform: 'none' }], { duration: 240, easing: EASE });
   return pop;
 }
-function closePop(refocus = false) {
+function closePop(refocus = false, immediate = false) {
   if (!cur) return;
   const { pop, trigger } = cur; cur = null;
   trigger.setAttribute('aria-expanded', 'false');
   trigger.removeAttribute('aria-activedescendant');
   const gone = () => { try { if (POPOVER) pop.hidePopover(); } catch (e) {} pop.remove(); };
-  if (reduced()) gone();
+  if (immediate || reduced()) gone();
   else pop.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-4px) scale(.98)' }], { duration: 140, easing: 'ease-in' }).finished.then(gone, gone);
   if (refocus && trigger.isConnected) trigger.focus({ preventScroll: true });
 }
 function place() {
   if (!cur) return;
   const { pop, trigger } = cur;
-  if (!trigger.isConnected) return closePop();
+  if (!trigger.isConnected) return closePop(false, true);
   const r = trigger.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = innerHeight, gap = 6;
   pop.style.minWidth = pop.classList.contains('clist') ? `${Math.max(r.width, 160)}px` : '';
   const w = pop.offsetWidth, h = pop.offsetHeight;
   const below = r.bottom + gap + h <= vh - 8, above = r.top - gap - h >= 8;
-  const top = below || !above ? Math.min(r.bottom + gap, Math.max(8, vh - h - 8)) : r.top - gap - h;
-  pop.dataset.side = below || !above ? 'bottom' : 'top';
+  let side = pop.dataset.side;
+  if (!side) {
+    side = below || !above ? 'bottom' : 'top';
+  } else if (side === 'bottom' && !below && above) {
+    side = 'top';
+  } else if (side === 'top' && !above && below) {
+    side = 'bottom';
+  }
+  const top = side === 'bottom' ? Math.min(r.bottom + gap, Math.max(8, vh - h - 8)) : r.top - gap - h;
+  pop.dataset.side = side;
   pop.style.left = `${Math.round(Math.min(Math.max(8, r.left), Math.max(8, vw - w - 8)))}px`;
   pop.style.top = `${Math.round(top)}px`;
 }
@@ -127,9 +146,16 @@ function enhanceSelect(sel) {
     active = Math.max(0, Math.min(items.length - 1, i));
     items.forEach((x, j) => x.classList.toggle('act', j === active));
     btn.setAttribute('aria-activedescendant', items[active].id);
-    items[active].scrollIntoView({ block: 'nearest' });
+    scrollChildIntoView(list, items[active]);
   };
-  const choose = i => { const o = opts()[i]; if (o && !o.disabled) commit(sel, o.value); closePop(true); };
+  const choose = i => {
+    const o = opts()[i];
+    if (o && !o.disabled) {
+      closePop(false, true);
+      commit(sel, o.value);
+      if (btn.isConnected) btn.focus({ preventScroll: true });
+    }
+  };
   const open = () => {
     if (sel.disabled) return;
     list = document.createElement('div');
@@ -246,7 +272,7 @@ function timeList(value, onPick, labelText) {
     active = Math.max(0, Math.min(items.length - 1, i));
     items.forEach((x, j) => x.classList.toggle('act', j === active));
     lb.setAttribute('aria-activedescendant', items[active].id);
-    if (scroll) items[active].scrollIntoView({ block: 'nearest' });
+    if (scroll) scrollChildIntoView(lb, items[active]);
   };
   lb.addEventListener('click', e => { const o = e.target.closest('[data-t]'); if (o) onPick(o.dataset.t); });
   lb.addEventListener('keydown', e => {
