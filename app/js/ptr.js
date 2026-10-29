@@ -61,10 +61,16 @@ export function setupPullToRefresh({ current, refresh }) {
     if (withMochi()) stopAnim = hasAnim('pull-spin') ? sprite(cat, 'pull-spin', { scale: 0.62 }) : sprite(cat, 'happy-spin', { scale: 0.72, loop: [1, 6] });
     play('click', 0.5);
     const t0 = performance.now();
-    try { await refresh(); } catch (e) {}
+    let res = null;
+    try { res = await refresh(); } catch (e) {}
     const left = 900 - (performance.now() - t0);   // let one spin finish so it reads as a refresh
     if (left > 0) await new Promise(r => setTimeout(r, left));
     busy = false; reset(true);
+    if (res?.updated) {
+      toast('Updating to latest version…', 'good');
+      setTimeout(() => { location.reload(); }, 600);
+      return;
+    }
     toast('Up to date');
     setTimeout(() => mascot.react('happy-spin'), 200);
   }

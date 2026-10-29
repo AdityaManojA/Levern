@@ -34,6 +34,7 @@ import { preloadSounds, unlockOnGesture, sfx, sfxLog, soundsLoaded } from './sou
 import { mascot, setMascot } from './mascot.js';
 import * as tour from './views/tour.js';
 import { setupPullToRefresh } from './ptr.js';
+import { checkForUpdate } from './refresh-update.js';
 import { check as checkReminders } from './reminders.js';
 import { syncGoogle, googleState, hasToken } from './calendars.js';
 import { startControls } from './controls.js';
@@ -250,10 +251,23 @@ startNameCheck(() => onboarding.isOpen() || !cloud.cloudReady());
 setupPullToRefresh({
   current: () => route.name,
   refresh: async () => {
+    if (cloud.cloudOn()) {
+      await cloud.syncNow().catch(() => {});
+    }
+    if (googleState().connected && hasToken()) {
+      await syncGoogle({ interactive: false }).catch(() => {});
+    }
+    try {
+      const board = await import('./board.js');
+      if (board.isOn()) {
+        board.publish().catch(() => {});
+        board.entries({ fresh: true }).catch(() => {});
+      }
+    } catch (e) {}
     await checkReminders();
-    if (googleState().connected && hasToken()) await syncGoogle({ interactive: false }).catch(() => {});
-    try { const reg = await navigator.serviceWorker?.getRegistration(); await reg?.update(); } catch (e) {}
+    const updated = await checkForUpdate();
     render({ keepScroll: true });
+    return { updated };
   },
 });
 document.addEventListener('sheet:open', () => mascot.setPerch('sheet'));
