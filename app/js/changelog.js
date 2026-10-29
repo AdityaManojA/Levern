@@ -11,6 +11,7 @@ export const CHANGELOG = [
       'Interval Wellness Reminders: Drink water, Eat something, and Take a walk now feature an optional Fixed intervals mode alongside Specific times.',
       'Custom Active Hours: Set your wake-up time and bedtime (such as 10:00 AM to 12:00 AM midnight), and Levern will space reminders evenly at your chosen pace (30m, 45m, 1h, 1.5h, 2h, 3h, or 4h).',
       'Reliable Delivery Everywhere: Interval nudges trigger smoothly across in-app notifications, device push alerts, and background offline sync.',
+      'Playful Animated Weekly Chart: The weekly quests graph on your home screen now comes alive with springy capsule bars, celebration stars on days you reach your goal, exact quest counts, an animated target goal line, and a glowing indicator for today.',
     ],
   },
   {

@@ -16,7 +16,10 @@ export function render() {
   const next = sortQuests(open, 'smart').slice(0, 5);
   const week = lastDays(st.history, st.sessions, s.target, 7);
   // Headroom above the target, so the dashed line never sits on the chart's top edge.
-  const max = Math.max(s.target * 1.25, ...week.map(d => d.count));
+  const max = Math.max(s.target * 1.25, ...week.map(d => d.count), 1);
+  const hitCount = week.filter(d => d.count >= s.target && d.count > 0).length;
+  const totalWeekDone = week.reduce((a, b) => a + b.count, 0);
+  const targetPct = Math.min(88, Math.max(14, Math.round(s.target / max * 100)));
   const left = Math.max(0, s.target - sum.todayCount);
   const rem = dueReminders().length;
   return `
@@ -40,11 +43,46 @@ export function render() {
       <div class="small">You hit your ${s.target}-a-day target on ${sum.keptThisMonth} of ${sum.daysInMonthSoFar} days so far</div>
       <div class="bar"><i style="width:${Math.round(sum.keptThisMonth / sum.daysInMonthSoFar * 100)}%"></i></div>
     </div>
-    <a class="card" href="#/stats" style="display:block;text-decoration:none">
-      <h3>Quests done this week</h3>
-      <div class="chart" style="height:90px">${week.map(d => `<b class="${d.count ? (d.count >= s.target ? 'hit' : '') : 'zero'}" style="height:${Math.max(4, d.count / max * 100)}%" title="${d.count} done"></b>`).join('')}
-        <div class="target" style="bottom:${s.target / max * 100}%"></div></div>
-      <div class="chart-l">${week.map(d => `<span>${WEEKDAYS[fromStr(d.date).getDay()][0]}</span>`).join('')}</div>
+    <a class="card week-card" href="#/stats" style="display:block;text-decoration:none" aria-label="Quests done this week: ${totalWeekDone} completed, ${hitCount} of 7 days target hit. Open stats.">
+      <div class="week-head">
+        <div>
+          <h3 class="week-title">Quests done this week</h3>
+          <div class="week-sub">${hitCount} of 7 days target hit${hitCount >= 5 ? ' 🔥' : ''}</div>
+        </div>
+        <span class="week-badge">${totalWeekDone} done</span>
+      </div>
+      <div class="week-graph" style="height:115px">
+        <div class="week-target-line" style="bottom:${targetPct}%" title="Daily target: ${s.target}">
+          <span class="week-target-pill">Goal ${s.target} 🎯</span>
+        </div>
+        <div class="week-cols">
+          ${week.map((d, i) => {
+            const isToday = i === week.length - 1;
+            const isHit = d.count >= s.target && d.count > 0;
+            const isZero = d.count === 0;
+            const hPct = isZero ? 8 : Math.max(16, Math.round(d.count / max * 100));
+            const dayName = WEEKDAYS[fromStr(d.date).getDay()];
+            const dayLetter = dayName[0];
+            return `
+            <div class="week-col ${isToday ? 'is-today' : ''} ${isHit ? 'is-hit' : ''} ${isZero ? 'is-zero' : ''}" style="--i:${i}">
+              <div class="week-bar-slot">
+                <div class="week-bar ${isHit ? 'hit' : (isZero ? 'zero' : 'mint')}" 
+                     style="height:${hPct}%" 
+                     tabindex="0"
+                     aria-label="${dayName}: ${d.count} quests done${isHit ? ', daily target reached' : ''}">
+                  ${isHit ? '<span class="week-star" aria-hidden="true">★</span>' : ''}
+                  ${d.count > 0 ? `<span class="week-val" aria-hidden="true">${d.count}</span>` : ''}
+                </div>
+                <div class="week-tip" role="tooltip">${dayName}: <b>${d.count}</b> done${isHit ? ' · 🎯' : ''}</div>
+              </div>
+              <div class="week-lbl ${isToday ? 'is-today' : ''}">
+                <span>${dayLetter}</span>
+                ${isToday ? '<i class="today-pip" title="Today"></i>' : ''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
     </a>
     <a class="card" href="#/focus" style="display:flex;align-items:center;justify-content:space-between;text-decoration:none">
       <span><h3>Focus timer</h3><span class="small">${st.timer ? esc(st.timer.mode === 'focus' ? 'A focus session is running' : 'On a break') : `${s.focusMin} min sessions earn EXP`}</span></span><span class="btn sm">Open</span>
