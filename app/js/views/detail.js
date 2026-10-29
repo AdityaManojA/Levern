@@ -24,6 +24,16 @@ export function unmarkDeleted(id) {
   recentlyDeleted.delete(id);
 }
 
+export function editQuestHeaderHTML() {
+  return `<div class="sheet-h edit-quest-header">
+    <div class="sheet-h-left">
+      <a class="iconbtn sheet-close" href="#/quests" aria-label="Close">${ICON.x}</a>
+      <b>Edit quest</b>
+    </div>
+    <button type="button" class="btn sm sheet-save" data-act="save-detail">Save</button>
+  </div>`;
+}
+
 export function render(params) {
   const q = current = findQuest(params.id);
   if (!q) {
@@ -77,7 +87,7 @@ export function render(params) {
   const st = dueStatus(q), done = q.subtasks.filter(s => s.done).length;
   const history = getState().history.filter(h => h.questId === q.id).length;
   return `<div class="detail">
-    <a class="back" href="#/quests">${ICON.back} Quests</a>
+    ${editQuestHeaderHTML()}
     <div class="hero" style="--c:${TIER_COLORS[q.tier]}">
       <button class="chk${q.done ? ' on' : ''}" data-act="toggle" data-id="${q.id}" aria-label="${q.done ? 'Mark not done' : 'Complete'}"></button>
       <div style="flex:1;min-width:0">
@@ -145,6 +155,7 @@ export function render(params) {
       <button class="btn white sm" data-act="ics">${ICON.download} Apple / Outlook (.ics)</button>
     </div>` : ''}
     <div style="height:18px"></div>
+    <button type="button" class="btn block" data-act="save-detail" style="margin-bottom:12px">Save changes</button>
     <button class="btn ghost block" data-act="delete">${ICON.trash} Delete quest</button>
     <p class="small" style="text-align:center;margin-top:10px">Added ${esc(fmtStamp(q.createdAt))}</p>
   </div>`;
@@ -154,6 +165,12 @@ export function mount(main) {
   const q = current; if (!q) return;
   const root = main.querySelector('.detail');
   if (!root) return;
+  root.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      actions['save-detail']();
+    }
+  });
   bindPicker(root.querySelector('[data-picker]'), (spec, key) => {
     if (spec) requestPermission();
     setReminder(q.id, spec);
@@ -180,6 +197,18 @@ export function mount(main) {
 }
 
 export const actions = {
+  'save-detail': () => {
+    const q = current;
+    if (q) {
+      const titleIn = document.querySelector('.title-in');
+      if (titleIn && titleIn.value.trim()) updateQuest(q.id, { title: titleIn.value.trim() });
+      const notesIn = document.querySelector('#notes');
+      if (notesIn) updateQuest(q.id, { notes: notesIn.value });
+    }
+    play('click', 0.5);
+    toast('Quest saved', 'good');
+    location.hash = '#/quests';
+  },
   'sub-toggle': el => { const s = current.subtasks.find(x => x.id === el.dataset.sid); if (!s) return; const nowDone = !s.done; updateSubtask(current.id, s.id, { done: nowDone }); if (nowDone) { play('coin', 0.5); toast('+2 EXP · Subtask complete', 'good'); } else play('tap', 0.6); },
   'sub-del': el => removeSubtask(current.id, el.dataset.sid),
   'ink-new': el => openInk(current.id, { kind: el.dataset.kind }),

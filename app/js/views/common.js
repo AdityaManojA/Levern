@@ -84,7 +84,7 @@ export function questPanel(q, now = new Date()) {
   return `<div class="qx" id="qx-${q.id}">
     ${subs.length ? `<div class="qx-subs" role="group" aria-label="Subtasks">${subs.map(s => `<button type="button" class="qx-sub${s.done ? ' done' : ''}" role="checkbox" aria-checked="${!!s.done}" data-act="sub-toggle" data-id="${q.id}" data-sid="${s.id}"><span class="qx-box" aria-hidden="true"></span><span>${esc(s.title)}</span></button>`).join('')}</div>` : ''}
     ${(!subs.length && info.length) || notes ? `<dl class="qx-info">${subs.length ? '' : info.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}${notes ? `<div class="qx-notes"><dt>Notes</dt><dd>${esc(notes.length > 280 ? notes.slice(0, 280) + '…' : notes)}</dd></div>` : ''}</dl>` : ''}
-    <div class="qx-acts"><button type="button" class="mini" data-act="open" data-id="${q.id}">${ICON.pen} Edit</button>${subs.length ? `<span class="small">${subs.filter(s => s.done).length} of ${subs.length} done</span>` : ''}</div>
+    <div class="qx-acts"><div style="display:flex;gap:8px;align-items:center"><button type="button" class="mini" data-act="open" data-id="${q.id}">${ICON.pen} Edit</button><button type="button" class="mini ghost" data-act="expand" data-id="${q.id}" aria-label="Close quest details">Close</button></div>${subs.length ? `<span class="small">${subs.filter(s => s.done).length} of ${subs.length} done</span>` : ''}</div>
   </div>`;
 }
 
