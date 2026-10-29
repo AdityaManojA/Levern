@@ -66,7 +66,7 @@ Open the app through the server, not as a file, because service workers need `lo
 | `design/` | Design brief, palette and the cats' source art |
 | `docs/screenshots/` | Screenshots used on this page |
 
-For the full feature table, the onboarding and tour details and the settings reference, see [`app/README.md`](app/README.md). Release notes are in `app/js/changelog.js` and in the app under Settings → What's new.
+For the full feature table, the onboarding and tour details and the settings reference, see [`app/README.md`](app/README.md). Release notes are in `app/js/changelog.js` and in the app under Settings → What's new. Ideas for making money from Levern are in [`docs/monetisation.md`](docs/monetisation.md).
 
 ## Deploying
 
