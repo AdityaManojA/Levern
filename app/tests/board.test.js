@@ -60,6 +60,9 @@ test('one load gives every board: this season, Legacy and each past season, best
 
 test('OG: everyone who was on the board in Seasons 1 to 3, and they keep it', async () => {
   const { isOg, standings } = await import('../js/board.js');
+  assert.equal(isOg({ name: 'David', exp: 120 }), true);       // legacy entry before seasons field existed
+  assert.equal(isOg({ name: 'David', exp: 120, season: 0 }), true); // legacy entry with season 0
+  assert.equal(isOg({ name: 'David', exp: 120, season: null }), true); // legacy entry with season null
   assert.equal(isOg({ season: 2, past: { 1: 46 } }), true);    // moved on, Season 1 score kept
   assert.equal(isOg({ season: 2, past: {} }), true);           // joined in Season 2
   assert.equal(isOg({ season: 3, past: {} }), true);           // joined in Season 3

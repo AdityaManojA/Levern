@@ -51,7 +51,7 @@ function full(p, me) {
   return `
     <div class="card pf-top${auraOf(place, seasonOf() - 1).cls}"${auraOf(place, seasonOf() - 1).title}>${auraSpark(place)}
       <div class="pf-cat ${p.cat === 'cookie' ? 'cookie' : ''}" aria-hidden="true"></div>
-      <div class="pf-id"><h2>${auraName(place, esc(p.name || 'No name'))}${ogChip((p.seasons || []).some(x => x.s >= 1 && x.s <= OG_UNTIL))}</h2>
+      <div class="pf-id"><h2>${auraName(place, esc(p.name || 'No name'))}${ogChip(!p.season || p.season <= OG_UNTIL || (p.seasons || []).some(x => x.s >= 1 && x.s <= OG_UNTIL))}</h2>
         <div class="small">Since ${esc(month(p.since))} · Season ${p.season}</div>
         <div class="pf-ranks">${rankChip(p.seasonExp)}<span class="small">best ever</span>${rankChipNamed(p.bestRank)}</div></div>
     </div>
