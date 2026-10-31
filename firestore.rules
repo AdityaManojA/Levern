@@ -193,6 +193,16 @@ service cloud.firestore {
              'seasons', 'totalExp', 'streak', 'bestStreak', 'quests', 'focusMin', 'activity', 'activityEnd', 'public', 'updated'])
         && request.resource.data.public == true
         && request.resource.data.name is string && request.resource.data.name.size() <= 30
+        // what others' screens show: numbers as numbers and short text as text (views/profile.js also cleans them)
+        && request.resource.data.season is int && request.resource.data.bestSeason is number
+        && request.resource.data.seasonExp is number && request.resource.data.totalExp is number
+        && request.resource.data.streak is number && request.resource.data.bestStreak is number
+        && request.resource.data.quests is number && request.resource.data.focusMin is number
+        && request.resource.data.cat is string && request.resource.data.cat.size() <= 10
+        && request.resource.data.since is string && request.resource.data.since.size() <= 10
+        && request.resource.data.activityEnd is string && request.resource.data.activityEnd.size() <= 10
+        && request.resource.data.seasonRank is string && request.resource.data.seasonRank.size() <= 20
+        && request.resource.data.bestRank is string && request.resource.data.bestRank.size() <= 20
         && request.resource.data.seasons is list && request.resource.data.seasons.size() <= 52
         && request.resource.data.activity is list && request.resource.data.activity.size() <= 400
         && request.resource.data.updated == request.time;

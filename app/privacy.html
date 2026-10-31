@@ -22,60 +22,77 @@
   </nav>
   <main>
     <h1 class="h-title">Privacy policy</h1>
-    <p class="small">Last updated 19 October 2026</p>
+    <p class="small">Last updated 31 October 2026</p>
 
     <div class="card legal-sum">
       <h2>The short version</h2>
       <ul>
-        <li>Your quests, notes, sketches and settings are stored <b>on your device</b>. We don't have a copy.</li>
-        <li>If you sign in with Google, we receive your <b>name, email address and profile picture</b> to show who you are.</li>
-        <li>If you connect Google Calendar, Levern can only see and change <b>the one "Levern" calendar it creates</b>, never your other calendars.</li>
-        <li>No ads, no analytics, no tracking, and we never sell your data.</li>
+        <li>You sign in with Google to use Levern. We receive your <b>name, email address, profile picture and an account ID</b>.</li>
+        <li>Your quests, notes, sketches, stats and settings are kept <b>on your device and in your Levern account</b> (Google's Firebase), so they're the same on all your devices and come back when you sign in again.</li>
+        <li>The <b>leaderboard</b> shows your board name and EXP to other signed-in people. Your <b>profile</b> is only visible to others if you make it public.</li>
+        <li>If you turn on notifications, your device's push address is stored so reminders can reach you while Levern is closed.</li>
+        <li>No ads, no analytics, no tracking, and we never sell your data. Settings → Delete account removes everything we keep.</li>
       </ul>
     </div>
 
     <h2>Who we are</h2>
     <p>Levern is a to-do app that runs in your browser and can be installed as an app. This policy covers the Levern web app at <a href="https://getlevern.web.app">getlevern.web.app</a>. When we say "we" or "us", we mean the Levern team.</p>
 
-    <h2>What stays on your device</h2>
-    <p>Everything you put into Levern is saved in your browser's own storage on the device you use: your quests and subtasks, due dates and reminders, notes, sketches and handwriting, your stats and streaks, and your settings (including the name you type in). It is not sent to us. Clearing your browser data for this site, or using Settings → Reset everything, removes it. Settings → Export backup lets you keep a copy as a file.</p>
-    <p>Because it lives on one device, your quests don't move between your phone and computer yet. If we add syncing between devices, we'll update this policy and ask before anything is uploaded.</p>
+    <h2>Your account</h2>
+    <p>To use Levern you sign in with Google ("Continue with Google"). Sign-in is handled by Google through Firebase Authentication, a Google service. We receive your Google account's name, email address, profile picture and an account ID, and use them to show who's signed in, greet you by name, and keep your data in your account. Google keeps a record of your sign-in in our Firebase project.</p>
 
-    <h2>Signing in with Google (optional)</h2>
-    <p>You can use Levern without an account. If you choose "Continue with Google", sign-in is handled by Google through Firebase Authentication, a Google service. We receive your Google account's name, email address, profile picture and an account ID. We use them only to show who's signed in and to greet you by name. Google keeps a record of your sign-in in our Firebase project. You can sign out at any time in Settings, and you can ask us to delete your account record (see "Your choices").</p>
+    <h2>What we store in your account</h2>
+    <p>Everything you put into Levern is saved in your browser's own storage on your device <b>and</b> copied to your account in Cloud Firestore, a Google Firebase database, so it stays in step across your devices:</p>
+    <ul>
+      <li>your quests and subtasks, due dates, repeats and reminders, notes, sketches and handwriting;</li>
+      <li>your stats, streaks, EXP, rank history and focus sessions;</li>
+      <li>your settings, including the name you type in and your theme;</li>
+      <li>a plain list of your open quests (and upcoming Google Calendar events, if connected), kept in your account so Solodesk, a companion app that uses the same sign-in, can show them.</li>
+    </ul>
+    <p>Only you can read your account's data through the app. We (the Levern team) can technically access the database to run and fix the service, and only do so when that's needed. Settings → Export backup lets you keep a copy as a file.</p>
+
+    <h2>Leaderboard and public profile</h2>
+    <p>If you're on the leaderboard, other signed-in people can see your board name (your name, or the one you choose in Settings), your all-time EXP and this season's EXP, and your score at the end of past seasons. You can change the name or leave the board in Settings.</p>
+    <p>Your profile is private unless you turn on "public profile" in Settings. When it's public, other signed-in people can open it and see your board name, your cat, when you joined, your season ranks, EXP, streaks, number of quests done, focus minutes and a chart of the days you were active. It never shows your quests themselves. Turning it off removes it.</p>
+
+    <h2>Notifications and reminders</h2>
+    <p>If you allow notifications, reminders are shown by your device, and the schedule is kept in your browser so they can show while Levern is closed. To deliver them when the app is fully closed, your browser's push address for Levern is stored in your account. A small scheduled job, run by us on GitHub's servers with access to our Firebase project, reads your upcoming reminders from your account and sends the push through your browser maker's push service (for example Google, Apple or Mozilla). It keeps a short list of which reminders it already sent, so you don't get one twice.</p>
 
     <h2>Google Calendar (optional)</h2>
     <p>If you connect Google Calendar, Levern asks Google for one permission: <code>calendar.app.created</code>, which lets it create a calendar called "Levern" and add, change and remove events in that calendar only. It cannot read or change any of your other calendars or events.</p>
-    <p>Your quests that have a date are copied into that calendar straight from your browser to Google. The access Google gives Levern lasts about an hour and is kept in memory only, never stored. You can disconnect in Settings, and remove Levern's access entirely at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</p>
+    <p>Your quests that have a date are copied into that calendar straight from your browser to Google. The access Google gives Levern lasts about an hour and is kept in your browser's memory only; we don't store it. You can disconnect in Settings, and remove Levern's access entirely at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</p>
     <p>Levern's use and transfer of information received from Google APIs follows the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. We don't use that information for ads, don't sell it, and don't let people read it.</p>
 
     <h2>Voice input and handwriting</h2>
     <p>Voice input uses your browser's speech recognition. In Chrome and Edge, the browser sends your recording to Google's or Microsoft's speech service to turn it into text. That happens between your browser and its maker, and Levern only receives the text. Handwriting recognition, where available, runs on your device and nothing is sent anywhere.</p>
 
-    <h2>Notifications</h2>
-    <p>If you allow notifications, reminders are shown by your device. The reminder schedule is kept in your browser so it can show reminders while Levern is closed. Nothing is sent to us.</p>
-
     <h2>Services that help run Levern</h2>
     <ul>
       <li><b>Firebase Hosting (Google)</b> serves the app's files. Like any web host, it handles basic technical data such as your IP address and browser type to deliver the pages and keep them secure.</li>
-      <li><b>Firebase Authentication (Google)</b>, only if you sign in.</li>
+      <li><b>Firebase Authentication and Cloud Firestore (Google)</b> run your sign-in and store your account's data. The Firebase code that does this is loaded from Google (<code>www.gstatic.com</code>) when you open Levern, before you sign in, so Google sees that your browser loaded it.</li>
+      <li><b>Your browser maker's push service</b> (for example Google, Apple or Mozilla), only if you allow notifications.</li>
+      <li><b>GitHub Actions</b> runs the reminder job described above.</li>
       <li><b>Google Identity Services and the Google Calendar API</b>, only if you connect Google Calendar.</li>
     </ul>
     <p>Google's handling of this data is described in the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>. Our fonts and sounds are stored with the app, so loading them doesn't contact anyone else.</p>
 
+    <h2>How long we keep it</h2>
+    <p>Your account's data is kept while you have an account. If you delete your account, it is removed straight away (see below). If you leave a reason when deleting, that reason is kept, without your name or email, to help us improve Levern.</p>
+
     <h2>Your choices</h2>
     <ul>
-      <li>Use Levern without signing in or connecting a calendar. Everything works without them.</li>
-      <li>Sign out, disconnect Google Calendar, export or reset your data in Settings.</li>
-      <li>Ask us to see or delete the account record Google keeps for your sign-in. Write to the support email shown on Google's sign-in screen for Levern.</li>
+      <li><b>Delete account</b> (Settings) removes your data from our database (your quests, settings and stats, the Solodesk copy, your push address and reminder history, your public profile and your leaderboard entry) and then your Google sign-in record. If Solodesk uses the same sign-in, the sign-in record is kept for Solodesk.</li>
+      <li>Leave the leaderboard, make your profile private, turn notifications off, disconnect Google Calendar, export or reset your data in Settings.</li>
+      <li>Ask us to see, correct or delete what we hold about you. Write to the support email shown on Google's sign-in screen for Levern.</li>
     </ul>
-    <p>Depending on where you live (for example the EU, UK or California), you may have legal rights to access, correct, delete or move your data and to object to how it's used. We'll help with any of these requests.</p>
+    <p>Depending on where you live (for example the EU, UK, India or California), you may have legal rights to access, correct, delete or move your data and to object to how it's used. We'll help with any of these requests.</p>
 
     <h2>Children</h2>
     <p>Levern isn't meant for children under 13, and we don't knowingly collect personal information from them.</p>
 
     <h2>Changes</h2>
     <p>If we change this policy, we'll update the date at the top. If a change affects what we collect, we'll tell you in the app first.</p>
+    <p>Earlier versions of this policy (before 31 October 2026) said your quests stayed only on your device. That stopped being true when syncing between devices was added, and we should have updated this page then. Nothing was collected beyond what's described above.</p>
   </main>
   <footer class="legal-foot small"><a href="cookies.html">Cookies</a> · <a href="./">Open Levern</a></footer>
 </div>

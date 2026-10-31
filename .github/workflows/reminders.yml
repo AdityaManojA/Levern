@@ -22,7 +22,8 @@ jobs:
           node-version: 22
       - name: Install
         working-directory: scripts/reminders
-        run: npm install --no-audit --no-fund
+        # ci: installs exactly what package-lock.json pins, since this job holds the Firebase service account
+        run: npm ci --no-fund
       - name: Send due reminders
         working-directory: scripts/reminders
         env:

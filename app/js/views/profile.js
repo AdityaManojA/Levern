@@ -5,7 +5,7 @@ import * as profile from '../profile.js';
 import { isOg, entries, topThreeFrom, OG_UNTIL } from '../board.js';
 import { rankChip, rankChipNamed, ogChip, auraOf, auraName, auraSpark } from './common.js';
 import { TIER_COLORS, getState } from '../store.js';
-import { addDays } from '../dates.js';
+import { addDays, todayStr } from '../dates.js';
 import { esc, play, toast, confirmBox } from '../ui.js';
 import { swap } from '../motion.js';
 import { seasonOf } from '../stats.js';
@@ -14,13 +14,31 @@ let shownId = null, data = null, state = 'idle', place = 0;   // place: last sea
 const fmt = n => Number(n || 0).toLocaleString();
 const month = ym => new Date(ym + '-15').toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 
+// Someone else's profile or board entry comes from their own device, so only trusted shapes reach the page:
+// numbers as numbers, dates as dates, text as text (the page escapes text where it's shown).
+const num = v => (Number.isFinite(+v) ? +v : 0);
+const str = v => (typeof v === 'string' ? v : '');
+function clean(p) {
+  if (!p) return p;
+  const day = /^\d{4}-\d{2}-\d{2}$/, ym = /^\d{4}-\d{2}$/;
+  return {
+    ...p,
+    name: str(p.name), cat: p.cat === 'cookie' ? 'cookie' : 'mochi',
+    since: ym.test(p.since) ? p.since : '', activityEnd: day.test(p.activityEnd) ? p.activityEnd : todayStr(),
+    season: num(p.season), seasonExp: num(p.seasonExp), exp: num(p.exp), totalExp: num(p.totalExp), bestRank: str(p.bestRank),
+    quests: num(p.quests), streak: num(p.streak), bestStreak: num(p.bestStreak), focusMin: num(p.focusMin),
+    seasons: (Array.isArray(p.seasons) ? p.seasons : []).map(x => ({ s: num(x?.s), r: str(x?.r), e: num(x?.e) })),
+    activity: (Array.isArray(p.activity) ? p.activity : []).map(v => Math.max(0, Math.floor(num(v)))).map(v => Math.floor(v / 10) * 10 + Math.min(v % 10, 5)),
+  };
+}
+
 async function load(id) {
   shownId = id; state = 'loading'; data = null; swap(render({ id }));
   if (id === 'me' || id === await profile.myUid()) { data = profile.mine(); state = 'me'; }
   else {
-    const p = await profile.load(id);
+    const p = clean(await profile.load(id));
     if (p) { data = p; state = 'public'; }
-    else { const b = await profile.boardEntry(id); data = b; state = b ? 'private' : 'missing'; }
+    else { const b = clean(await profile.boardEntry(id)); data = b; state = b ? 'private' : 'missing'; }
   }
   // the board was most likely just loaded (a name tapped on it), so this is usually no extra read
   try { const uid = id === 'me' ? await profile.myUid() : id; place = topThreeFrom(await entries({ fresh: false }))[uid] || 0; } catch (e) { place = 0; }

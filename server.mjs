@@ -30,9 +30,15 @@ const sync = createSync(db, PORT);
 process.on('SIGINT', () => { db.flush(); process.exit(0); });
 process.on('SIGTERM', () => { db.flush(); process.exit(0); });
 
+// Bound to this machine only (the default): answer only requests addressed to it by a local name, so a web page
+// can't point its own domain at 127.0.0.1 (DNS rebinding) and read or replace the feed or the sync data.
+const localHost = h => HOST !== '127.0.0.1' || /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(h || '');
+
 const server = createServer(async (req, res) => {
+  if (!localHost(req.headers.host)) { res.writeHead(403).end(); return; }
   const url = new URL(req.url, 'http://x');
-  const path = decodeURIComponent(url.pathname);
+  let path;
+  try { path = decodeURIComponent(url.pathname); } catch (e) { res.writeHead(400).end(); return; }   // a malformed %-escape
   if (path.startsWith('/sync/')) return sync(req, res, path);
   try {
     if (path === '/calendar.ics') {

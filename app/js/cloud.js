@@ -156,7 +156,8 @@ export async function signOutAndReset({ force = false } = {}) {
 // Delete account: everything Levern keeps for this person on the backend, then this device.
 //  1. their feedback, if they gave any: anonymous (a reason and a note, no name, email or account id), and only
 //     readable in the Firebase console (taskflowFeedback);
-//  2. their data (taskflowUsers/{uid}, its chunks and the copy shared with Solodesk), their public profile and their leaderboard entry
+//  2. their data (taskflowUsers/{uid}, its chunks, the copy shared with Solodesk and their push address), their public
+//     profile and their leaderboard entry
 //     (hidden instead, if the rules don't allow deleting it yet);
 //  3. their Google sign-in, unless a Solodesk workspace shares it (deleting it would cut them off from Solodesk:
 //     a new sign-in gets a new account id). Then this device starts fresh.
@@ -168,10 +169,12 @@ export async function deleteAccount(feedback = {}) {
   unlisten?.(); unlisten = null; clearTimeout(timer); clearTimeout(shareT); dirty = false;
   const reason = String(feedback.reason || '').slice(0, 60), note = String(feedback.note || '').trim().slice(0, 1000);
   if (reason || note) await F.addDoc(F.collection(db, FIRESTORE_COLLECTIONS.FEEDBACK), { kind: 'account-deleted', reason, note, app: 'taskflow', at: F.serverTimestamp() }).catch(() => {});
-  const [chunks, shares] = await Promise.all([F.getDocs(F.collection(db, FIRESTORE_COLLECTIONS.USERS, u.uid, 'chunks')), F.getDocs(F.collection(db, FIRESTORE_COLLECTIONS.USERS, u.uid, 'share'))]);
+  // push holds the device's push address (push.js) and the reminder job's sent list (scripts/reminders)
+  const [chunks, shares, push] = await Promise.all(['chunks', 'share', 'push'].map(c => F.getDocs(F.collection(db, FIRESTORE_COLLECTIONS.USERS, u.uid, c))));
   const batch = F.writeBatch(db);
   chunks.forEach(d => batch.delete(d.ref));
   shares.forEach(d => batch.delete(d.ref));
+  push.forEach(d => batch.delete(d.ref));
   batch.delete(F.doc(db, FIRESTORE_COLLECTIONS.USERS, u.uid));
   await batch.commit();
   await F.deleteDoc(F.doc(db, FIRESTORE_COLLECTIONS.PROFILES, u.uid)).catch(() => {});   // the public profile, if there is one

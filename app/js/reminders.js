@@ -43,8 +43,9 @@ export async function check() {
 }
 
 let lastCount = null, lastDue = null;
-// What the bell counts: open quests that are overdue or due today, or whose reminder has gone off.
-function bellQuests() {
+// What the bell counts: open quests that are overdue or due today, or whose reminder has gone off. The panel
+// (views/reminders.js) lists the same quests, so the badge never counts something it doesn't show.
+export function bellQuests() {
   return (getState().quests || []).filter(q => {
     if (q.done) return false;
     const s = dueStatus(q);

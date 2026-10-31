@@ -3,6 +3,19 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.18', date: '2026-10-31', title: 'An Honest Privacy Policy, a Lighter App & Clearer Notifications',
+    note: 'Our privacy policy said your quests stay only on your device. Since syncing arrived, they are also kept in your Levern account so they follow you across devices. The policy now says exactly what is stored, who can see it and how to delete it. Nothing extra was collected.',
+    tip: 'Read the full policy any time from Settings → Privacy → Privacy policy.',
+    items: [
+      'Updated Privacy Policy: It now lists everything kept in your account: your quests and settings, your leaderboard entry, your public profile (only if you turn it on) and your notification address.',
+      'Complete Account Deletion: Delete account now also removes your notification address and reminder history.',
+      'Faster First Visit: Levern now downloads about a third as much when it first opens. Most of the cat\'s tricks load once you start using the app.',
+      'Clearer Notifications: The notifications panel lists every overdue and due-today quest that the bell counts.',
+      'No More Double Quests: Tapping Save twice quickly now adds one quest, not two.',
+      'Easier Keyboard Use: The focus ring is easy to see in the dark and Halloween themes, and Tab stays inside the welcome screens.',
+    ],
+  },
+  {
     v: '1.17', date: '2026-10-29', title: 'Cookie as Default Cat & Flexible Interval Wellness Reminders',
     note: 'Cookie is now the default companion for all new setups (with Mochi easily switchable in Settings), and you can now set recurring interval reminders with custom start and sleep hours for drinking water, eating, and taking walks.',
     tip: 'Try switching to Fixed intervals under Settings → Every day to get reminders spaced throughout your waking hours!',

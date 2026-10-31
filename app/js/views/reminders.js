@@ -1,6 +1,6 @@
 // The bell panel (due and upcoming reminders) and the quick "remind me" sheet from a quest's bell.
 import { dueReminders, upcomingReminders, findQuest, tierLabel, TIER_COLORS, snooze, snoozeTomorrow, dismissReminder, setReminder, setAlerts, getState } from '../store.js';
-import { fmtStamp, relTime } from '../dates.js';
+import { fmtStamp, relTime, dueStatus, dueLabel } from '../dates.js';
 import { $, esc, sheet, toast, play, ICON } from '../ui.js';
 import { permission, requestPermission, supported } from '../notify.js';
 import { reminderPicker, bindPicker, bindAlerts } from './common.js';
@@ -8,7 +8,7 @@ import { morph } from '../motion.js';
 import { mascot } from '../mascot.js';
 import { recentNotifs } from '../store.js';
 import { completeQuest } from '../complete.js';
-import { markBellSeen } from '../reminders.js';
+import { markBellSeen, bellQuests } from '../reminders.js';
 
 const panel = () => $('#rpanel');
 export const isOpen = () => panel().classList.contains('open');
@@ -35,14 +35,24 @@ function draw() {
       <div class="ract">${due ? `<button class="pri" data-act="r-done" data-id="${q.id}">Done</button><button data-act="r-snooze" data-id="${q.id}">Snooze 15m</button><button data-act="r-snooze-tomorrow" data-id="${q.id}">Tomorrow</button><button data-act="r-dismiss" data-id="${q.id}">Dismiss</button>`
         : `<button data-act="open-r" data-id="${q.id}">Open</button><button data-act="r-remove" data-id="${q.id}">Remove</button>`}</div>
     </div>`;
+  // overdue and due-today quests the badge counts but that have no reminder going off (those are listed above them)
+  const fired = new Set(d.map(q => q.id));
+  const dueQ = bellQuests().filter(q => !fired.has(q.id)).sort((a, b) => (dueStatus(a) === 'overdue' ? 0 : 1) - (dueStatus(b) === 'overdue' ? 0 : 1));
+  const dueItem = q => `<div data-key="d-${q.id}" class="ritem" style="--c:${TIER_COLORS[q.tier]}">
+      <div class="rt">${esc(q.title)}</div>
+      <div class="rw">${esc(tierLabel(q.tier))} · ${esc(dueLabel(q))}</div>
+      <div class="ract"><button class="pri" data-act="r-done" data-id="${q.id}">Done</button><button data-act="open-r" data-id="${q.id}">Open</button></div>
+    </div>`;
+  const total = d.length + dueQ.length;
   const past = recentNotifs(), LABEL = { done: 'Done', snoozed: 'Snoozed', dismissed: 'Dismissed' };
   panel().innerHTML = `<div class="rhead"><b>Notifications</b><button class="iconbtn" data-act="r-close" aria-label="Close" style="width:34px;height:34px">${ICON.x}</button></div>
-    <div class="small">${d.length ? `${d.length} due now` : 'Nothing due right now'}</div>
+    <div class="small">${total ? `${total} due now` : 'Nothing due right now'}</div>
     ${d.map(q => item(q, true)).join('')}
+    ${dueQ.map(dueItem).join('')}
     ${u.length ? `<div class="sec">Coming up</div>${u.map(q => item(q, false)).join('')}` : ''}
     ${past.length ? `<div class="sec">Earlier</div><div class="rpast">${past.map(n => `<button data-key="p-${n.id}-${n.at}" class="rpast-i" data-act="open-r" data-id="${n.id}" style="--c:${TIER_COLORS[n.tier ?? 3]}">
         <span class="dotc"></span><span class="rt">${esc(n.title)}</span><span class="small">${LABEL[n.status] || ''} · ${esc(relTime(n.at))}</span></button>`).join('')}</div>` : ''}
-    ${!d.length && !u.length && !past.length ? '<p class="small" style="padding:14px 0 4px">No notifications yet. Tap the bell on any quest to set a reminder.</p>' : ''}
+    ${!total && !u.length && !past.length ? '<p class="small" style="padding:14px 0 4px">No notifications yet. Tap the bell on any quest to set a reminder.</p>' : ''}
     ${permNote()}`;
 }
 

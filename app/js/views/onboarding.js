@@ -129,6 +129,7 @@ export function close(then) {
   markDeviceSetup();
   root.classList.remove('open');
   document.body.classList.remove('ob-lock');
+  document.querySelector('.app')?.removeAttribute('inert');
   const r = root;
   setTimeout(() => { r.hidden = true; stops.forEach(s => s()); stops = []; if (then) then(); }, reduced() ? 0 : 450);
 }
@@ -143,6 +144,8 @@ export function open(startTour, { startAt = null } = {}) {
   root.hidden = false;
   draw();
   document.body.classList.add('ob-lock');
+  // the app behind the welcome screens can't take focus or clicks (Tab stays inside the dialog)
+  document.querySelector('.app')?.setAttribute('inert', '');
   requestAnimationFrame(() => root.classList.add('open'));
   if (root.dataset.bound) return;
   root.dataset.bound = '1';

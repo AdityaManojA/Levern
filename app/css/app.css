@@ -17,6 +17,8 @@
   /* one-off tints */
   --tint-paper: #E6DDCF; --tint-paper2: #DDD3C3; --tint-sky: #EAF5FC; --tint-cream: #FFFCF6; --tint-mint: #F1FAF4; --tint-rose: #FBE1E4; --tint-butter: #FFF6D6;
   --mint-dk: #8FC9A5; --mint-dk2: #84C09B; --ev: #9DB8F6;
+  /* the keyboard focus ring: the outline colour by day; dark themes, whose outlines are faint, set their own below */
+  --focus: var(--edge);
   color-scheme: light;
 }
 /* Monochrome (Settings > Theme > Mono): the light theme in greys only. The pastels become greys of different
@@ -51,6 +53,7 @@
   --tint-paper: #282828; --tint-paper2: #303030; --tint-sky: #202020; --tint-cream: #161616;
   --tint-mint: #222222; --tint-rose: #252525; --tint-butter: #292929;
   --mint-dk: #9E9E9E; --mint-dk2: #B0B0B0; --ev: #A0A0A0;
+  --focus: var(--ink);
   color-scheme: dark;
 }
 /* Monochrome Dark Accent (Settings > Theme > Mono Dark Accent):
@@ -64,6 +67,7 @@
   --tint-paper: #282828; --tint-paper2: #303030; --tint-sky: #202020; --tint-cream: #161616;
   --tint-mint: #222222; --tint-rose: #252525; --tint-butter: #292929;
   --mint-dk: #9E9E9E; --mint-dk2: #B0B0B0; --ev: #A0A0A0;
+  --focus: var(--ink);
   color-scheme: dark;
 }
 /* Pictures, mascots and badges in greys across all monochrome themes */
@@ -93,6 +97,7 @@
   --tint-cream: #13161B; --tint-mint: color-mix(in srgb, var(--a-mint) 8%, #171A20); --tint-rose: color-mix(in srgb, var(--a-coral) 9%, #171A20);
   --tint-butter: color-mix(in srgb, var(--a-butter) 8%, #171A20);
   --mint-dk: #46D19E; --mint-dk2: #5CDAAC; --ev: #5DB6F2;
+  --focus: var(--a-ginger);
   color-scheme: dark;
 }
 :root[data-theme="dark"] ::selection { background: rgba(255,154,61,.35); }
@@ -225,7 +230,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 button, a.tab, .chip-btn { cursor: pointer; }
 a { color: inherit; }
 /* one focus ring everywhere: ink outline with a cream gap, following each control's rounded corners */
-:focus-visible { outline: 2.5px solid var(--edge); outline-offset: 3px; }
+:focus-visible { outline: 2.5px solid var(--focus); outline-offset: 3px; }
 ::selection { background: var(--butter); color: var(--ink); }
 input, textarea { caret-color: var(--ink); }
 ::placeholder { color: var(--muted); opacity: .75; }
@@ -791,7 +796,7 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .mochi.raised { z-index: 82; }
 .mochi .flip, .mochi .act { width: 100%; height: 100%; }
 .mochi .act { background-repeat: no-repeat; transform-origin: 50% 100%; }
-.mochi:focus-visible { outline: 3px solid var(--edge); outline-offset: 2px; border-radius: 12px; }
+.mochi:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 12px; }
 .mochi.ghost { pointer-events: none; z-index: 32; transition: opacity .11s linear; }
 .mochi.ghost.raised { z-index: 83; }
 .mbubble { position: fixed; left: 0; top: 0; z-index: 33; background: var(--card); border: var(--line); border-radius: 14px; padding: 5px 11px; font-weight: 700; font-size: 12px;
@@ -924,7 +929,7 @@ body.ptr-drag { user-select: none; cursor: grabbing; }
 .mcard-bell::after { content: ""; position: absolute; inset: 3px; background: var(--ink);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
           mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20.5a2 2 0 0 0 4 0' fill='black'/%3E%3C/svg%3E") center / contain no-repeat; }
-.mcard:focus-visible .mcard-in { outline: 3px solid var(--edge); outline-offset: 2px; }
+.mcard:focus-visible .mcard-in { outline: 3px solid var(--focus); outline-offset: 2px; }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 body.ob-lock .mcard { visibility: hidden; }
 /* bell at the top: soft butter when something is due, the badge pops when one arrives */
@@ -946,7 +951,7 @@ code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-siz
 .segopt input { position: absolute; opacity: 0; }
 .segopt span { display: block; border: var(--line); border-radius: 14px; padding: 8px 10px; background: var(--card); font-weight: 600; font-size: 13px; text-align: center; cursor: pointer; }
 .segopt input:checked + span { background: var(--ink); color: var(--on-ink); }
-.segopt input:focus-visible + span { outline: 3px solid var(--edge); outline-offset: 2px; }
+.segopt input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
 .evs { display: grid; gap: 6px; margin: 10px 0 12px; font-size: 13px; }
 .evs label { display: flex; align-items: center; gap: 8px; }
 
@@ -1088,8 +1093,8 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px;
 input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--card); border: none; box-shadow: 0 1px 2px rgba(var(--ink-rgb),.22), 0 2px 6px rgba(var(--ink-rgb),.12); }
 input[type=range]:active::-webkit-slider-thumb { box-shadow: 0 1px 2px rgba(var(--ink-rgb),.2), 0 0 0 7px rgba(143,201,165,.22); transform: scale(1.05); }
 input[type=range]:focus { outline: none; }
-input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--cream), 0 0 0 5.5px var(--edge); }
-input[type=range]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--cream), 0 0 0 5.5px var(--edge); }
+input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--cream), 0 0 0 5.5px var(--focus); }
+input[type=range]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--cream), 0 0 0 5.5px var(--focus); }
 
 /* tooltip */
 .ctip { position: fixed; inset: auto; margin: 0; z-index: 90; max-width: 240px; padding: 6px 10px; border: none; border-radius: 10px; background: var(--ink); color: var(--on-ink);

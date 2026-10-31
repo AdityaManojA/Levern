@@ -267,8 +267,11 @@ export function openAdd(prefill = {}) {
     });
   }
 
+  // one quest per opened form: a fast double tap or a second Enter while the sheet closes would add it twice
+  let saved = false;
   form.addEventListener('submit', e => {
     e.preventDefault();
+    if (saved) return;
     stop && stop();
     const sk = inkToSave();
     if (sk && sketchBytes(sk) > MAX_SKETCH_BYTES) { toast('That page is too detailed to save. Try clearing a few strokes.'); return; }
@@ -285,6 +288,7 @@ export function openAdd(prefill = {}) {
     // a dated quest keeps its list of alerts; several-times-a-day repeats keep their own reminder (multi.js)
     const dated = !!f.due && !mspec;
     const goal = f.goal ? { target: clampGoal(f.goal.target) } : null;
+    saved = true;
     const q = addQuest({ title: f.title || raw, tier: f.tier, due: goal ? null : f.due, time: f.due && !goal ? f.time : null, duration: f.due && !goal ? f.duration : null, repeat: f.due && !goal ? f.repeat : null, subtasks: f.subtasks, goal, alerts: dated && !goal ? f.alerts : undefined, remind: dated && !goal ? null : remindSpec || null, sketches: sk ? [sk] : [] });
     dropInk();
     play('click');

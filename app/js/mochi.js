@@ -64,13 +64,20 @@ const warm = u => {
   }));
   return warmed.get(u);
 };
+// The rest of his ~90 strips (about 8 MB) wait until the person first touches, clicks or types, so a first visit
+// isn't spent downloading tricks nobody has seen yet. One that's needed before then loads when it's played.
+const engaged = new Promise(res => {
+  if (typeof addEventListener !== 'function') return;   // tests run this outside a browser
+  const go = () => { ['pointerdown', 'keydown'].forEach(t => removeEventListener(t, go, true)); res(); };
+  ['pointerdown', 'keydown'].forEach(t => addEventListener(t, go, { capture: true, passive: true }));
+});
 let warmGen = 0;
 function warmAll() {
   const gen = ++warmGen;
-  const order = [...FIRST.filter(has), ...Object.keys(A).filter(n => !FIRST.includes(n))].map(n => baseUrl(n));
   const idle = window.requestIdleCallback ? f => requestIdleCallback(f, { timeout: 1500 }) : f => setTimeout(f, 60);
-  const step = () => { if (gen !== warmGen) return; const batch = order.splice(0, 3); if (batch.length) Promise.all(batch.map(warm)).then(() => idle(step)); };
-  idle(step);
+  const run = order => { const step = () => { if (gen !== warmGen) return; const batch = order.splice(0, 3); if (batch.length) Promise.all(batch.map(warm)).then(() => idle(step)); }; idle(step); };
+  run(FIRST.filter(has).map(n => baseUrl(n)));
+  engaged.then(() => { if (gen === warmGen) run(Object.keys(A).filter(n => !FIRST.includes(n)).map(n => baseUrl(n))); });
 }
 // The other cat takes over only once his resting strip is ready, so the bar is never empty while it loads.
 let switching = 0;
