@@ -1841,3 +1841,40 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
   font-weight: 700;
   color: var(--mint-dk, var(--mint));
 }
+/* Halloween week (js/theme.js, 31 Oct to 6 Nov): Dark Mode with its own colours, set as <html data-theme="dark"
+   data-season="halloween">. Night purple-black layers, bone ink, pumpkin as the signature colour, and the priorities as
+   blood, pumpkin, candle, slime, ghost and witch. From the Figma file "Levern — Halloween theme". */
+:root[data-theme="dark"][data-season="halloween"] {
+  --a-ginger: #FF7A1A; --a-butter: #FFC94A; --a-coral: #FF4D5E; --a-mint: #8BE04E; --a-sky: #7FD4E0; --a-lav: #B57CFF;
+  --ink: #F3E9DC; --cream: #120D1A; --card: #1C1426; --paper: #261B33; --muted: #A99BB5; --edge: #3A2B4A;
+  --mint: color-mix(in srgb, var(--a-mint) 14%, #1C1426); --coral: color-mix(in srgb, var(--a-coral) 14%, #1C1426);
+  --lav: color-mix(in srgb, var(--a-lav) 14%, #1C1426); --butter: color-mix(in srgb, var(--a-butter) 14%, #1C1426);
+  --sky: color-mix(in srgb, var(--a-sky) 14%, #1C1426);
+  --p1: #FF4D5E; --p2: #FF7A1A; --p3: #FFC94A; --p4: #8BE04E; --p5: #7FD4E0; --p6: #B57CFF;
+  --red: #FF4D5E;
+  --on-ink: #120D1A; --ink-rgb: 243,233,220; --card-rgb: 28,20,38;
+  --tint-paper: #261B33; --tint-paper2: #2E2240; --tint-sky: color-mix(in srgb, var(--a-sky) 8%, #1C1426);
+  --tint-cream: #160F20; --tint-mint: color-mix(in srgb, var(--a-mint) 8%, #1C1426); --tint-rose: color-mix(in srgb, var(--a-coral) 9%, #1C1426);
+  --tint-butter: color-mix(in srgb, var(--a-butter) 8%, #1C1426);
+  --mint-dk: #8BE04E; --mint-dk2: #9EE866; --ev: #7FD4E0;
+}
+/* the moon, its pumpkin glow, three bats and a cobweb at the top of the page; they scroll away with it */
+:root[data-season="halloween"] body {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='70' viewBox='0 0 150 70'%3E%3Cg fill='%233B2B4F'%3E%3Cpath id='b' d='M22 7 L20 2 L19.5 6 C16 4 12 6 11 9 C8 5 4 4 0 5 C4 7 6 11 6 16 C8 13 11 13 13 15 C14 12 17 12 19 14 C20 16 21 18 22 19 C23 18 24 16 25 14 C27 12 30 12 31 15 C33 13 36 13 38 16 C38 11 40 7 44 5 C40 4 36 5 33 9 C32 6 28 4 24.5 6 L24 2 Z' transform='translate(40 18)'/%3E%3Cpath d='M22 7 L20 2 L19.5 6 C16 4 12 6 11 9 C8 5 4 4 0 5 C4 7 6 11 6 16 C8 13 11 13 13 15 C14 12 17 12 19 14 C20 16 21 18 22 19 C23 18 24 16 25 14 C27 12 30 12 31 15 C33 13 36 13 38 16 C38 11 40 7 44 5 C40 4 36 5 33 9 C32 6 28 4 24.5 6 L24 2 Z' transform='translate(105 48) scale(.7)' opacity='.75'/%3E%3Cpath d='M22 7 L20 2 L19.5 6 C16 4 12 6 11 9 C8 5 4 4 0 5 C4 7 6 11 6 16 C8 13 11 13 13 15 C14 12 17 12 19 14 C20 16 21 18 22 19 C23 18 24 16 25 14 C27 12 30 12 31 15 C33 13 36 13 38 16 C38 11 40 7 44 5 C40 4 36 5 33 9 C32 6 28 4 24.5 6 L24 2 Z' transform='translate(0 0) scale(.55)' opacity='.6'/%3E%3C/g%3E%3C/svg%3E") no-repeat right 70px top 40px / 150px 70px,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90' fill='none' stroke='%23F3E9DC' stroke-opacity='.12'%3E%3Cpath d='M0 0 L90 0 M0 0 L80 40 M0 0 L40 80 M0 0 L0 90 M30 0 Q25 12 27 13 Q12 14 13 27 Q12 25 0 30 M60 0 Q50 22 53 27 Q30 30 27 53 Q22 50 0 60 M88 0 Q74 32 79 40 Q46 46 40 79 Q32 74 0 88'/%3E%3C/svg%3E") no-repeat left top / 90px 90px,
+    radial-gradient(circle at calc(100% - 58px) 18px, rgba(255,217,160,.9) 0 31px, rgba(255,122,26,.24) 33px, rgba(255,122,26,0) 170px) no-repeat,
+    var(--cream);
+}
+:root[data-season="halloween"] ::selection { background: rgba(255,122,26,.35); }
+:root[data-theme="dark"][data-season="halloween"] :is(.tab.on .ic) { background: rgba(255,122,26,.16); }
+:root[data-theme="dark"][data-season="halloween"] :is(.seg .on, .chip-btn.on, .segopt input:checked + span, .daychips button.on, .ob-presets button.on, .ink-size.on, .ink-btn.on, .ccal-q button:hover, .day.s, .day.sel, .iconbtn.on, .del-chips input:checked + span, .wn-v) { background: rgba(255,122,26,.16); }
+:root[data-theme="dark"][data-season="halloween"] .field:focus { box-shadow: 0 0 0 3px rgba(255,122,26,.35); }
+:root[data-theme="dark"][data-season="halloween"] .add { box-shadow: 0 0 0 5px var(--cream), 0 4px 16px rgba(255,122,26,.45); }
+:root[data-theme="dark"][data-season="halloween"] .week-bar.hit { background: linear-gradient(180deg, #FFD56B 0%, #FFC94A 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 4px 18px rgba(255,201,74,.35); }
+:root[data-theme="dark"][data-season="halloween"] .today-pip { box-shadow: 0 0 6px rgba(255,122,26,.7); }
+:root[data-theme="dark"][data-season="halloween"] .lb-row.me { background: rgba(255,122,26,.12); box-shadow: inset 0 0 0 1.5px rgba(255,122,26,.45); }
+/* the "Happy Halloween" pill on Home (views/home.js) */
+.hw-chip { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 8px; padding: 4px 12px 4px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+  color: var(--a-ginger); background: color-mix(in srgb, var(--a-ginger) 16%, var(--card)); border: 1px solid color-mix(in srgb, var(--a-ginger) 45%, transparent); }
+.hw-chip svg { width: 14px; height: 14px; flex: none; }

@@ -4,6 +4,7 @@ import { dueStatus, WEEKDAYS, fromStr } from '../dates.js';
 import { esc } from '../ui.js';
 import { questRow } from './common.js';
 import { displayName } from '../account.js';
+import { halloweenActive } from '../theme.js';
 
 function greeting() { const h = new Date().getHours(); return h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; }
 
@@ -22,7 +23,9 @@ export function render() {
   const targetPct = Math.min(88, Math.max(14, Math.round(s.target / max * 100)));
   const left = Math.max(0, s.target - sum.todayCount);
   const rem = dueReminders().length;
+  const jack = '<svg viewBox="0 0 14 14" aria-hidden="true"><rect x="6.2" y=".5" width="1.6" height="3" rx=".8" fill="#8BE04E"/><ellipse cx="7" cy="8.3" rx="6.5" ry="5.2" fill="#FF7A1A"/><path d="M3.6 6.6h1.6l-.8-1.3zM8.8 6.6h1.6l-.8-1.3zM3.8 9.2q3.2 3.2 6.4 0L9 9.9l-1-.6-1 .7-1-.7-1 .6z" fill="#120D1A"/></svg>';
   return `
+    ${halloweenActive(s) ? `<div class="hw-chip">${jack}Happy Halloween · this week</div>` : ''}
     <div class="h-sub">${greeting()}${displayName(s) ? ', ' + esc(displayName(s)) : ''}</div>
     <h1 class="h-title">Up next</h1>
     <div class="sec sec-top"><span></span><a href="#/quests?filter=all" data-act="more-quests">All quests</a></div>

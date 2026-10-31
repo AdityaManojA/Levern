@@ -12,7 +12,7 @@ import { COATS, CAT_VOICE } from '../mochi.js';
 export const coatNow = s => (s.mochiColor === 'black' ? 'black' : 'cookie');
 export const catName = s => (coatNow(s) === 'cookie' ? 'Cookie' : 'Mochi');
 import { mySeasonExp, setBoardName } from '../board.js';
-import { applyTheme } from '../theme.js';
+import { applyTheme, isHalloweenWeek, halloweenActive } from '../theme.js';
 import { APP_VERSION, CHANGELOG } from '../changelog.js';
 import { deleteAccount } from '../cloud.js';
 import { rankChip } from './common.js';
@@ -60,6 +60,7 @@ export function themeInfo(rawT) {
     };
   }
   const map = {
+    'halloween': { label: 'Halloween', desc: 'Pumpkin glow on a moonless night, for Halloween week', bg: '#120D1A', card: '#1C1426', ink: '#F3E9DC', pri: ['#FF4D5E', '#FF7A1A', '#FFC94A', '#8BE04E', '#7FD4E0', '#B57CFF'] },
     'light': { label: 'Light Mode', desc: 'Warm cream surfaces and soft pastels', bg: '#FFF8EE', card: '#FFFFFF', ink: '#1E1B18', pri: ['#F4918A', '#F9B77E', '#FFE08A', '#B9E7CC', '#A9D6F0', '#D4C4F2'] },
     'dark': { label: 'Dark Mode', desc: 'Near-black layers with glowing accents', bg: '#0E1014', card: '#171A20', ink: '#EEE8DF', pri: ['#FF6B6B', '#FF9A3D', '#FFCB57', '#46D19E', '#5DB6F2', '#A68BFA'] },
     'mono': { label: 'Monochrome Light', desc: 'Clean light theme in pure greys', bg: '#F5F5F4', card: '#FFFFFF', ink: '#141414', pri: ['#8A8A8A', '#A1A1A1', '#B5B5B5', '#C8C8C8', '#D9D9D9', '#EAEAEA'] },
@@ -140,7 +141,7 @@ export function renderThemePreview(rawT) {
 }
 
 export function render() {
-  const s = getState().settings, p = permission();
+  const s = getState().settings, p = permission(), hw = halloweenActive(s);
   const pText = { granted: 'Allowed. Reminders pop up even when Levern is in the background.', denied: 'Blocked in your browser settings for this site. Reminders still show in the app.',
     default: 'Not asked yet.', unsupported: 'This browser has no system notifications. Reminders show in the app.' }[p];
   return `
@@ -173,16 +174,17 @@ export function render() {
       <div class="srow" style="display:block;border-top:none;padding:2px 0 8px">
         <div class="l" style="margin-bottom:8px"><b>Theme</b><small>Select an appearance or follow your device settings</small></div>
         <select class="field theme-select" data-change="theme" aria-label="Theme">
-          <option value="light" ${(s.theme || 'light') === 'light' ? 'selected' : ''}>Light Mode</option>
-          <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Dark Mode</option>
-          <option value="mono" ${s.theme === 'mono' || s.theme === 'mono-light' ? 'selected' : ''}>Monochrome Light</option>
-          <option value="mono-light-accent" ${s.theme === 'mono-light-accent' ? 'selected' : ''}>Monochrome Light Accent</option>
-          <option value="mono-dark" ${s.theme === 'mono-dark' ? 'selected' : ''}>Monochrome Dark</option>
-          <option value="mono-dark-accent" ${s.theme === 'mono-dark-accent' ? 'selected' : ''}>Monochrome Dark Accent</option>
-          <option value="auto" ${s.theme === 'auto' ? 'selected' : ''}>Follow Device</option>
+          ${isHalloweenWeek() ? `<option value="halloween" ${hw ? 'selected' : ''}>Halloween (this week)</option>` : ''}
+          <option value="light" ${!hw && ((s.theme || 'light') === 'light') ? 'selected' : ''}>Light Mode</option>
+          <option value="dark" ${!hw && (s.theme === 'dark') ? 'selected' : ''}>Dark Mode</option>
+          <option value="mono" ${!hw && (s.theme === 'mono' || s.theme === 'mono-light') ? 'selected' : ''}>Monochrome Light</option>
+          <option value="mono-light-accent" ${!hw && (s.theme === 'mono-light-accent') ? 'selected' : ''}>Monochrome Light Accent</option>
+          <option value="mono-dark" ${!hw && (s.theme === 'mono-dark') ? 'selected' : ''}>Monochrome Dark</option>
+          <option value="mono-dark-accent" ${!hw && (s.theme === 'mono-dark-accent') ? 'selected' : ''}>Monochrome Dark Accent</option>
+          <option value="auto" ${!hw && (s.theme === 'auto') ? 'selected' : ''}>Follow Device</option>
         </select>
       </div>
-      ${renderThemePreview(s.theme || 'light')}
+      ${renderThemePreview(hw ? 'halloween' : (s.theme || 'light'))}
     </div>
 
     <div class="sec">Cat</div>
@@ -388,7 +390,7 @@ export const actions = {
   speed: el => { setSetting('speed', el.dataset.v); play('click', 0.4); mascot.settingsChanged(); },
   theme: el => {
     const val = el.dataset.v;
-    setSetting('theme', val, { quiet: true });
+    pickTheme(val);
     applyTheme();
     play('click', 0.4);
     const prev = document.querySelector('.theme-preview-card');
@@ -406,10 +408,17 @@ export const actions = {
   'clear-done': async () => { if (await confirmBox('Remove all done quests? Your history and stats stay.', 'Clear')) { clearCompleted(); toast('Done quests cleared'); } },
   reset: async () => { if (await confirmBox('Delete all quests, history and settings on this device?', 'Reset')) { resetAll(); toast('Everything reset'); setTimeout(() => mascot.react('cry', 'my settings…'), 400); } },
 };
+// Halloween is picked by clearing halloweenOff (the saved theme stays as it was); any other theme during Halloween
+// week also sets halloweenOff, so Halloween stays off on every device until the week ends (js/theme.js).
+function pickTheme(val) {
+  if (val === 'halloween') { setSetting('halloweenOff', '', { quiet: true }); return; }
+  if (isHalloweenWeek()) setSetting('halloweenOff', String(new Date().getFullYear()), { quiet: true });
+  setSetting('theme', val, { quiet: true });
+}
 export function onChange(el) {
   if (el.dataset.change === 'theme') {
     const val = el.value;
-    setSetting('theme', val, { quiet: true });
+    pickTheme(val);
     applyTheme();
     play('click', 0.4);
     const prev = document.querySelector('.theme-preview-card');

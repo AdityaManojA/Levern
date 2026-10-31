@@ -29,6 +29,8 @@ const DEFAULT_SETTINGS = {
   updateSeen: '',
   // dailyCapSeen: date string (YYYY-MM-DD in IST) when the 55 EXP daily cap popup was shown
   dailyCapSeen: '',
+  // halloweenOff: the year someone picked another theme during Halloween week (theme.js), so it stays off that week
+  halloweenOff: '',
 };
 
 let adapter = localAdapter('taskflow.v1');
