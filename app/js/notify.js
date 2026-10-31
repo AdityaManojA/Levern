@@ -10,6 +10,19 @@ const listeners = new Set();
 export async function registerSW() {
   if (!('serviceWorker' in navigator)) return null;
   try {
+    // A new release (sw.js VERSION bump) takes over open pages at once (skipWaiting + claim), but the page would
+    // keep running the old files it already loaded. So reload once when that happens, and look for a new release
+    // whenever the app comes back to the front, so an app left open all day still updates.
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloading) return;
+      reloading = true;
+      location.reload();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg?.update?.().catch(() => {});
+    });
     reg = await navigator.serviceWorker.register('./sw.js');
     navigator.serviceWorker.addEventListener('message', e => listeners.forEach(f => f(e.data)));
     await navigator.serviceWorker.ready;

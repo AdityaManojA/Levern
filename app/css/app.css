@@ -1858,13 +1858,23 @@ h2 .og { vertical-align: 4px; font-size: 10px; line-height: 14px; }
   --tint-butter: color-mix(in srgb, var(--a-butter) 8%, #1C1426);
   --mint-dk: #8BE04E; --mint-dk2: #9EE866; --ev: #7FD4E0;
 }
-/* the moon, its pumpkin glow, three bats and a cobweb at the top of the page; they scroll away with it */
+/* the moon, its pumpkin glow, three bats and a cobweb in the page corners; only on wide screens, where the top bar
+   leaves the sides free. Phones get the moon beside Home's title instead (below). */
+@media (min-width: 900px) {
 :root[data-season="halloween"] body {
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='70' viewBox='0 0 150 70'%3E%3Cg fill='%233B2B4F'%3E%3Cpath id='b' d='M22 7 L20 2 L19.5 6 C16 4 12 6 11 9 C8 5 4 4 0 5 C4 7 6 11 6 16 C8 13 11 13 13 15 C14 12 17 12 19 14 C20 16 21 18 22 19 C23 18 24 16 25 14 C27 12 30 12 31 15 C33 13 36 13 38 16 C38 11 40 7 44 5 C40 4 36 5 33 9 C32 6 28 4 24.5 6 L24 2 Z' transform='translate(40 18)'/%3E%3Cpath d='M22 7 L20 2 L19.5 6 C16 4 12 6 11 9 C8 5 4 4 0 5 C4 7 6 11 6 16 C8 13 11 13 13 15 C14 12 17 12 19 14 C20 16 21 18 22 19 C23 18 24 16 25 14 C27 12 30 12 31 15 C33 13 36 13 38 16 C38 11 40 7 44 5 C40 4 36 5 33 9 C32 6 28 4 24.5 6 L24 2 Z' transform='translate(105 48) scale(.7)' opacity='.75'/%3E%3Cpath d='M22 7 L20 2 L19.5 6 C16 4 12 6 11 9 C8 5 4 4 0 5 C4 7 6 11 6 16 C8 13 11 13 13 15 C14 12 17 12 19 14 C20 16 21 18 22 19 C23 18 24 16 25 14 C27 12 30 12 31 15 C33 13 36 13 38 16 C38 11 40 7 44 5 C40 4 36 5 33 9 C32 6 28 4 24.5 6 L24 2 Z' transform='translate(0 0) scale(.55)' opacity='.6'/%3E%3C/g%3E%3C/svg%3E") no-repeat right 70px top 40px / 150px 70px,
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90' fill='none' stroke='%23F3E9DC' stroke-opacity='.12'%3E%3Cpath d='M0 0 L90 0 M0 0 L80 40 M0 0 L40 80 M0 0 L0 90 M30 0 Q25 12 27 13 Q12 14 13 27 Q12 25 0 30 M60 0 Q50 22 53 27 Q30 30 27 53 Q22 50 0 60 M88 0 Q74 32 79 40 Q46 46 40 79 Q32 74 0 88'/%3E%3C/svg%3E") no-repeat left top / 90px 90px,
     radial-gradient(circle at calc(100% - 58px) 18px, rgba(255,217,160,.9) 0 31px, rgba(255,122,26,.24) 33px, rgba(255,122,26,0) 170px) no-repeat,
     var(--cream);
+}
+}
+/* phones and narrow windows: the moon and two bats sit to the right of Home's "Up next", clear of the sticky top bar
+   (which grows under an iPhone notch), and scroll with the page */
+@media (max-width: 899px) {
+:root[data-season="halloween"] .view[data-view="home"] .h-title { position: relative; }
+:root[data-season="halloween"] .view[data-view="home"] .h-title::after { content: ""; position: absolute; right: -6px; top: 50%; width: 190px; height: 110px; margin-top: -62px; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='190' height='110' viewBox='0 0 190 110'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23FF7A1A' stop-opacity='.32'/%3E%3Cstop offset='1' stop-color='%23FF7A1A' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='132' cy='55' r='55' fill='url(%23g)'/%3E%3Ccircle cx='132' cy='55' r='22' fill='%23FFD9A0' fill-opacity='.92'/%3E%3Cg fill='%234A3763'%3E%3Cpath d='M22 7 L20 2 L19.5 6 C16 4 12 6 11 9 C8 5 4 4 0 5 C4 7 6 11 6 16 C8 13 11 13 13 15 C14 12 17 12 19 14 C20 16 21 18 22 19 C23 18 24 16 25 14 C27 12 30 12 31 15 C33 13 36 13 38 16 C38 11 40 7 44 5 C40 4 36 5 33 9 C32 6 28 4 24.5 6 L24 2 Z' transform='translate(28 22) scale(.85)'/%3E%3Cpath d='M22 7 L20 2 L19.5 6 C16 4 12 6 11 9 C8 5 4 4 0 5 C4 7 6 11 6 16 C8 13 11 13 13 15 C14 12 17 12 19 14 C20 16 21 18 22 19 C23 18 24 16 25 14 C27 12 30 12 31 15 C33 13 36 13 38 16 C38 11 40 7 44 5 C40 4 36 5 33 9 C32 6 28 4 24.5 6 L24 2 Z' transform='translate(62 72) scale(.55)' opacity='.8'/%3E%3C/g%3E%3C/svg%3E") no-repeat center / 190px 110px; }
 }
 :root[data-season="halloween"] ::selection { background: rgba(255,122,26,.35); }
 :root[data-theme="dark"][data-season="halloween"] :is(.tab.on .ic) { background: rgba(255,122,26,.16); }
