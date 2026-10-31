@@ -1,7 +1,7 @@
 // Reminder scheduler (page side). Every second it looks for reminders whose time has come, marks
 // them fired, and shows a system notification plus an in-app toast. The count of due reminders
 // drives the red badges, the tab title and the app-icon badge.
-import { getState, subscribe, markFired, dueReminders, upcomingReminders, findQuest, tierLabel, toggleDone, snooze, snoozeTomorrow, commit } from './store.js';
+import { getState, subscribe, setSetting, markFired, dueReminders, upcomingReminders, findQuest, tierLabel, toggleDone, snooze, snoozeTomorrow, commit } from './store.js';
 import { dueStatus } from './dates.js';
 import * as N from './notify.js';
 import { toast, play } from './ui.js';
@@ -42,32 +42,42 @@ export async function check() {
   document.querySelectorAll('.bell').forEach(b => { b.classList.remove('ring'); void b.offsetWidth; b.classList.add('ring'); });
 }
 
-let lastCount = null;
-export function paintBadges() {
-  const st = getState();
-  const quests = st.quests || [];
-  // Dynamic badge count: overdue + due-today quests + active due reminders
-  const dueQIds = new Set();
-  for (const q of quests) {
-    if (q.done) continue;
+let lastCount = null, lastDue = null;
+// What the bell counts: open quests that are overdue or due today, or whose reminder has gone off.
+function bellQuests() {
+  return (getState().quests || []).filter(q => {
+    if (q.done) return false;
     const s = dueStatus(q);
-    if (s === 'overdue' || s === 'today' || (q.remind && q.remind.fired && !q.remind.dismissed)) {
-      dueQIds.add(q.id);
-    }
-  }
-  const n = dueQIds.size;
+    return s === 'overdue' || s === 'today' || (q.remind && q.remind.fired && !q.remind.dismissed);
+  });
+}
+// One key per thing to be told about: a new due date or a reminder going off makes a new key, so it counts again.
+const bellKey = q => `${q.id}:${q.due || ''}@${q.remind && q.remind.fired && !q.remind.dismissed ? q.remind.at : ''}`;
+// Opening the notifications panel marks everything in it as seen, so the badges clear until something new comes up.
+// Kept in synced settings (bellSeen), so it clears on every device.
+export function markBellSeen() {
+  const keys = bellQuests().map(bellKey).sort();
+  if (JSON.stringify(keys) === JSON.stringify(getState().settings.bellSeen || [])) return;
+  setSetting('bellSeen', keys, { quiet: true });   // quiet: no re-render of the open view, so repaint the badges here
+  paintBadges();
+}
+export function paintBadges() {
+  const due = bellQuests();
+  const seen = new Set(getState().settings.bellSeen || []);
+  const unseen = due.filter(q => !seen.has(bellKey(q)));
+  const n = unseen.length;
   const txt = n > 99 ? '99+' : String(n);
   const grew = lastCount !== null && n > lastCount;
-  const cleared = lastCount > 0 && n === 0;
-  lastCount = n;
+  const cleared = lastDue > 0 && due.length === 0;
+  lastCount = n; lastDue = due.length;
   document.querySelectorAll('[data-rcount]').forEach(b => {
     b.textContent = txt; b.hidden = !n;
     if (grew) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
   });
   document.querySelectorAll('.bell').forEach(b => b.classList.toggle('has-due', !!n));
-  // he only holds a card while something is due; keep its count in step
+  // he only holds a card while something new is due; keep its count in step
   if (!n) { mascot.release(); if (cleared) mascot.react('celebrate', 'all caught up!'); }
-  else if (mascot.holding()) { const d = dueReminders(); mascot.hold({ count: n, title: d.length ? d[d.length - 1].title : (quests.find(q => dueQIds.has(q.id))?.title || '') }); }
+  else if (mascot.holding()) { const d = dueReminders(); mascot.hold({ count: n, title: d.length ? d[d.length - 1].title : unseen[unseen.length - 1].title }); }
   document.title = n ? `(${txt}) ${baseTitle}` : baseTitle;
   N.setBadge(n);
 }

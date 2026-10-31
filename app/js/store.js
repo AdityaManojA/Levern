@@ -31,6 +31,8 @@ const DEFAULT_SETTINGS = {
   dailyCapSeen: '',
   // halloweenOff: the year someone picked another theme during Halloween week (theme.js), so it stays off that week
   halloweenOff: '',
+  // bellSeen: what the notifications panel last showed (reminders.js), so its badges only count what's new
+  bellSeen: [],
 };
 
 let adapter = localAdapter('taskflow.v1');

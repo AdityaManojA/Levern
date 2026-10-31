@@ -8,10 +8,11 @@ import { morph } from '../motion.js';
 import { mascot } from '../mascot.js';
 import { recentNotifs } from '../store.js';
 import { completeQuest } from '../complete.js';
+import { markBellSeen } from '../reminders.js';
 
 const panel = () => $('#rpanel');
 export const isOpen = () => panel().classList.contains('open');
-export function open() { render(); panel().classList.add('open'); mascot.release(); }
+export function open() { render(); panel().classList.add('open'); mascot.release(); markBellSeen(); }
 export function close() { panel().classList.remove('open'); }
 export function toggle() { play('click', 0.5); isOpen() ? close() : open(); }
 
@@ -24,7 +25,8 @@ export function permNote() {
   return '<p class="small" style="margin-top:10px">Get reminders outside the app too. <button class="mini" data-act="allow-notify">Allow notifications</button></p>';
 }
 
-export function render() { morph(panel(), draw); }
+// while the panel is open, anything new that shows up in it counts as seen too
+export function render() { morph(panel(), draw); if (isOpen()) markBellSeen(); }
 function draw() {
   const d = dueReminders(), u = upcomingReminders().slice(0, 12), snoozeMin = getState().settings.snoozeMin;
   const item = (q, due) => `<div data-key="r-${q.id}" class="ritem${due ? '' : ' upcoming'}" style="--c:${TIER_COLORS[q.tier]}">
