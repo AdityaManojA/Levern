@@ -3,6 +3,16 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.19', date: '2026-11-02', title: 'Clean Quest Details & Redesigned Time Picker',
+    note: 'Editing quests is now calmer and more organized with card-grouped sections, clearer spacing, and a smoothly rolling time wheel picker with clean action buttons.',
+    tip: 'Tap any quest to check out the refreshed schedule, frequency, reminders, and subtask cards!',
+    items: [
+      'Clean Card Layout: Quest details are now grouped into structured cards for Schedule & Duration, Frequency, Reminders, and Subtasks with gentle borders and generous spacing.',
+      'Redesigned Time Wheel Picker: Setting a quest time now features an iOS-style rolling wheel with a soft highlight capsule, a colon separator, and dedicated buttons for No time and Done.',
+      'Streamlined Controls: Quick date and duration selectors now sit in clean chips, and frequency repeats use a unified segmented toggle.',
+    ],
+  },
+  {
     v: '1.18', date: '2026-10-31', title: 'An Honest Privacy Policy, a Lighter App & Clearer Notifications',
     note: 'Our privacy policy said your quests stay only on your device. Since syncing arrived, they are also kept in your Levern account so they follow you across devices. The policy now says exactly what is stored, who can see it and how to delete it. Nothing extra was collected.',
     tip: 'Read the full policy any time from Settings → Privacy → Privacy policy.',

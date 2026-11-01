@@ -1,6 +1,6 @@
 // Quest detail: edit everything about one quest. Fields save as you go.
 import { findQuest, updateQuest, deleteQuest, restoreQuest, addSubtask, updateSubtask, removeSubtask, setReminder, setAlerts, tierLabel, TIER_COLORS, getState } from '../store.js';
-import { dueLabel, dueStatus, fmtStamp, todayStr, fmtDuration } from '../dates.js';
+import { dueLabel, dueStatus, fmtStamp, todayStr, addDays, fmtDuration } from '../dates.js';
 import { REPEATS, describe, oftenOf, oftenSeg } from '../recur.js';
 import { multiLabel } from '../multi.js';
 import { googleLink, buildICS } from '../ics.js';
@@ -97,53 +97,73 @@ export function render(params) {
     </div>
     ${q.repeat && history ? `<div class="small" style="margin:6px 2px 0">Completed ${history} time${history === 1 ? '' : 's'}. Ticking it moves it to the next date.</div>` : ''}
 
-    <label class="lbl">Priority</label>
-    ${tierPicker(q.tier)}
-
-    <label class="lbl">Due</label>
-    <div class="two">
-      <input class="field" type="date" value="${q.due || ''}" data-change="due" aria-label="Due date">
-      ${timeWheelHTML(q.time || '', { name: 'time', label: 'Due time', attrs: 'data-change="time"', disabled: !q.due })}
-    </div>
-    <div class="chips" style="margin-top:8px">
-      <button class="chip chip-btn" data-act="due-quick" data-d="0">Today</button><button class="chip chip-btn" data-act="due-quick" data-d="1">Tomorrow</button>
-      <button class="chip chip-btn" data-act="due-quick" data-d="7">In a week</button>${q.due ? '<button class="chip chip-btn" data-act="due-quick" data-d="">No date</button>' : ''}
+    <div class="dt-group">
+      <div class="sec-label">Priority</div>
+      ${tierPicker(q.tier)}
     </div>
 
-    <label class="lbl">Duration</label>
-    <div class="chips" style="margin-bottom:8px">
-      ${[[30, '30m'], [45, '45m'], [60, '1h'], [90, '1.5h'], [120, '2h'], [0, 'None']].map(([min, lbl]) =>
-        `<button type="button" class="chip chip-btn${(q.duration || 0) === min ? ' on' : ''}" data-act="dur-set" data-dur="${min}">${lbl}</button>`
-      ).join('')}
-      ${q.duration && ![30, 45, 60, 90, 120].includes(q.duration) ? `<button type="button" class="chip chip-btn on" data-act="dur-set" data-dur="${q.duration}">${esc(fmtDuration(q.duration))}</button>` : ''}
+    <div class="dt-group">
+      <div class="sec-label">Schedule & Duration</div>
+      <div class="dt-card">
+        <div class="two">
+          <input class="field" type="date" value="${q.due || ''}" data-change="due" aria-label="Due date">
+          ${timeWheelHTML(q.time || '', { name: 'time', label: 'Due time', attrs: 'data-change="time"', disabled: !q.due })}
+        </div>
+        <div class="chips dt-quick-chips">
+          <button type="button" class="chip chip-btn${q.due === todayStr() ? ' on' : ''}" data-act="due-quick" data-d="0">Today</button>
+          <button type="button" class="chip chip-btn${q.due === addDays(todayStr(), 1) ? ' on' : ''}" data-act="due-quick" data-d="1">Tomorrow</button>
+          <button type="button" class="chip chip-btn${q.due === addDays(todayStr(), 7) ? ' on' : ''}" data-act="due-quick" data-d="7">In a week</button>
+          ${q.due ? '<button type="button" class="chip chip-btn" data-act="due-quick" data-d="">No date</button>' : ''}
+        </div>
+        <div class="dt-inner-divider"></div>
+        <span class="sub-label">Duration</span>
+        <div class="chips dt-dur-chips">
+          ${[[30, '30m'], [45, '45m'], [60, '1h'], [90, '1.5h'], [120, '2h'], [0, 'None']].map(([min, lbl]) =>
+            `<button type="button" class="chip chip-btn${(q.duration || 0) === min ? ' on' : ''}" data-act="dur-set" data-dur="${min}">${lbl}</button>`
+          ).join('')}
+          ${q.duration && ![30, 45, 60, 90, 120].includes(q.duration) ? `<button type="button" class="chip chip-btn on" data-act="dur-set" data-dur="${q.duration}">${esc(fmtDuration(q.duration))}</button>` : ''}
+        </div>
+      </div>
     </div>
 
-    <label class="lbl">How often</label>
-    ${oftenSeg(oftenOf(q), 'data-act="often" data-k')}
-    ${q.repeat ? `<select class="field" id="repeat" data-change="repeat" aria-label="Repeats">${REPEATS.map(([k, l]) => `<option value="${k}" ${q.repeat.freq === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : ''}
-    ${q.repeat && q.due && (q.repeat.freq === 'monthly' || q.repeat.freq === 'yearly') ? `<div class="small" style="margin:6px 0 10px">${esc(describe(q.repeat, q.due))}. To repeat on another date, change the due date.</div>` : ''}
-    ${q.goal ? goalBlock(q) : ''}
-
-    <label class="lbl">Reminders</label>
-    <div data-picker>${reminderPicker(q)}</div>
-    ${q.remind?.multi && !q.done ? `<div class="srow multi-on"><div class="l"><b>Also through the day</b><small>${esc(multiLabel(q.remind.multi))}</small></div><button class="mini" data-act="multi-off">Stop</button></div>` : ''}
-
-    <label class="lbl">Subtasks ${q.subtasks.length ? `<span class="small">${done}/${q.subtasks.length}</span>` : ''}</label>
-    <div class="card" data-tour="subtasks" style="padding:6px 12px">
-      ${q.subtasks.map(s => `<div data-key="s-${s.id}" class="sub${s.done ? ' done' : ''}" style="--c:${TIER_COLORS[s.tier ?? q.tier]}">
-        <button class="chk${s.done ? ' on' : ''}" data-act="sub-toggle" data-sid="${s.id}" aria-label="Toggle subtask"></button>
-        <input class="st" value="${esc(s.title)}" data-input="sub-title" data-sid="${s.id}" aria-label="Subtask">
-        <select data-change="sub-tier" data-sid="${s.id}" aria-label="Subtask priority">${TIER_COLORS.map((_, i) => `<option value="${i}" ${i === (s.tier ?? q.tier) ? 'selected' : ''}>P${i + 1}</option>`).join('')}</select>
-        <button class="x" data-act="sub-del" data-sid="${s.id}" aria-label="Delete subtask">${ICON.x}</button>
-      </div>`).join('') || '<div class="small" style="padding:8px 0">Break it into smaller steps.</div>'}
-      <form class="addsub" data-addsub><input class="field" name="t" placeholder="Add a subtask" autocomplete="off" style="padding:8px 12px"><button class="mini">Add</button></form>
+    <div class="dt-group">
+      <div class="sec-label">Frequency</div>
+      ${oftenSeg(oftenOf(q), 'data-act="often" data-k')}
+      ${q.repeat ? `<select class="field dt-repeat" id="repeat" data-change="repeat" aria-label="Repeats">${REPEATS.map(([k, l]) => `<option value="${k}" ${q.repeat.freq === k ? 'selected' : ''}>${l}</option>`).join('')}</select>` : ''}
+      ${q.repeat && q.due && (q.repeat.freq === 'monthly' || q.repeat.freq === 'yearly') ? `<div class="small dt-repeat-hint">${esc(describe(q.repeat, q.due))}. To repeat on another date, change the due date.</div>` : ''}
+      ${q.goal ? goalBlock(q) : ''}
     </div>
 
-    <label class="lbl" for="notes">Notes</label>
-    <textarea class="field" id="notes" data-input="notes" placeholder="Links, details, anything">${esc(q.notes)}</textarea>
+    <div class="dt-group">
+      <div class="sec-label">Reminders</div>
+      <div class="dt-card">
+        <div data-picker>${reminderPicker(q)}</div>
+        ${q.remind?.multi && !q.done ? `<div class="srow multi-on"><div class="l"><b>Also through the day</b><small>${esc(multiLabel(q.remind.multi))}</small></div><button class="mini" data-act="multi-off">Stop</button></div>` : ''}
+      </div>
+    </div>
 
-    <label class="lbl">Sketches and handwriting ${q.sketches?.length ? `<span class="small">${q.sketches.length}</span>` : ''}</label>
-    ${sketchThumbs(q)}
+    <div class="dt-group">
+      <div class="sec-label">Subtasks ${q.subtasks.length ? `<span class="dt-badge">${done}/${q.subtasks.length}</span>` : ''}</div>
+      <div class="dt-card dt-subtasks-card" data-tour="subtasks">
+        ${q.subtasks.map(s => `<div data-key="s-${s.id}" class="sub${s.done ? ' done' : ''}" style="--c:${TIER_COLORS[s.tier ?? q.tier]}">
+          <button class="chk${s.done ? ' on' : ''}" data-act="sub-toggle" data-sid="${s.id}" aria-label="Toggle subtask"></button>
+          <input class="st" value="${esc(s.title)}" data-input="sub-title" data-sid="${s.id}" aria-label="Subtask">
+          <select data-change="sub-tier" data-sid="${s.id}" aria-label="Subtask priority">${TIER_COLORS.map((_, i) => `<option value="${i}" ${i === (s.tier ?? q.tier) ? 'selected' : ''}>P${i + 1}</option>`).join('')}</select>
+          <button class="x" data-act="sub-del" data-sid="${s.id}" aria-label="Delete subtask">${ICON.x}</button>
+        </div>`).join('') || '<div class="dt-empty-hint">Break it into smaller steps.</div>'}
+        <form class="addsub" data-addsub><input class="field" name="t" placeholder="Add a subtask…" autocomplete="off"><button class="btn sm">Add</button></form>
+      </div>
+    </div>
+
+    <div class="dt-group">
+      <label class="sec-label" for="notes">Notes</label>
+      <textarea class="field dt-notes" id="notes" data-input="notes" placeholder="Links, details, anything…">${esc(q.notes)}</textarea>
+    </div>
+
+    <div class="dt-group">
+      <div class="sec-label">Sketches and handwriting ${q.sketches?.length ? `<span class="dt-badge">${q.sketches.length}</span>` : ''}</div>
+      ${sketchThumbs(q)}
+    </div>
 
     <div class="sec">Do it</div>
     <div class="row-btns">

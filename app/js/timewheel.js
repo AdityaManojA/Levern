@@ -33,11 +33,17 @@ export function timeWheelHTML(value, { name = 'time', label = 'Time', attrs = ''
     <input type="hidden" name="${esc(name)}" value="${esc(value || '')}" ${attrs} ${disabled ? 'disabled' : ''}>
     <button type="button" class="tw-btn" data-tw-open aria-expanded="false" ${disabled ? 'disabled' : ''}>${esc(fmtTime(value))}</button>
     <div class="tw-panel" hidden>
-      ${column('h', hours, p ? p.h12 - 1 : 8, 'Hour')}
-      ${column('m', minutes, p ? p.m : 0, 'Minute')}
-      ${column('p', ['AM', 'PM'], p ? (p.pm ? 1 : 0) : 0, 'AM or PM')}
-      <div class="tw-band" aria-hidden="true"></div>
-      <div class="tw-foot"><button type="button" class="link" data-tw-clear>No time</button><button type="button" class="link" data-tw-done>Done</button></div>
+      <div class="tw-wheels">
+        ${column('h', hours, p ? p.h12 - 1 : 8, 'Hour')}
+        <div class="tw-sep" aria-hidden="true">:</div>
+        ${column('m', minutes, p ? p.m : 0, 'Minute')}
+        ${column('p', ['AM', 'PM'], p ? (p.pm ? 1 : 0) : 0, 'AM or PM')}
+        <div class="tw-band" aria-hidden="true"></div>
+      </div>
+      <div class="tw-foot">
+        <button type="button" class="tw-btn-clear" data-tw-clear>No time</button>
+        <button type="button" class="tw-btn-done" data-tw-done>Done</button>
+      </div>
     </div>
   </div>`;
 }

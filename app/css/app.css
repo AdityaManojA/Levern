@@ -591,6 +591,232 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .missing-btns .btn { font-size: 14.5px; min-height: 46px; }
 
 /* detail */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.dt-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sec-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 0 4px;
+}
+.sub-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.dt-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(var(--ink-rgb), 0.08);
+  color: var(--ink);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.dt-card {
+  background: var(--card);
+  border: 1.5px solid rgba(var(--ink-rgb), 0.14);
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(var(--ink-rgb), 0.03);
+}
+.dt-inner-divider {
+  height: 1px;
+  background: rgba(var(--ink-rgb), 0.08);
+  margin: 14px 0 10px;
+}
+.detail .quick-dates,
+.detail .dt-quick-chips,
+.detail .dt-dur-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.detail .chip,
+.detail .chip-btn {
+  border: 1.5px solid rgba(var(--ink-rgb), 0.14);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s var(--ease);
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+.detail .chip:hover,
+.detail .chip-btn:hover {
+  color: var(--ink);
+  border-color: rgba(var(--ink-rgb), 0.28);
+  background: var(--paper);
+}
+.detail .chip.on,
+.detail .chip-btn.on {
+  background: var(--ink);
+  color: var(--card);
+  border-color: var(--ink);
+  font-weight: 700;
+}
+.seg.often {
+  display: flex;
+  background: var(--paper);
+  border: 1.5px solid rgba(var(--ink-rgb), 0.12);
+  border-radius: 16px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 0;
+}
+.seg.often button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 8px 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s var(--ease);
+}
+.seg.often button.on {
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(var(--ink-rgb), 0.1);
+}
+.dt-repeat {
+  margin-top: 8px;
+}
+.dt-repeat-hint {
+  margin: 6px 4px 0;
+}
+.alerts .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.alerts .chip-btn {
+  border: 1.5px solid rgba(var(--ink-rgb), 0.14);
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: var(--card);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.alerts .chip-btn.on {
+  background: var(--ink);
+  color: var(--card);
+  border-color: var(--ink);
+  font-weight: 700;
+}
+.alert-add {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(var(--ink-rgb), 0.08);
+}
+.alert-add input.field {
+  width: 64px;
+  flex: none;
+  border: 1.5px solid rgba(var(--ink-rgb), 0.14);
+  border-radius: 10px;
+  padding: 6px 10px;
+  text-align: center;
+  font-weight: 700;
+  background: var(--paper);
+}
+.alert-add select.field {
+  flex: 1;
+  border: 1.5px solid rgba(var(--ink-rgb), 0.14);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 13.5px;
+  background: var(--paper);
+}
+.alert-add button.mini {
+  border: none;
+  background: rgba(var(--ink-rgb), 0.08);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.alert-add button.mini:hover {
+  background: var(--ink);
+  color: var(--card);
+}
+.dt-subtasks-card {
+  padding: 10px 14px;
+}
+.dt-empty-hint {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 2px 4px;
+}
+.dt-notes {
+  border: 1.5px solid rgba(var(--ink-rgb), 0.14);
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  background: var(--card);
+}
+:root[data-theme="dark"] .dt-card,
+:root[data-theme="mono-dark"] .dt-card {
+  background: var(--card);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+:root[data-theme="dark"] .seg.often,
+:root[data-theme="mono-dark"] .seg.often {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+:root[data-theme="dark"] .seg.often button.on,
+:root[data-theme="mono-dark"] .seg.often button.on {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+:root[data-theme="halloween"] .dt-card {
+  background: #1c1426;
+  border-color: rgba(243, 233, 220, 0.12);
+}
+:root[data-theme="halloween"] .seg.often {
+  background: #261b33;
+  border-color: rgba(243, 233, 220, 0.15);
+}
+:root[data-theme="halloween"] .seg.often button.on {
+  background: #1c1426;
+  color: #ff7a1a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
 .back { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; text-decoration: none; margin-bottom: 8px; }
 .title-in { width: 100%; font-size: 24px; font-weight: 700; border: none; border-bottom: 2.5px dashed transparent; background: none; padding: 2px 0; outline: none; }
 .title-in:focus { border-bottom-color: var(--ink); }
@@ -1336,16 +1562,125 @@ body.mochi-held { touch-action: none; overscroll-behavior: none; }
 .tw-btn { width: 100%; border: var(--line); border-radius: 14px; padding: 12px 14px; background: var(--card); font-weight: 600; font-size: 16px; text-align: left; color: var(--ink); }
 .tw-btn:disabled { opacity: .5; }
 /* floats over the card, so opening it doesn't stretch the form (a narrow grid cell on phones) */
-.tw-panel { position: absolute; top: calc(100% + 6px); right: 0; z-index: 30; width: 240px; max-width: calc(100vw - 32px); border: var(--line); border-radius: 18px; background: var(--card); display: flex; padding: 0 8px; height: 220px; overflow: hidden; box-shadow: 0 12px 30px rgba(var(--ink-rgb),.16); }
+/* floats over the card, so opening it doesn't stretch the form (a narrow grid cell on phones) */
+.tw-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: 248px;
+  max-width: calc(100vw - 32px);
+  border: var(--line);
+  border-radius: 20px;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(var(--ink-rgb),.16), 0 2px 8px rgba(var(--ink-rgb),.08);
+}
 .tw-panel[hidden] { display: none; }
-.tw-col { flex: 1; height: 176px; margin-top: 22px; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; overscroll-behavior: contain; touch-action: pan-y; }
+.tw-wheels {
+  position: relative;
+  display: flex;
+  height: 132px;
+  padding: 0 8px;
+  max-width: 260px;
+  margin: 0 auto;
+  width: 100%;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%);
+}
+.tw-col {
+  flex: 1;
+  height: 132px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
 .tw-col::-webkit-scrollbar { display: none; }
-.tw-list { padding: 66px 0; }
-.tw-item { height: 44px; scroll-snap-align: center; display: grid; place-items: center; font-weight: 700; font-size: 22px; color: var(--muted); opacity: .45; transition: opacity .2s var(--ease), color .2s var(--ease); cursor: pointer; font-variant-numeric: tabular-nums; }
-.tw-item.on { color: var(--ink); opacity: 1; }
-.tw-band { position: absolute; left: 8px; right: 8px; top: 88px; height: 44px; border-top: 2px solid var(--edge); border-bottom: 2px solid var(--edge); pointer-events: none; }
-.tw-foot { position: absolute; left: 0; right: 0; bottom: 4px; display: flex; justify-content: space-between; padding: 0 14px; }
-.tw-foot .link { font-size: 14px; }
+.tw-list { padding: 44px 0; }
+.tw-item {
+  height: 44px;
+  scroll-snap-align: center;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 21px;
+  color: var(--muted);
+  opacity: .35;
+  transition: opacity .15s var(--ease), color .15s var(--ease), font-size .15s var(--ease);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+.tw-item.on {
+  color: var(--ink);
+  opacity: 1;
+  font-size: 23px;
+}
+.tw-sep {
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  width: 8px;
+  height: 132px;
+  margin-top: -2px;
+  opacity: .7;
+  pointer-events: none;
+  user-select: none;
+}
+.tw-band {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
+  pointer-events: none;
+}
+.tw-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-top: 1px solid var(--edge);
+  background: var(--card);
+}
+.tw-btn-clear {
+  background: transparent;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: color .15s ease, background .15s ease;
+}
+.tw-btn-clear:hover {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+.tw-btn-done {
+  background: var(--ink);
+  color: var(--card);
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(var(--ink-rgb),.18);
+  transition: opacity .15s ease, transform .1s ease;
+}
+.tw-btn-done:hover { opacity: .9; }
+.tw-btn-done:active { transform: scale(0.97); }
 
 /* the leaderboard prompt (leaderboardnudge.js) */
 .lbnudge { padding: 4px 2px 6px; }

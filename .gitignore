@@ -6,3 +6,4 @@ dist/
 functions/shared/
 *.local
 brag-output/
+proof/
