@@ -7,6 +7,7 @@ import { mascot } from './mascot.js';
 import { sfx } from './sound.js';
 import { latePopup } from './latepop.js';
 import { checkDailyCapAndNotify } from './dailycappop.js';
+import { maybeLeaderboardNudge } from './leaderboardnudge.js';
 
 export function completeQuest(id) {
   const q = store.findQuest(id); if (!q) return;
@@ -17,6 +18,7 @@ export function completeQuest(id) {
     const p = r.progress;
     play('tick');
     const msg = p.extra ? `Logged. ${p.count} this week, ${p.extra} extra. Amazing!` : p.met ? `Logged. Goal met: ${p.count} of ${p.target} this week.` : `Logged. ${p.count} of ${p.target} this week.`;
+    setTimeout(() => maybeLeaderboardNudge(), 700);
     return toast(msg, p.met ? 'good' : undefined);
   }
   // a daily (or any repeating) quest is done once for its date: tapping again does nothing and counts nothing
@@ -24,6 +26,7 @@ export function completeQuest(id) {
   const st = store.getState();
   if (!r.done) { play('tap', 0.8); mascot.react('suspicious', 'hmm… sure?'); return toast('Marked as not done'); }
   setTimeout(checkDailyCapAndNotify, 400);
+  setTimeout(() => maybeLeaderboardNudge(), 700);
   const after = before + 1;
   // done late: still counts, for half the EXP, and a pop-up says so (with a wink); hitting the target still celebrates
   if (r.late) {

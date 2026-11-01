@@ -3,6 +3,15 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.20', date: '2026-11-02', title: 'Thoughtful Leaderboard Nudges',
+    note: 'The leaderboard prompt no longer pops up when opening the app. Instead, it appears at most once a day right after you finish a quest, so you can check your standings when it matters most.',
+    tip: 'Complete your first quest of the day to see where you stand on the season leaderboard!',
+    items: [
+      'Calm App Opening: No more surprise popups when launching Levern. The app starts cleanly and peacefully.',
+      'Once-a-Day Milestone: The leaderboard prompt now shows at most once per day, immediately after completing a quest.',
+    ],
+  },
+  {
     v: '1.19', date: '2026-11-02', title: 'Clean Quest Details & Redesigned Time Picker',
     note: 'Editing quests is now calmer and more organized with card-grouped sections, clearer spacing, and a smoothly rolling time wheel picker with clean action buttons.',
     tip: 'Tap any quest to check out the refreshed schedule, frequency, reminders, and subtask cards!',

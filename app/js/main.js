@@ -3,7 +3,6 @@ import * as store from './store.js';
 import { registerSW } from './notify.js';
 import { startReminders, paintBadges } from './reminders.js';
 import { watchInstall } from './install.js';
-import { maybeLeaderboardNudge } from './leaderboardnudge.js';
 import { startUpdatePop, isShowing as updateShowing } from './updatepop.js';
 import { $, toast, play, sheet, ICON } from './ui.js';
 import { completeQuest } from './complete.js';
@@ -298,8 +297,6 @@ else if (!onboarding.deviceSetupDone() || !account.user()) onboarding.open(() =>
 if (!account.user()) account.preload();   // ready before the sign-in tap, so Google's popup isn't blocked
 account.onAccount(u => { if (!u) setTimeout(toStart, 0); });   // after sign-out has cleared the device
 registerSW().finally(() => { startReminders(); if ('Notification' in window && Notification.permission === 'granted') import('./push.js').then(m => m.enablePush()); });
-// a friendly nudge to check the leaderboard (at most twice a day), once the app has settled
-setTimeout(() => { if (account.user() && !onboarding.isOpen() && !updateShowing()) maybeLeaderboardNudge(); }, 4000);
 // What's new: once per person per update, on whichever device opens first
 startUpdatePop(onboarding.isOpen);
 startCalendars();
