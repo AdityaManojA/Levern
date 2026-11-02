@@ -205,7 +205,7 @@ service cloud.firestore {
         && request.resource.data.a is map && request.resource.data.a.size() <= 60
         && request.resource.data.at == request.time;
       allow read: if request.auth != null && request.auth.token.get('email_verified', false) == true
-        && request.auth.token.get('email', '') in ['aditya.dev.org@gmail.com', 'toclardentity@gmail.com'];
+        && request.auth.token.get('email', '') in ['adityamanoja@gmail.com', 'aditya.dev.org@gmail.com'];
       allow update, delete: if false;
     }
 
