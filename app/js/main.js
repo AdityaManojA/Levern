@@ -18,6 +18,8 @@ import * as settings from './views/settings.js';
 import * as leaderboard from './views/leaderboard.js';
 import * as whatsnew from './views/whatsnew.js';
 import * as profileView from './views/profile.js';
+import * as usageView from './views/usage.js';
+import { startUsage, trackView } from './usage.js';
 import { startProfile } from './profile.js';
 import { startRankups } from './rankup.js';
 import { startDailyCapListener } from './dailycappop.js';
@@ -53,7 +55,7 @@ startBack([
 
 store.init();
 
-const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, leaderboard, whatsnew, profile: profileView };
+const VIEWS = { home, quests, quest: detail, calendar, focus, stats, settings, leaderboard, whatsnew, profile: profileView, usage: usageView };
 const NAV = [['home', 'Home'], ['quests', 'Quests'], ['add'], ['calendar', 'Calendar'], ['focus', 'Focus']];
 let route = { name: 'home', params: {} };
 
@@ -79,6 +81,7 @@ function renderNav() {
 let spriteStops = [];
 function draw(keep) {
   const v = VIEWS[route.name], main = $('#view');
+  trackView(route.name);   // anonymous screen-usage counts (usage.js)
   spriteStops.forEach(s => s());
   if (v.unmount) v.unmount();
   if (!cloud.cloudReady()) {
@@ -229,6 +232,7 @@ preloadSounds();
 startControls();
 startMenu();
 startAccount();
+startUsage(account);
 startBoard();
 startProfile();
 startRankups();

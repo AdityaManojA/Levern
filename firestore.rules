@@ -1,6 +1,6 @@
 rules_version = '2';
-// Firestore rules for the shared project (TaskFlow + Solodesk). Solodesk deploys them
-// (Solodesk-MVP/firestore.rules); keep this file and Solodesk's the same.
+// Firestore rules for the shared project (Levern + Terracove, formerly TaskFlow + Solodesk). Terracove deploys
+// them (D:/Projects/Terracove/firestore.rules); keep this file and Terracove's the same.
 service cloud.firestore {
   match /databases/{database}/documents {
     // Solodesk: each signed-in user can read/write only their own workspace document.
@@ -38,10 +38,12 @@ service cloud.firestore {
       match /responses/{task} {
         allow read: if isOwner() || isClient();
         allow create, update: if isClient() &&
-          request.resource.data.keys().hasOnly(['taskId','decision','comment','at','email']) &&
+          request.resource.data.keys().hasOnly(['taskId','decision','comment','at','email','signerName','userAgent']) &&
           request.resource.data.taskId == task && task in share().data.get('approvalIds', []) &&
           request.resource.data.decision in ['approved','changes'] &&
           request.resource.data.comment is string && request.resource.data.comment.size() <= 1000 &&
+          (!('signerName' in request.resource.data) || (request.resource.data.signerName is string && request.resource.data.signerName.size() <= 100)) &&
+          (!('userAgent' in request.resource.data) || (request.resource.data.userAgent is string && request.resource.data.userAgent.size() <= 300)) &&
           request.resource.data.email is string && request.resource.data.at == request.time;
         allow delete: if isOwner();
       }
@@ -75,17 +77,23 @@ service cloud.firestore {
           request.resource.data.get('taskId', '') is string;
         allow delete: if isOwner();
       }
-      // Link and file updates from the client; SoloDesk applies them to the workspace and removes them.
+      // Link, file and questionnaire updates from the client; SoloDesk applies them to the workspace and removes them.
       match /updates/{update} {
         allow read, delete: if isOwner();
         allow create: if isClient() &&
-          request.resource.data.keys().hasOnly(['kind','docId','label','url','replaceUrl','at','email']) &&
-          request.resource.data.kind in ['link','file'] &&
-          request.resource.data.url is string && request.resource.data.url.size() <= 300 &&
-          request.resource.data.label is string && request.resource.data.label.size() <= 60 &&
-          request.resource.data.docId is string && request.resource.data.docId.size() <= 100 &&
-          request.resource.data.replaceUrl is string && request.resource.data.replaceUrl.size() <= 300 &&
-          request.resource.data.email is string && request.resource.data.at == request.time;
+          request.resource.data.kind in ['link','file','brief'] &&
+          ((request.resource.data.kind in ['link','file'] &&
+            request.resource.data.keys().hasOnly(['kind','docId','label','url','replaceUrl','at','email']) &&
+            request.resource.data.url is string && request.resource.data.url.size() <= 300 &&
+            request.resource.data.label is string && request.resource.data.label.size() <= 60 &&
+            request.resource.data.docId is string && request.resource.data.docId.size() <= 100 &&
+            request.resource.data.replaceUrl is string && request.resource.data.replaceUrl.size() <= 300 &&
+            request.resource.data.email is string && request.resource.data.at == request.time) ||
+           (request.resource.data.kind == 'brief' &&
+            request.resource.data.keys().hasOnly(['kind','docId','questions','at','email']) &&
+            request.resource.data.docId is string && request.resource.data.docId.size() <= 100 &&
+            request.resource.data.questions is list && request.resource.data.questions.size() <= 30 &&
+            request.resource.data.at == request.time && request.resource.data.email is string));
       }
     }
     // Solodesk public profiles (Profile → Public profile), one document per username. Anyone with the link can
@@ -182,6 +190,23 @@ service cloud.firestore {
         && request.resource.data.note is string && request.resource.data.note.size() <= 1000
         && request.resource.data.at == request.time;
       allow read, update, delete: if false;
+    }
+
+    // Levern anonymous usage counts (app/js/usage.js): one document per device per day used, with screen names,
+    // active seconds, scroll depth and button-tap counts only (no account id, name, email or quest content).
+    // Any signed-in person can add one, never change or delete it; only the owner's accounts can read them
+    // (Levern → #/usage). Map sizes are capped so a document can't be stuffed.
+    match /levernUsage/{id} {
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['day', 'dev', 'v', 'a', 'at'])
+        && request.resource.data.day is string && request.resource.data.day.matches('^20[0-9]{2}-[01][0-9]-[0-3][0-9]$')
+        && request.resource.data.dev in ['phone', 'desktop']
+        && request.resource.data.v is map && request.resource.data.v.size() > 0 && request.resource.data.v.size() <= 20
+        && request.resource.data.a is map && request.resource.data.a.size() <= 60
+        && request.resource.data.at == request.time;
+      allow read: if request.auth != null && request.auth.token.get('email_verified', false) == true
+        && request.auth.token.get('email', '') in ['aditya.dev.org@gmail.com', 'toclardentity@gmail.com'];
+      allow update, delete: if false;
     }
 
     // Public profiles (TaskFlow Leaderboard → Make my profile public): readable by anyone signed in only while

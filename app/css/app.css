@@ -922,6 +922,14 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .tiers .tr span:first-child { width: 28px; }
 .tiers .tr .bar { flex: 1; margin: 0; height: 14px; }
 .tiers .tr .bar i { background: var(--c); }
+/* owner-only usage report (views/usage.js) */
+.usage .tr span:first-child { width: 96px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usage .tr span:last-child { width: 36px; text-align: right; }
+.usage-t { overflow-x: auto; }
+.usage-t table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.usage-t :is(th, td) { padding: 6px 8px; text-align: right; white-space: nowrap; }
+.usage-t :is(th, td):first-child { text-align: left; }
+.usage-t tbody tr + tr td { border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
 .hist { display: flex; justify-content: space-between; gap: 8px; padding: 7px 0; border-top: 2px solid rgba(var(--ink-rgb),.08); font-size: 14px; }
 .hist:first-child { border-top: none; }
 .hist span:first-child { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

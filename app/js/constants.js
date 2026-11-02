@@ -6,6 +6,7 @@ export const FIRESTORE_COLLECTIONS = Object.freeze({
   PROFILES: 'taskflowProfiles',
   BOARD: 'taskflowBoard',
   FEEDBACK: 'taskflowFeedback',
+  USAGE: 'levernUsage',   // anonymous screen-usage counts (usage.js)
 });
 
 export const STORAGE_KEYS = Object.freeze({
@@ -19,6 +20,7 @@ export const STORAGE_KEYS = Object.freeze({
   LB_NUDGE: 'taskflow-lb-nudge',
   NUDGES_FIRED: 'taskflow-nudges-fired',
   DEVICE_SETUP: 'taskflow-device-setup',
+  USAGE: 'levern-usage',
 });
 
 export const SW_CONFIG = Object.freeze({

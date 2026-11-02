@@ -4,7 +4,7 @@
    when the browser runs a periodic background sync (installed app, Chrome/Edge, roughly every
    15 min at best and at the browser's discretion) or when a push message arrives. Exact-time
    delivery with the app closed needs a push server (or the native wrapper's local notifications). */
-const VERSION = 'taskflow-v105';
+const VERSION = 'taskflow-v106';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/constants.js', 'js/ambient.js', 'js/alerts.js', 'js/debuglog.js', 'js/goals.js', 'js/leaderboardnudge.js', 'js/multi.js', 'js/notifyhelp.js', 'js/push.js', 'js/signinlog.js', 'js/timewheel.js', 'js/refresh-update.js', 'js/dailycappop.js',
@@ -15,7 +15,7 @@ const SHELL = [
   'icons/icon-v4-192.png', 'icons/icon-v4-512.png', 'icons/favicon-v4.png', 'icons/favicon-v4-32.png', 'icons/maskable-v4-512.png', 'icons/badge-v4-96.png', 'icons/apple-touch-icon-v4.png',
   'sounds/sprite.mp3', 'sounds/sounds.json',
   'js/sound.js', 'js/ink.js', 'js/inkpad.js', 'js/handwriting.js', 'js/views/ink.js',
-  'js/controls.js', 'js/menu.js', 'js/account.js', 'js/cloud.js', 'js/nudges.js', 'js/theme.js', 'js/theme-boot.js', 'js/namefilter.js', 'js/namecheck.js', 'js/board.js', 'js/views/leaderboard.js', 'js/views/whatsnew.js', 'js/changelog.js', 'js/views/profile.js', 'js/profile.js', 'js/rankup.js', 'js/back.js', 'js/latepop.js', 'js/updatepop.js', 'privacy.html', 'cookies.html','mochi/strips/happy-wiggle.webp', 'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
+  'js/controls.js', 'js/menu.js', 'js/account.js', 'js/cloud.js', 'js/nudges.js', 'js/theme.js', 'js/theme-boot.js', 'js/namefilter.js', 'js/namecheck.js', 'js/board.js', 'js/views/leaderboard.js', 'js/views/whatsnew.js', 'js/changelog.js', 'js/views/profile.js', 'js/profile.js', 'js/rankup.js', 'js/back.js', 'js/latepop.js', 'js/updatepop.js', 'js/usage.js', 'js/views/usage.js', 'privacy.html', 'cookies.html','mochi/strips/happy-wiggle.webp', 'fonts/inter-latin-wght-normal.woff2', 'fonts/inter-latin-ext-wght-normal.woff2',
 ];
 
 self.addEventListener('install', e => {
