@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.24', date: '2026-11-04', title: 'Relaxed Voice Recording & Natural Speaking Pauses',
+    note: 'Voice quest dictation now stays open much longer when you pause, giving you plenty of time to breathe, think, or check your schedule without the microphone cutting off early.',
+    tip: 'Tap the mic in New quest and speak naturally—you can pause between phrases and keep adding to your quest!',
+    items: [
+      'Relaxed Pause Cutoff: The voice recorder now waits patiently through natural pauses instead of ending prematurely after a moment of silence.',
+      'Multi-phrase Dictation: Speak in pieces—such as a task name, followed by a time or date—and watch your full quest come together seamlessly.',
+      'Generous Initial Patience: Take your time before you begin speaking; the microphone stays open and waits for your words calmly.',
+      'Instant Finish: Whenever you are done dictating, tap the mic button to finish immediately without waiting for the silence timer.',
+    ],
+  },
+  {
     v: '1.23', date: '2026-11-04', title: 'Effortless Mascot Touch & Sheet Perch Interaction',
     note: 'Picking up and interacting with Cookie and Mochi now feels silky smooth and responsive on all touch devices, whether the cat is strolling the nav bar or peeking over your open quest sheet.',
     tip: 'Try gently picking up Cookie or Mochi with your finger and letting him fall back into place, or tap him while editing a quest for a friendly hello!',

@@ -54,8 +54,12 @@ export function buildTranscript(results) {
   return { text, final };
 }
 
-// listen({ onText(text, final), onEnd(), onError(code), onStatus(text) }) -> stop()
-export function listen({ onText, onEnd, onError, onStatus }) {
+// Default silence cutoff delay (ms) after the speaker stops talking.
+// Giving ~3800ms allows relaxed pauses to breathe or think without abruptly cutting off the recording.
+export const SILENCE_CUTOFF_MS = 3800;
+
+// listen({ onText(text, final), onEnd(), onError(code), onStatus(text), silenceCutoffMs }) -> stop()
+export function listen({ onText, onEnd, onError, onStatus, silenceCutoffMs = SILENCE_CUTOFF_MS }) {
   const Rec = getRec();
   if (!Rec) {
     onError && onError('unavailable');
@@ -63,7 +67,51 @@ export function listen({ onText, onEnd, onError, onStatus }) {
     return () => {};
   }
 
-  let r = null, stopped = false, gotText = false, noSpeechAttempts = 0, networkAttempts = 0;
+  let r = null;
+  let stopped = false;
+  let gotText = false;
+  let noSpeechAttempts = 0;
+  let networkAttempts = 0;
+  let accumulatedText = '';
+  let currentSegmentText = '';
+  let lastSpeechTime = 0;
+  let silenceTimer = null;
+
+  function clearSilenceTimer() {
+    if (silenceTimer) {
+      clearTimeout(silenceTimer);
+      silenceTimer = null;
+    }
+  }
+
+  function finish() {
+    if (stopped) return;
+    stopped = true;
+    clearSilenceTimer();
+    try {
+      if (r) {
+        if (typeof r.stop === 'function') r.stop();
+        setTimeout(() => {
+          try { if (r && typeof r.abort === 'function') r.abort(); } catch (_) {}
+        }, 600);
+      }
+    } catch (_) {}
+    onEnd && onEnd();
+  }
+
+  function scheduleSilenceCheck() {
+    clearSilenceTimer();
+    if (stopped) return;
+    const elapsed = Date.now() - lastSpeechTime;
+    const remaining = silenceCutoffMs - elapsed;
+    if (remaining <= 0) {
+      finish();
+    } else {
+      silenceTimer = setTimeout(() => {
+        scheduleSilenceCheck();
+      }, Math.max(40, remaining));
+    }
+  }
 
   function start() {
     if (stopped) return;
@@ -71,22 +119,28 @@ export function listen({ onText, onEnd, onError, onStatus }) {
       r = new Rec();
     } catch (e) {
       onError && onError('start-failed');
-      onEnd && onEnd();
+      finish();
       return;
     }
 
-    // Use continuous mode so Android Chrome does not cut off after brief pauses
+    // Use continuous mode so Android Chrome and other browsers do not cut off after brief pauses
     r.continuous = true;
     r.interimResults = true;
     r.maxAlternatives = 1;
     r.lang = getSpeechLang();
+
+    currentSegmentText = '';
 
     r.onresult = e => {
       if (stopped) return;
       const { text, final } = buildTranscript(e.results);
       if (text) {
         gotText = true;
-        onText && onText(text, final);
+        currentSegmentText = text;
+        lastSpeechTime = Date.now();
+        clearSilenceTimer();
+        const full = accumulatedText ? `${accumulatedText} ${text}` : text;
+        onText && onText(full, final);
       }
     };
 
@@ -96,15 +150,30 @@ export function listen({ onText, onEnd, onError, onStatus }) {
     };
 
     r.onend = () => {
-      if (stopped) {
-        onEnd && onEnd();
+      if (stopped) return;
+
+      // Commit recognized words from this speech segment to accumulatedText
+      if (currentSegmentText) {
+        accumulatedText = accumulatedText ? `${accumulatedText} ${currentSegmentText}` : currentSegmentText;
+        currentSegmentText = '';
+      }
+
+      // If user has spoken words, keep listening until the relaxed cutoff period expires
+      if (gotText) {
+        const elapsed = Date.now() - lastSpeechTime;
+        if (elapsed < silenceCutoffMs) {
+          scheduleSilenceCheck();
+          start();
+          return;
+        }
+        finish();
         return;
       }
 
-      // If user paused briefly on Android before speaking, give them a chance instead of aborting
-      if (failed === 'no-speech' && !gotText && noSpeechAttempts < 2) {
+      // If user hesitated before speaking, grant generous retries before giving up
+      if (failed === 'no-speech' && !gotText && noSpeechAttempts < 4) {
         noSpeechAttempts++;
-        onStatus && onStatus('Listening… speak now');
+        onStatus && onStatus('Listening… take your time');
         start();
         return;
       }
@@ -123,17 +192,16 @@ export function listen({ onText, onEnd, onError, onStatus }) {
         onError && onError(failed);
       }
 
-      onEnd && onEnd();
+      finish();
     };
 
     try {
       r.start();
     } catch (e) {
-      // If already started or failed to initialize, notify and end
       if (failed !== 'no-speech') {
         onError && onError('start-failed');
       }
-      onEnd && onEnd();
+      finish();
     }
   }
 
@@ -141,15 +209,7 @@ export function listen({ onText, onEnd, onError, onStatus }) {
 
   // stop: clean release of the microphone
   return () => {
-    stopped = true;
-    try {
-      if (r) {
-        if (typeof r.stop === 'function') r.stop();
-        setTimeout(() => {
-          try { if (r && typeof r.abort === 'function') r.abort(); } catch (_) {}
-        }, 600);
-      }
-    } catch (_) {}
+    finish();
   };
 }
 
