@@ -1,67 +1,155 @@
-// Voice entry with the Web Speech API. In Chrome and Edge the audio is sent to the browser maker's speech
-// service; some Chromium browsers (Brave, Opera, Vivaldi, embedded browsers) don't have that service and
-// always answer "network" even when online. So on a "network" error we try once more, then Chrome's
-// on-device recognition where it exists (processLocally), and only then give up with a clear message.
-// Firefox has no speech recognition at all; the mic button says so and you type instead.
-const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-export const speechSupported = !!Rec;
-let broken = false;   // set once this browser has shown it can't do voice input
-export const speechBroken = () => broken;
+// Voice entry with the Web Speech API.
+// In Chrome and Edge, speech audio is processed with speech recognition services.
+// On Android devices, speech recognition requires careful handling of language tags (e.g. 'en-US' vs bare 'en'),
+// silence timeouts (no-speech retries), multi-result transcript spacing, and continuous listening.
+const getRec = () => {
+  if (typeof window !== 'undefined') return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  if (typeof globalThis !== 'undefined') return globalThis.SpeechRecognition || globalThis.webkitSpeechRecognition || null;
+  return null;
+};
 
-export function browserName() {
-  const ua = navigator.userAgent;
-  if (navigator.brave) return 'Brave';
-  if (/OPR\//.test(ua)) return 'Opera';
-  if (/Vivaldi/.test(ua)) return 'Vivaldi';
-  if (/Edg\//.test(ua)) return 'Edge';
-  if (/Electron/.test(ua)) return 'this built-in browser';
-  if (/Chrome\//.test(ua)) return 'Chrome';
-  if (/Safari\//.test(ua)) return 'Safari';
+export const speechSupported = typeof window !== 'undefined' ? !!getRec() : true;
+let broken = false;
+export const speechBroken = () => broken;
+export const resetSpeechBroken = () => { broken = false; };
+
+export function browserName(ua) {
+  ua = ua || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  if (typeof navigator !== 'undefined' && navigator.brave) return 'Brave';
+  if (/SamsungBrowser/i.test(ua)) return 'Samsung Internet';
+  if (/OPR\//i.test(ua)) return 'Opera';
+  if (/Vivaldi/i.test(ua)) return 'Vivaldi';
+  if (/Edg\//i.test(ua)) return 'Edge';
+  if (/Electron/i.test(ua)) return 'this built-in browser';
+  if (/Chrome\//i.test(ua)) return 'Chrome';
+  if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) return 'Safari';
   return 'this browser';
 }
 
-const lang = () => navigator.language || 'en-GB';
-async function onDeviceReady() {
-  try {
-    if (!Rec.available || !('processLocally' in Rec.prototype)) return false;
-    const st = await Rec.available({ langs: [lang()], processLocally: true });
-    if (st === 'available') return true;
-    if (st === 'downloadable' || st === 'downloading') return Rec.install ? await Rec.install({ langs: [lang()], processLocally: true }) : false;
-  } catch (e) {}
-  return false;
+// Android speech recognizer strictly requires a regional dialect tag (e.g. 'en-US' or 'en-IN')
+// and fails if passed a bare 2-letter language code like 'en'
+export function getSpeechLang(override) {
+  if (override) {
+    const trimmed = String(override).trim();
+    if (trimmed === 'en') return 'en-US';
+    return trimmed;
+  }
+  const nav = typeof navigator !== 'undefined' ? navigator : {};
+  const l = (nav.language || (nav.languages && nav.languages[0]) || 'en-US').trim();
+  if (l === 'en' || !l) return 'en-US';
+  return l;
+}
+
+// Aggregates interim and final results cleanly across mobile and desktop
+export function buildTranscript(results) {
+  if (!results) return { text: '', final: false };
+  let text = '', final = false;
+  for (let i = 0; i < results.length; i++) {
+    const res = results[i];
+    const chunk = (res && res[0]?.transcript ? res[0].transcript : '').trim();
+    if (!chunk) continue;
+    text += (text ? ' ' : '') + chunk;
+    if (res.isFinal) final = true;
+  }
+  return { text, final };
 }
 
 // listen({ onText(text, final), onEnd(), onError(code), onStatus(text) }) -> stop()
 export function listen({ onText, onEnd, onError, onStatus }) {
-  let r = null, stopped = false, gotText = false, attempt = 0;
-  function start(local) {
-    r = new Rec();
-    r.lang = lang(); r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
-    if (local) r.processLocally = true;
+  const Rec = getRec();
+  if (!Rec) {
+    onError && onError('unavailable');
+    onEnd && onEnd();
+    return () => {};
+  }
+
+  let r = null, stopped = false, gotText = false, noSpeechAttempts = 0, networkAttempts = 0;
+
+  function start() {
+    if (stopped) return;
+    try {
+      r = new Rec();
+    } catch (e) {
+      onError && onError('start-failed');
+      onEnd && onEnd();
+      return;
+    }
+
+    // Use continuous mode so Android Chrome does not cut off after brief pauses
+    r.continuous = true;
+    r.interimResults = true;
+    r.maxAlternatives = 1;
+    r.lang = getSpeechLang();
+
     r.onresult = e => {
-      let text = '', final = false;
-      for (const res of e.results) { text += res[0].transcript; final = res.isFinal; }
-      gotText = true; onText(text.trim(), final);
+      if (stopped) return;
+      const { text, final } = buildTranscript(e.results);
+      if (text) {
+        gotText = true;
+        onText && onText(text, final);
+      }
     };
+
     let failed = null;
-    r.onerror = e => { failed = e.error; };
-    r.onend = async () => {
-      if (stopped || failed !== 'network' || gotText) { if (failed && failed !== 'aborted') onError && onError(failed); onEnd && onEnd(); return; }
-      attempt++;
-      if (attempt === 1) { start(local); return; }   // a blip: try once more
-      if (!local && await onDeviceReady()) { onStatus && onStatus('Using on-device voice'); start(true); return; }
-      broken = true;
-      onError && onError('unavailable');
+    r.onerror = e => {
+      failed = e.error || 'error';
+    };
+
+    r.onend = () => {
+      if (stopped) {
+        onEnd && onEnd();
+        return;
+      }
+
+      // If user paused briefly on Android before speaking, give them a chance instead of aborting
+      if (failed === 'no-speech' && !gotText && noSpeechAttempts < 2) {
+        noSpeechAttempts++;
+        onStatus && onStatus('Listening… speak now');
+        start();
+        return;
+      }
+
+      // Single network glitch on mobile data shouldn't permanently kill the mic
+      if (failed === 'network' && networkAttempts < 1) {
+        networkAttempts++;
+        start();
+        return;
+      }
+
+      if (failed && failed !== 'aborted') {
+        if (failed === 'network' && browserName() !== 'Chrome' && browserName() !== 'Edge') {
+          broken = true;
+        }
+        onError && onError(failed);
+      }
+
       onEnd && onEnd();
     };
-    try { r.start(); } catch (e) { onError && onError('start-failed'); onEnd && onEnd(); }
+
+    try {
+      r.start();
+    } catch (e) {
+      // If already started or failed to initialize, notify and end
+      if (failed !== 'no-speech') {
+        onError && onError('start-failed');
+      }
+      onEnd && onEnd();
+    }
   }
-  start(false);
-  // stop: finish what was heard so far, and release the microphone even if the browser doesn't end the session
+
+  start();
+
+  // stop: clean release of the microphone
   return () => {
     stopped = true;
-    try { r && r.stop(); } catch (e) {}
-    setTimeout(() => { try { r && r.abort(); } catch (e) {} }, 1200);
+    try {
+      if (r) {
+        if (typeof r.stop === 'function') r.stop();
+        setTimeout(() => {
+          try { if (r && typeof r.abort === 'function') r.abort(); } catch (_) {}
+        }, 600);
+      }
+    } catch (_) {}
   };
 }
 
@@ -70,12 +158,13 @@ export function speechError(code) {
   return {
     'not-allowed': 'Microphone access is blocked. Allow it in the browser to use voice.',
     'service-not-allowed': 'Voice input is turned off in this browser.',
-    'no-speech': "Didn't catch anything. Try again.",
-    'audio-capture': 'No microphone found.',
-    network: 'Voice input lost its connection. Try again.',
+    'no-speech': "Didn't catch any words. Tap the mic and speak clearly.",
+    'audio-capture': 'No microphone found or mic is currently in use.',
+    'language-not-supported': 'Language not supported for voice input on this device.',
+    network: 'Voice input lost its connection. Check your network and try again.',
     unavailable: b === 'Chrome' || b === 'Edge'
       ? `${b} couldn't reach its speech service. Check your connection, or type it instead.`
-      : `Voice input isn't available in ${b}. Try Chrome, Edge or Safari, or type it instead.`,
+      : `Voice input isn't available in ${b}. Try Google Chrome, Edge or Safari, or type it instead.`,
     'start-failed': 'Voice input could not start. Type it instead.',
   }[code] || 'Voice input stopped.';
 }

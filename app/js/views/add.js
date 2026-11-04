@@ -254,16 +254,29 @@ export function openAdd(prefill = {}) {
       $f('[data-mic-s]').textContent = form.title.value ? `"${form.title.value}"` : 'Try "Dentist on Friday at 4pm"';
       return;
     }
+    // Drop soft keyboard on Android phones so keyboard dictation does not conflict with microphone capture
+    try { if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur(); } catch (_) {}
     btn.classList.add('listening'); $f('[data-mic-t]').textContent = 'Listening…'; $f('[data-mic-s]').textContent = 'Speak now. Tap again to stop.';
     stop = listen({
-      onText: (text, final) => { form.title.value = text; onText(text); if (final) $f('[data-mic-s]').textContent = `"${text}"`; },
+      onText: (text, final) => {
+        form.title.value = text;
+        onText(text);
+        if (text) $f('[data-mic-s]').textContent = `"${text}"`;
+      },
       onStatus: text => { $f('[data-mic-s]').textContent = text + '. Speak now.'; },
       onError: code => {
         if (code === 'aborted') return;
         toast(speechError(code));
         if (code === 'unavailable') { markMicUnavailable(); form.title.focus(); }
       },
-      onEnd: () => { stop = null; btn.classList.remove('listening'); if (!speechBroken()) $f('[data-mic-t]').textContent = form.title.value ? 'Got it. Tap to try again' : 'Tap and speak'; },
+      onEnd: () => {
+        stop = null;
+        btn.classList.remove('listening');
+        if (!speechBroken()) {
+          $f('[data-mic-t]').textContent = form.title.value ? 'Got it. Tap to try again' : 'Tap and speak';
+          if (form.title.value) $f('[data-mic-s]').textContent = `"${form.title.value}"`;
+        }
+      },
     });
   }
 

@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.21', date: '2026-11-04', title: 'Seamless Android Voice Recording & Smarter Listening',
+    note: 'Voice recording when creating quests now listens smoothly and accurately on Android phones, even if you hesitate before speaking or have your keyboard open.',
+    tip: 'Tap the mic in New quest to speak your task naturally—Levern will fill in the details automatically!',
+    items: [
+      'Reliable Android Voice Input: Speaking your quests now works seamlessly on mobile devices including Samsung Internet and Chrome for Android.',
+      'Gentle Silence Resilience: The microphone no longer cuts off abruptly if you pause for a moment before speaking—Levern patiently keeps listening.',
+      'Keyboard Harmony: Tapping the microphone button automatically dismisses any open mobile keyboard to ensure crisp audio capture without device conflicts.',
+      'Real-time Speech Feedback: Words now appear on screen as you speak so you can watch your spoken quest take shape live.',
+    ],
+  },
+  {
     v: '1.20', date: '2026-11-02', title: 'Thoughtful Leaderboard Nudges',
     note: 'The leaderboard prompt no longer pops up when opening the app. Instead, it appears at most once a day right after you finish a quest, so you can check your standings when it matters most.',
     tip: 'Complete your first quest of the day to see where you stand on the season leaderboard!',
