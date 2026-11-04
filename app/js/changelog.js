@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.22', date: '2026-11-04', title: 'Edge-to-Edge Display Harmony & Refined Mobile Sound Controls',
+    note: 'Levern now looks sharper and cleaner on tall modern Android displays like the Nothing Phone, with edge-to-edge dark system bars and neatly spaced sound controls.',
+    tip: 'Check out Settings → Sound and voice to test your tap sounds and cat voices on a crisp responsive grid!',
+    items: [
+      'Edge-to-Edge System Navigation: The bottom navigation area now matches your chosen theme seamlessly in both light and dark modes, eliminating mismatched system bar backgrounds.',
+      'Refined Sound Preview Controls: Sound preview buttons now sit in an adaptive grid that never cramps or overlaps labels on mobile screens.',
+      'Elevated Navigation Island: The floating nav bar features enhanced contrast and soft elevation so quests scrolling underneath stay clearly separated.',
+      'Generous Priority Tap Targets: Priority inputs now offer comfortable touch targets for quick and effortless editing on mobile devices.',
+    ],
+  },
+  {
     v: '1.21', date: '2026-11-04', title: 'Seamless Android Voice Recording & Smarter Listening',
     note: 'Voice recording when creating quests now listens smoothly and accurately on Android phones, even if you hesitate before speaking or have your keyboard open.',
     tip: 'Tap the mic in New quest to speak your task naturally—Levern will fill in the details automatically!',

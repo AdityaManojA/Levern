@@ -47,7 +47,7 @@ export function applyTheme() {
                    : (want === 'mono-dark' || want === 'mono-dark-accent') ? '#121212'
                    : (want === 'mono' || want === 'mono-light-accent') ? '#F5F5F4'
                    : '#FFF8EE';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', themeColor));
   void root.offsetHeight;   // the new colours apply now
   requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('theme-swap')));
   setTimeout(() => root.classList.remove('theme-swap'), 200);   // in case frames are paused (hidden tab)

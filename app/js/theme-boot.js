@@ -11,6 +11,6 @@ try {
     document.documentElement.dataset.theme = want;
     if (halloween) document.documentElement.dataset.season = 'halloween';
     const color = halloween ? '#120D1A' : (want === 'dark') ? '#0E1014' : (want === 'mono-dark' || want === 'mono-dark-accent') ? '#121212' : '#F5F5F4';
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', color));
   }
 } catch (e) {}

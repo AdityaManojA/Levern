@@ -30,7 +30,7 @@ const debugRows = () => {
   return `<div class="sec">Debugging</div>
     <div class="card">
       <div class="srow"><div class="l"><b>Record diagnostic logs</b><small>Notes what sign-in, sync and notifications do on this device. No quest names, emails or tokens. Turn on when you're asked to send a log.</small></div><button class="tog" role="switch" aria-checked="${on}" aria-label="Record diagnostic logs" data-act="dbg-toggle"></button></div>
-      ${on ? `<div class="srow"><div class="l"><b>${logCount()} entries</b><small>Copy the log and send it back</small></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="mini" data-act="dbg-copy">Copy log</button><button class="mini" data-act="dbg-show">${logShown ? 'Hide' : 'Show'} log</button></div></div>
+      ${on ? `<div class="srow srow-dbg-actions"><div class="l"><b>${logCount()} entries</b><small>Copy the log and send it back</small></div><div class="mini-pair"><button class="mini" data-act="dbg-copy">Copy log</button><button class="mini" data-act="dbg-show">${logShown ? 'Hide' : 'Show'} log</button></div></div>
       <div class="srow"><div class="l"><b>Test notification</b><small>Shows one notification now, to check this device</small></div><button class="mini" data-act="dbg-test">Send test</button></div>
       <div class="srow"><div class="l"><b>Clear log</b><small>Starts a fresh log</small></div><button class="mini" data-act="dbg-clear">Clear</button></div>
       ${logShown ? `<textarea class="field" readonly rows="12" style="width:100%;font:12px/1.4 ui-monospace,monospace" aria-label="Diagnostic log">${esc(lastReport)}</textarea>` : ''}` : ''}
@@ -228,7 +228,15 @@ export function render() {
     <div class="sec">Sound and voice</div>
     <div class="card">
       <div class="srow"><div class="l"><b>Sound effects</b><small>Taps, ticks, reminders and the cat. Starts off if your device asks for reduced motion.</small></div>${tog('sound', s.sound, 'Sound effects')}</div>
-      <div class="srow"><div class="l"><b>Try them</b></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="mini" data-act="hear" data-s="tick">Tick</button><button class="mini" data-act="hear" data-s="chime">Reminder</button><button class="mini" data-act="hear" data-s="mrrp">Mochi</button><button class="mini" data-act="hear" data-s="mrrp" data-rate="${CAT_VOICE.cookie}">Cookie</button></div></div>
+      <div class="srow srow-sounds">
+        <div class="l"><b>Try sounds</b><small>Preview taps, reminders and cat meows</small></div>
+        <div class="sound-btns">
+          <button type="button" class="mini" data-act="hear" data-s="tick">Tick</button>
+          <button type="button" class="mini" data-act="hear" data-s="chime">Reminder</button>
+          <button type="button" class="mini" data-act="hear" data-s="mrrp">Mochi</button>
+          <button type="button" class="mini" data-act="hear" data-s="mrrp" data-rate="${CAT_VOICE.cookie}">Cookie</button>
+        </div>
+      </div>
       <div class="srow"><div class="l"><b>Voice input</b><small>Mic button when adding a quest</small></div>${tog('voice', s.voice, 'Voice input')}</div>
       <div class="srow"><div class="l"><b>Volume</b></div><input type="range" min="0" max="1" step="0.05" value="${s.volume}" data-change="volume" aria-label="Volume"></div>
     </div>

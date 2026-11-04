@@ -121,7 +121,7 @@
 :root[data-theme="dark"] :is(.pick button, .tier-in i, .ob-chips span, .tour-chips span) { color: var(--c); }
 :root[data-theme="dark"] .pick button.on { background: var(--c); color: #14100B; outline-color: var(--c); }
 /* the nav bar: raised, the current tab a ginger pill, the + solid ginger */
-:root[data-theme="dark"] .nav { background: var(--paper); }
+:root[data-theme="dark"] .nav { background: var(--paper); box-shadow: 0 8px 26px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06); }
 :root[data-theme="dark"] .tab { color: var(--muted); }
 :root[data-theme="dark"] .tab.on { color: var(--a-ginger); }
 :root[data-theme="dark"] .tab.on .ic { background: rgba(255,154,61,.16); border-color: transparent; }
@@ -177,7 +177,7 @@
   background: color-mix(in srgb, var(--c) 14%, var(--card)); border-color: color-mix(in srgb, var(--c) 45%, transparent); }
 :root:is([data-theme="mono-dark"], [data-theme="mono-dark-accent"]) :is(.pick button, .tier-in i, .ob-chips span, .tour-chips span) { color: var(--c); }
 :root:is([data-theme="mono-dark"], [data-theme="mono-dark-accent"]) .pick button.on { background: var(--c); color: #121212; outline-color: var(--c); }
-:root:is([data-theme="mono-dark"], [data-theme="mono-dark-accent"]) .nav { background: var(--paper); }
+:root:is([data-theme="mono-dark"], [data-theme="mono-dark-accent"]) .nav { background: var(--paper); box-shadow: 0 8px 26px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06); }
 :root:is([data-theme="mono-dark"], [data-theme="mono-dark-accent"]) .tab { color: var(--muted); }
 :root:is([data-theme="mono-dark"], [data-theme="mono-dark-accent"]) .tab.on { color: var(--ink); }
 :root:is([data-theme="mono-dark"], [data-theme="mono-dark-accent"]) .tab.on .ic { background: rgba(240,240,240,.16); border-color: transparent; }
@@ -223,7 +223,8 @@
 :root.theme-swap *, :root.theme-swap *::before, :root.theme-swap *::after { transition: none !important; }
 /* no glow around the cats on the dark theme: their own outlines carry them */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
+html { height: 100%; background: var(--cream); }
+html, body { min-height: 100%; background: var(--cream); }
 body { background: var(--cream); color: var(--ink); font: 15px/1.4 Inter, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -491,7 +492,8 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 
 /* nav */
 .nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + var(--safe-b)); width: min(608px, calc(100% - 24px)); height: var(--nav-h); z-index: 30;
-  background: var(--butter); border: var(--line); border-radius: 34px; display: flex; align-items: center; padding: 0 6px; }
+  background: var(--butter); border: var(--line); border-radius: 34px; display: flex; align-items: center; padding: 0 6px;
+  box-shadow: 0 8px 24px rgba(var(--shade-rgb),.18), 0 2px 6px rgba(var(--shade-rgb),.1); }
 .tab { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 600; font-size: 11px; text-decoration: none; }
 .tab .ic { position: relative; width: 48px; height: 30px; border-radius: 15px; display: grid; place-items: center; border: 2px solid transparent; }
 .tab.on .ic { background: var(--card); border-color: var(--ink); }
@@ -961,6 +963,25 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 .tier-in { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .tier-in i { width: 36px; height: 32px; border-radius: 10px; border: var(--line); background: var(--c); display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 12px; flex: none; }
 .tier-in input { flex: 1; min-width: 0; border: 2px solid var(--edge); border-radius: 10px; padding: 6px 10px; background: var(--card); font-weight: 600; outline: none; }
+/* Sound preview buttons in Settings: structured responsive grid preventing button and label overlap */
+.srow-sounds { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.srow-sounds .sound-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; }
+.srow-sounds .sound-btns .mini { width: 100%; min-width: 0; padding: 8px 4px; justify-content: center; text-align: center; white-space: nowrap; font-size: 13px; }
+@media (max-width: 380px) {
+  .srow-sounds .sound-btns { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 540px) {
+  .srow-sounds { flex-direction: row; align-items: center; justify-content: space-between; }
+  .srow-sounds .sound-btns { width: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; }
+  .srow-sounds .sound-btns .mini { width: auto; padding: 8px 14px; }
+}
+.mini-pair { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 480px) {
+  .srow:has(.mini-pair) { flex-direction: column; align-items: stretch; gap: 8px; }
+  .srow .mini-pair { width: 100%; display: flex; }
+  .srow .mini-pair .mini { flex: 1; justify-content: center; text-align: center; }
+  .tier-in input { min-height: 42px; font-size: 14.5px; }
+}
 
 @media (min-width: 700px) {
   .view { padding-left: 24px; padding-right: 24px; }
