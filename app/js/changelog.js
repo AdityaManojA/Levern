@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.23', date: '2026-11-04', title: 'Effortless Mascot Touch & Sheet Perch Interaction',
+    note: 'Picking up and interacting with Cookie and Mochi now feels silky smooth and responsive on all touch devices, whether the cat is strolling the nav bar or peeking over your open quest sheet.',
+    tip: 'Try gently picking up Cookie or Mochi with your finger and letting him fall back into place, or tap him while editing a quest for a friendly hello!',
+    items: [
+      'Silky Mobile Pickup: Touching and dragging your feline companion now responds instantly on mobile touchscreens without page scrolling getting in the way.',
+      'Sheet Perch Friendliness: When editing or viewing a quest, your cat peeking over the sheet can now be tapped for cheerful greetings or picked up directly into your hand.',
+      'Graceful Landing: Dropping your cat cleanly floats him back to his resting spot with natural physics and soft squish animations.',
+      'Expanded Touch Comfort: Touch areas around the cat now comfortably accommodate fingertip taps and holds on high-resolution displays.',
+    ],
+  },
+  {
     v: '1.22', date: '2026-11-04', title: 'Edge-to-Edge Display Harmony & Refined Mobile Sound Controls',
     note: 'Levern now looks sharper and cleaner on tall modern Android displays like the Nothing Phone, with edge-to-edge dark system bars and neatly spaced sound controls.',
     tip: 'Check out Settings → Sound and voice to test your tap sounds and cat voices on a crisp responsive grid!',

@@ -149,7 +149,8 @@ export function createMochi(env) {
   /* drawing */
   const nav = () => document.getElementById('nav');
   const sheetEl = () => document.getElementById('sheet');
-  function groundY() { return M.perch === 'sheet' ? sheetEl().getBoundingClientRect().top : nav().getBoundingClientRect().top + SINK; }
+  const isSheetOpen = () => Boolean(sheetEl() && sheetEl().classList.contains('open'));
+  function groundY() { return (M.perch === 'sheet' || isSheetOpen()) ? sheetEl().getBoundingClientRect().top : nav().getBoundingClientRect().top + SINK; }
   // Where his body centre may go. His picture (from its body centre out to its paws/tail) always stays inside
   // the screen with a small margin, and on the bar he sits a little in from the bar's ends, so he never runs off.
   const EDGE = 6, BAR_INSET = 26;
@@ -157,7 +158,7 @@ export function createMochi(env) {
     const a = A[M.anim] || A.rest;
     const left = a.ax + EDGE, right = a.w - a.ax + EDGE;   // picture room on each side of the body centre
     const vw = document.documentElement.clientWidth;
-    if (M.perch === 'sheet') { const r = sheetEl().getBoundingClientRect(); return [Math.max(left, r.right - 130), Math.min(vw - right, r.right - 70)]; }
+    if (M.perch === 'sheet' || isSheetOpen()) { const r = sheetEl().getBoundingClientRect(); return [Math.max(left, r.right - 130), Math.min(vw - right, r.right - 70)]; }
     const r = nav().getBoundingClientRect();
     return [Math.max(left, r.left + BAR_INSET), Math.min(vw - right, r.right - BAR_INSET)];
   }
@@ -460,7 +461,12 @@ export function createMochi(env) {
     if (M.state === 'sulk') { if (++M.sulkTaps >= M.sulkNeed) forgive(); else say('…', 800, true); return; }
     if (now < M.annoyedUntil) { say('…', 800, true); return; }
     if (M.asleep) { wakeUp('!!'); return; }
-    if (M.state === 'walk' || M.state === 'prep' || M.perch !== 'nav') return;
+    if (M.perch === 'sheet') {
+      tapVoice('mrrp', { vol: 0.85 });
+      say(['mrrp!', '*peeks*', 'hey!'][Math.floor(Math.random() * 3)], 1100);
+      return;
+    }
+    if (M.state === 'walk' || M.state === 'prep') return;
     M.clicks = M.clicks.filter(t => now - t < 6000); M.clicks.push(now);
     const n = M.clicks.length, limit = S().annoy || 5;
     if (n > limit) return getAnnoyed();
@@ -488,7 +494,9 @@ export function createMochi(env) {
   function startDrag(e) {
     clearTimeout(press.t);
     stop(); stopLook();
-    Object.assign(M, { held: false, busy: true, pending: null, slide: null, state: 'drag', asleep: false, perch: 'nav', fall: null });
+    const wasSheet = M.perch === 'sheet' || isSheetOpen();
+    Object.assign(M, { held: false, busy: true, pending: null, slide: null, state: 'drag', asleep: false, perch: wasSheet ? 'sheet' : 'nav', fall: null });
+    el.classList.add('over');
     // dangling: the long stretch frame, held by the scruff
     const [dn, df] = POSES[catName].dangle;
     play(dn, { from: df, to: df, hold: true });
@@ -516,13 +524,20 @@ export function createMochi(env) {
     // holding a reminder? paw back up
     const after = () => { if (M.holding) holdPose(true); else { goRest(); schedule(2.5, 5); } };
     M.landed = true;
+    if (isSheetOpen()) {
+      M.perch = 'sheet'; el.classList.add('over');
+      play('edge-peek', { loop: A['edge-peek'].loop });
+      return;
+    }
+    M.perch = 'nav'; el.classList.remove('over');
     if (has('land')) play('land', { then: after }); else play('startled', { from: 4, to: A.startled.frames, then: after });
   }
   el.addEventListener('pointerdown', e => {
     e.stopPropagation();
-    if (e.button > 0 || M.perch !== 'nav' || M.state === 'fall') return;
+    if (e.button > 0 || (M.perch !== 'nav' && M.perch !== 'sheet') || M.state === 'fall') return;
+    if (e.cancelable && e.pointerType === 'touch') e.preventDefault();
     try { el.setPointerCapture(e.pointerId); } catch (err) {}
-    press = { x: e.clientX, y: e.clientY, id: e.pointerId, drag: false, t: null };
+    press = { x: e.clientX, y: e.clientY, id: e.pointerId, drag: false, t: null, touch: e.pointerType === 'touch' };
     if (Date.now() < M.annoyedUntil) return;
     press.t = setTimeout(() => {
       if (!press || press.drag || M.state === 'walk' || M.state === 'prep' || M.asleep || M.holding) return;
@@ -531,18 +546,36 @@ export function createMochi(env) {
       press.t = setTimeout(endHeld, 6000);   // never loops forever
     }, 450);
   });
+  // phones: prevent default on touchstart to strictly stop native scroll and gesture cancellation
+  el.addEventListener('touchstart', e => {
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+  }, { passive: false });
+
+  function onPointerMove(clientX, clientY) {
+    if (!press) return;
+    if (!press.drag) {
+      if (Math.hypot(clientX - press.x, clientY - press.y) < DRAG_START || Date.now() < M.annoyedUntil) return;
+      startDrag({ clientX, clientY });
+    }
+    const d = M.dragTo;
+    if (!d) return;
+    const now = performance.now(), dt = Math.max(1, now - d.t) / 1000;
+    d.vx = d.vx * 0.6 + ((clientX - d.x) / dt) * 0.4; d.vy = d.vy * 0.6 + ((clientY - d.y) / dt) * 0.4;
+    d.x = clientX; d.y = clientY; d.t = now;
+  }
   document.addEventListener('pointermove', e => {
     if (!press || e.pointerId !== press.id) return;
-    if (!press.drag) {
-      if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < DRAG_START || Date.now() < M.annoyedUntil) return;
-      startDrag(e);
-    }
-    const d = M.dragTo, now = performance.now(), dt = Math.max(1, now - d.t) / 1000;
-    d.vx = d.vx * 0.6 + ((e.clientX - d.x) / dt) * 0.4; d.vy = d.vy * 0.6 + ((e.clientY - d.y) / dt) * 0.4;
-    d.x = e.clientX; d.y = e.clientY; d.t = now;
+    onPointerMove(e.clientX, e.clientY);
   });
+  document.addEventListener('touchmove', e => {
+    if (!press) return;
+    if (e.cancelable) e.preventDefault();
+    const t = e.touches[0];
+    if (t) onPointerMove(t.clientX, t.clientY);
+  }, { passive: false });
   const release = (e, cancelled) => {
-    if (!press || (e && e.pointerId !== press.id)) return;
+    if (!press || (e && e.pointerId !== undefined && e.pointerId !== press.id)) return;
     const p = press; press = null; clearTimeout(p.t);
     document.body.classList.remove('mochi-held');
     if (p.drag) { drop(); return; }
@@ -552,7 +585,13 @@ export function createMochi(env) {
   // Safari and Brave don't keep pointer capture reliably on touch, so the press follows the finger
   // on the whole page. Losing capture no longer drops him: only the finger lifting does.
   document.addEventListener('pointerup', e => release(e, false));
-  document.addEventListener('pointercancel', e => release(e, true));
+  document.addEventListener('touchend', e => {
+    if (press) release(null, false);
+  });
+  document.addEventListener('pointercancel', e => {
+    if (press && press.touch) release(e, false);
+    else release(e, true);
+  });
   // phones: no long-press callout, context menu or native image drag fighting the pickup
   el.addEventListener('contextmenu', e => e.preventDefault());
   el.addEventListener('dragstart', e => e.preventDefault());
