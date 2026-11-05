@@ -150,7 +150,14 @@ export function createMochi(env) {
   const nav = () => document.getElementById('nav');
   const sheetEl = () => document.getElementById('sheet');
   const isSheetOpen = () => Boolean(sheetEl() && sheetEl().classList.contains('open'));
-  function groundY() { return (M.perch === 'sheet' || isSheetOpen()) ? sheetEl().getBoundingClientRect().top : nav().getBoundingClientRect().top + SINK; }
+  function groundY() {
+    if (M.perch === 'sheet') {
+      const top = sheetEl()?.getBoundingClientRect()?.top;
+      if (top != null && top > 0) return top;
+    }
+    const navTop = nav()?.getBoundingClientRect()?.top;
+    return (navTop != null ? navTop : innerHeight - 70) + SINK;
+  }
   // Where his body centre may go. His picture (from its body centre out to its paws/tail) always stays inside
   // the screen with a small margin, and on the bar he sits a little in from the bar's ends, so he never runs off.
   const EDGE = 6, BAR_INSET = 26;
@@ -158,9 +165,13 @@ export function createMochi(env) {
     const a = A[M.anim] || A.rest;
     const left = a.ax + EDGE, right = a.w - a.ax + EDGE;   // picture room on each side of the body centre
     const vw = document.documentElement.clientWidth;
-    if (M.perch === 'sheet' || isSheetOpen()) { const r = sheetEl().getBoundingClientRect(); return [Math.max(left, r.right - 130), Math.min(vw - right, r.right - 70)]; }
-    const r = nav().getBoundingClientRect();
-    return [Math.max(left, r.left + BAR_INSET), Math.min(vw - right, r.right - BAR_INSET)];
+    if (M.perch === 'sheet') {
+      const r = sheetEl()?.getBoundingClientRect();
+      if (r && r.width > 0) return [Math.max(left, r.right - 130), Math.min(vw - right, r.right - 70)];
+    }
+    const r = nav()?.getBoundingClientRect();
+    if (r && r.width > 0) return [Math.max(left, r.left + BAR_INSET), Math.min(vw - right, r.right - BAR_INSET)];
+    return [left, vw - right];
   }
   const addX = () => { const a = document.querySelector('.navadd .add'); if (!a) return innerWidth / 2; const r = a.getBoundingClientRect(); return r.left + r.width / 2; };
   // Where a fixed element at (0, 0) actually is, in the same coordinates as getBoundingClientRect.
@@ -179,9 +190,10 @@ export function createMochi(env) {
   function followBar() {
     const r = M.perch === 'nav' ? nav()?.getBoundingClientRect() : null;
     if (!r || !r.width) { barWas = null; return; }
-    if (barWas && M.state !== 'drag' && (Math.abs(r.left - barWas.left) > 0.5 || Math.abs(r.width - barWas.width) > 0.5)) {
+    if (barWas && barWas.width > 0 && M.state !== 'drag' && (Math.abs(r.left - barWas.left) > 0.5 || Math.abs(r.width - barWas.width) > 0.5)) {
       const map = x => r.left + (x - barWas.left) / barWas.width * r.width;
       M.cx = map(M.cx); M.target = map(M.target);
+      if (!isFinite(M.cx)) M.cx = (r.left + r.right) / 2;
       if (M.slide) { M.slide.from = map(M.slide.from); M.slide.to = map(M.slide.to); }
     }
     barWas = { left: r.left, width: r.width };
@@ -196,13 +208,17 @@ export function createMochi(env) {
     el.style.width = a.w + 'px'; el.style.height = a.h + 'px';
     let y = groundY() - a.gy;
     const edge = animEdge(a);
-    if (M.perch === 'sheet' && edge != null) y = sheetEl().getBoundingClientRect().top - edge;
+    if (M.perch === 'sheet' && edge != null) {
+      const top = sheetEl()?.getBoundingClientRect()?.top;
+      if (top != null) y = top - edge;
+    }
     y += M.lift;
     const o = origin();
     el.style.transform = `translate(${M.cx - a.ax - o.x}px, ${y - o.y}px)`;
     flip.style.transform = mirrored(a, M.fi) ? 'scaleX(-1)' : '';
     // On the bar, anything drawn below his paws (a hanging tail, a flop) is cut off, so he never covers the tab icons and labels
-    el.style.clipPath = (M.perch === 'sheet' && edge != null) ? `inset(0 0 ${Math.max(0, a.h - edge + M.lift)}px 0)`
+    el.style.clipPath = (M.state === 'drag' || M.state === 'fall') ? ''
+      : (M.perch === 'sheet' && edge != null) ? `inset(0 0 ${Math.max(0, a.h - edge + M.lift)}px 0)`
       : (M.perch === 'nav' && !M.held && !M.lift) ? `inset(0 0 ${Math.max(0, a.h - a.gy)}px 0)` : '';
     if (M.holding && !M.hidden) {
       const cw = card.offsetWidth || 150, ch = card.offsetHeight || 40;
@@ -211,8 +227,9 @@ export function createMochi(env) {
     }
     if (Date.now() < M.bubbleUntil && !M.holding) {
       const w = bub.offsetWidth, h = bub.offsetHeight || 26, by = y + a.gy - V.sit - 44;
-      // inside the app's own column (the nav bar's width), never past the screen edge
-      const bar = nav()?.getBoundingClientRect(), L = Math.max(8, bar?.width ? bar.left : 8), R = Math.min(vw() - 8, bar?.width ? bar.right : vw() - 8);
+      // inside the app's own column (the nav bar or open sheet's width), never past the screen edge
+      const anchor = M.perch === 'sheet' ? sheetEl()?.getBoundingClientRect() : nav()?.getBoundingClientRect();
+      const L = Math.max(8, anchor?.width ? anchor.left : 8), R = Math.min(vw() - 8, anchor?.width ? anchor.right : vw() - 8);
       let bx = Math.max(L, Math.min(R - w, M.cx - w / 2));
       // never cover a red count badge (Quests tab, bell)
       for (const b of document.querySelectorAll('[data-rcount]:not([hidden])')) {
@@ -223,6 +240,7 @@ export function createMochi(env) {
     } else bub.classList.remove('show');
   }
   let ghostEl = null;
+  const removeGhost = () => { ghostEl?.remove(); ghostEl = null; };
   // A 0.1 s fade of the last frame over the next, softening a change of pose. Only for Mochi: his moves start and
   // end on his exact resting pose, so the fading copy sits right on top of him. Cookie's three-quarter art never
   // lands on one exact pose, so the copy would show as a second Cookie beside him. Never after a throw either: he
@@ -230,7 +248,7 @@ export function createMochi(env) {
   function ghost() {
     if (M.landed || M.perch === 'sheet') { M.landed = false; return; }
     if (!shown || M.sprint || catName === 'cookie') return;
-    ghostEl?.remove();
+    removeGhost();
     const g = el.cloneNode(true); g.removeAttribute('id'); g.className = 'mochi ghost'; g.removeAttribute('tabindex');
     el.after(g); ghostEl = g;
     requestAnimationFrame(() => { g.style.opacity = '0'; });
@@ -239,7 +257,7 @@ export function createMochi(env) {
   const identical = (a1, f1, a2, f2) => !!(A[a1].exact?.[f1 - 1] && A[a2].exact?.[f2 - 1]);
 
   /* playback */
-  const stop = () => { clearInterval(M.timer); M.timer = null; };
+  const stop = () => { clearInterval(M.timer); M.timer = null; removeGhost(); };
   function play(name, o = {}) {
     if (!has(name)) { console.warn(`Mochi: no animation "${name}"`); return false; }
     const a = A[name], from = o.from || 1, to = o.to || a.frames, step = to >= from ? 1 : -1;
@@ -688,7 +706,7 @@ export function createMochi(env) {
   }
   // window resized or zoomed: keep him on the bar, and redraw straight away (pinch zoom fires no resize)
   // the bar and the sheet are still moving when the resize event fires, so clamp again once they settle
-  const refit = () => { followBar(); const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); render(); };
+  const refit = () => { followBar(); const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); if (M.target) M.target = Math.max(a, Math.min(b, M.target)); render(); };
   const refitSettled = () => { refit(); requestAnimationFrame(refit); setTimeout(refit, 120); setTimeout(refit, 450); setTimeout(refit, 900); };
   addEventListener('resize', refitSettled);
   window.visualViewport?.addEventListener('resize', refitSettled);
@@ -698,7 +716,7 @@ export function createMochi(env) {
   const busyMoving = () => M.state === 'walk' || M.state === 'prep' || M.state === 'drag' || M.state === 'fall';
   const api = {
     el, say,
-    setVisible(on) { M.hidden = !on; el.hidden = !on; bub.hidden = !on; if (!on) card.hidden = true; else if (M.holding) card.hidden = false; if (on) { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); goRest(); } },
+    setVisible(on) { M.hidden = !on; el.hidden = !on; bub.hidden = !on; if (!on) { card.hidden = true; removeGhost(); } else if (M.holding) card.hidden = false; if (on) { const [a, b] = bounds(); M.cx = Math.max(a, Math.min(b, M.cx)); goRest(); } },
     enterPage(page) {
       M.lastActive = Date.now();
       if (Date.now() < M.annoyedUntil || M.held || M.perch !== 'nav' || busyMoving() || M.hidden || env.paused() || M.holding) return;
@@ -792,11 +810,11 @@ export function createMochi(env) {
     rect: () => el.getBoundingClientRect(),
     raise(on) { el.classList.toggle('raised', on); bub.classList.toggle('raised', on); },
     // pull to refresh borrows him as its indicator; the one on the bar steps out meanwhile
-    away(on) { el.style.visibility = on ? 'hidden' : ''; card.style.visibility = on ? 'hidden' : ''; if (on) bub.classList.remove('show'); },
+    away(on) { el.style.visibility = on ? 'hidden' : ''; card.style.visibility = on ? 'hidden' : ''; if (on) { bub.classList.remove('show'); removeGhost(); } },
     settingsChanged() {
       // the other cat: once his resting strip is ready he takes over from his resting pose, with his own animations
       switchCat(() => {
-        stop(); stopLook(); rebuildPools(); warmAll();
+        stop(); stopLook(); rebuildPools(); warmAll(); removeGhost();
         Object.assign(M, { anim: 'rest', fi: 1, busy: false, asleep: false, melted: false, held: false, pending: null, slide: null, state: M.holding ? 'hold' : 'idle' });
         el.setAttribute('aria-label', `${catLabel()} the cat. Tap to boop.`);
         shown = '';

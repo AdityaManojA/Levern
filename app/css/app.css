@@ -997,6 +997,12 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 /* screen changes: View Transitions API (Chrome, Edge, Safari 18) */
 .top { view-transition-name: top; }
 .nav { view-transition-name: nav; }
+.mochi { view-transition-name: mochi; }
+.mbubble { view-transition-name: mbubble; }
+.mcard { view-transition-name: mcard; }
+::view-transition-old(mochi), ::view-transition-new(mochi),
+::view-transition-old(mbubble), ::view-transition-new(mbubble),
+::view-transition-old(mcard), ::view-transition-new(mcard) { animation: none; }
 ::view-transition-group(root) { animation-duration: .45s; }
 ::view-transition-old(root) { animation: vt-out .22s var(--ease-in) both; }
 ::view-transition-new(root) { animation: vt-in .48s var(--ease) .06s both; }
@@ -1057,12 +1063,14 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
   -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important; -webkit-user-drag: none !important; }
 .mochi.over { z-index: 42; }
 .mochi.raised { z-index: 82; }
+.mochi.over ~ .mbubble,
+.mochi.over ~ .mcard { z-index: 43; }
 .mochi .flip, .mochi .act { width: 100%; height: 100%; touch-action: none !important; }
 .mochi .act { background-repeat: no-repeat; transform-origin: 50% 100%; }
 .mochi:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 12px; }
 .mochi.ghost { pointer-events: none; z-index: 32; transition: opacity .11s linear; }
 .mochi.ghost.raised { z-index: 83; }
-.mbubble { position: fixed; left: 0; top: 0; z-index: 33; background: var(--card); border: var(--line); border-radius: 14px; padding: 5px 11px; font-weight: 700; font-size: 12px;
+.mbubble { position: fixed; left: 0; top: 0; z-index: 33; view-transition-name: mbubble; background: var(--card); border: var(--line); border-radius: 14px; padding: 5px 11px; font-weight: 700; font-size: 12px;
   white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .25s var(--ease); }
 .mbubble.show { opacity: 1; }
 .mbubble.raised { z-index: 84; }
@@ -1181,7 +1189,7 @@ body:has(.mochi[hidden]) .ptr .ptr-cat { display: none; }
 body.ptr-drag { user-select: none; cursor: grabbing; }
 
 /* the reminder Mochi holds up: bobs gently above his paw */
-.mcard { position: fixed; left: 0; top: 0; z-index: 34; border: none; background: none; padding: 0; cursor: pointer; }
+.mcard { position: fixed; left: 0; top: 0; z-index: 34; view-transition-name: mcard; border: none; background: none; padding: 0; cursor: pointer; }
 .mcard[hidden] { display: none; }
 .mcard-in { display: flex; align-items: center; gap: 7px; max-width: 190px; background: var(--card); border: var(--line); border-radius: 14px; padding: 6px 10px 6px 7px;
   font-weight: 700; font-size: 12.5px; box-shadow: 0 6px 14px -8px rgba(var(--ink-rgb),.35); animation: bob 2.6s ease-in-out infinite; }

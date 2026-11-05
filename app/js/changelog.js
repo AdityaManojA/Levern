@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.25', date: '2026-11-05', title: 'Flawless Mascot Display Across All Mobile & Desktop Screens',
+    note: 'Cookie and Mochi now look crisp, perfectly positioned, and completely glitch-free across every mobile phone and desktop browser.',
+    tip: 'Switch between tabs or open any quest—your cat companion stays steadily by your side without visual blurs or interruptions!',
+    items: [
+      'Silky Screen Transitions: Switching between Home, Quests, Calendar, and Settings now keeps your cat rock-steady without blurring, ghosting, or screen-edge motion artifacts.',
+      'Unhindered Dragging & Carried Gestures: Picking up and moving your cat across the screen now always displays full paws, tail, and whiskers cleanly without accidental clipping.',
+      'Crystal Clear Speech Bubbles: When your cat peeks over an open quest or sheet, greetings and thoughts now float cleanly above the window with perfect alignment.',
+      'Adaptive Screen Fit: Rotating your phone or resizing your browser smoothly repositions your companion onto your navigation bar without sudden jumps.',
+    ],
+  },
+  {
     v: '1.24', date: '2026-11-04', title: 'Relaxed Voice Recording & Natural Speaking Pauses',
     note: 'Voice quest dictation now stays open much longer when you pause, giving you plenty of time to breathe, think, or check your schedule without the microphone cutting off early.',
     tip: 'Tap the mic in New quest and speak naturally—you can pause between phrases and keep adding to your quest!',
