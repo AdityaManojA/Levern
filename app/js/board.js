@@ -152,8 +152,15 @@ export async function entries({ fresh = true } = {}) {
 // Last season's top three ({ id: place }, people with EXP only): they wear an aura (a colour ring, a shimmering name
 // and a sparkle) for the whole of this season, then it passes to the next season's top three.
 export function topThreeFrom(list, now = seasonOf()) {
-  if (now < 2) return {};
-  return Object.fromEntries(standings(list, now - 1, now).filter(r => r.exp > 0).slice(0, 3).map((r, i) => [r.id, i + 1]));
+  const currentSeason = Number(now);
+  if (currentSeason < 2) return {};
+  const prevSeason = currentSeason - 1;
+  return Object.fromEntries(
+    standings(list, prevSeason, currentSeason)
+      .filter(r => (Number(r.exp) || 0) > 0)
+      .slice(0, 3)
+      .map((r, i) => [r.id, i + 1])
+  );
 }
 // OG: someone who was on the board in the first seasons, while Levern was still being tested (Seasons 1 to 3, OG_UNTIL):
 // a season's score is kept in past when the entry moves on, and an entry nobody has opened since still says its
@@ -164,12 +171,21 @@ export const isOg = e => !!e && (!e.season || e.season <= OG_UNTIL || Object.key
 // the board, starting from 0 until they earn some, so a new season shows everyone at Iron) or a past season's number
 // (its final scores: kept in past, or still the season's score if the entry hasn't moved on).
 export function standings(list, which, now = seasonOf()) {
-  const score = which === 'legacy' ? r => r.exp
-    : which === 'season' ? r => (r.season === now ? r.seasonExp : 0)
-    : r => r.past?.[which] ?? (r.season === which ? r.seasonExp : null);
+  const isSeason = which === 'season';
+  const isLegacy = which === 'legacy';
+  const targetSeason = !isSeason && !isLegacy ? Number(which) : null;
+  const score = isLegacy ? r => (Number(r.exp) || 0)
+    : isSeason ? r => (Number(r.season) === Number(now) ? (Number(r.seasonExp) || 0) : 0)
+    : r => {
+        const pVal = r.past?.[which] ?? r.past?.[String(which)] ?? (targetSeason != null ? r.past?.[targetSeason] : undefined);
+        if (pVal !== undefined && pVal !== null) return Number(pVal) || 0;
+        if (targetSeason != null && Number(r.season) === targetSeason) return Number(r.seasonExp) || 0;
+        return null;
+      };
   // a tie goes to the one with more all-time EXP (a new season starts with everyone on 0)
-  return (list || []).map(r => ({ id: r.id, name: r.name, me: r.me, og: r.og, exp: score(r), total: r.exp }))
-    .filter(r => r.exp != null && (which === 'legacy' || which === 'season' || r.exp > 0 || r.me)).sort((a, b) => b.exp - a.exp || b.total - a.total);
+  return (list || []).map(r => ({ id: r.id, name: r.name, me: r.me, og: r.og, exp: score(r), total: Number(r.exp) || 0 }))
+    .filter(r => r.exp != null && (isLegacy || isSeason || r.exp > 0 || r.me))
+    .sort((a, b) => b.exp - a.exp || b.total - a.total);
 }
 
 export function startBoard() {

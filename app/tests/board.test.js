@@ -82,6 +82,59 @@ test('aura: last season\'s top three, for the whole of this season', async () =>
   assert.deepEqual(topThreeFrom([e('a', { 2: 0 })], 3), {});          // no EXP, no aura
 });
 
+test('aura: in Season 3, exclusively Season 2 top 3 have glowing badges and old Season 1 auras are removed', async () => {
+  const { topThreeFrom, standings } = await import('../js/board.js');
+  const { auraOf, auraName, auraSpark } = await import('../js/views/common.js');
+
+  // S1 top three: user_s1_gold, user_s1_silver, user_s1_bronze
+  // S2 top three: user_s2_gold (350 EXP), user_s2_silver (280 EXP), user_s2_bronze (210 EXP)
+  // user_s1_gold was top 1 in S1, but only earned 50 EXP in S2 (rank 4)
+  // user_s1_silver was top 2 in S1, but didn't participate in S2 (0 EXP)
+  const users = [
+    { id: 'user_s1_gold', name: 'S1 Champion', exp: 600, season: 3, seasonExp: 10, past: { '1': 450, '2': 50 }, me: false },
+    { id: 'user_s1_silver', name: 'S1 Runner Up', exp: 400, season: 1, seasonExp: 400, past: {}, me: false },
+    { id: 'user_s1_bronze', name: 'S1 Bronze', exp: 350, season: '2', seasonExp: '150', past: { 1: 300 }, me: false },
+    { id: 'user_s2_gold', name: 'S2 Champion', exp: 350, season: 2, seasonExp: 350, past: { '1': 80 }, me: false },
+    { id: 'user_s2_silver', name: 'S2 Runner Up', exp: 500, season: 3, seasonExp: 0, past: { '1': 120, '2': 280 }, me: false },
+    { id: 'user_s2_bronze', name: 'S2 Bronze', exp: 450, season: '3', seasonExp: 20, past: { '2': 210 }, me: false },
+  ];
+
+  // In Season 3 (now = 3):
+  const auras = topThreeFrom(users, 3);
+  assert.deepEqual(auras, {
+    user_s2_gold: 1,
+    user_s2_silver: 2,
+    user_s2_bronze: 3,
+  }, 'Only the top three from Season 2 receive glowing badge places 1, 2, 3');
+
+  // Verify old Season 1 finishers do NOT have an aura
+  assert.equal(auras.user_s1_gold, undefined, 'S1 Champion has no aura because they placed 4th in S2');
+  assert.equal(auras.user_s1_silver, undefined, 'S1 Runner Up has no aura because they did not participate in S2');
+  assert.equal(auras.user_s1_bronze, undefined, 'S1 Bronze has no aura because they placed below top 3 in S2');
+
+  // Verify aura badges and titles for Season 2 winners
+  const au1 = auraOf(auras.user_s2_gold, 2);
+  assert.equal(au1.cls, ' aura aura-1');
+  assert.equal(au1.title, ' title="#1 in Season 2"');
+  assert.ok(auraName(auras.user_s2_gold, 'S2 Champion').includes('class="aura-name"'));
+  assert.ok(auraSpark(auras.user_s2_gold).includes('class="aura-sp"'));
+
+  const au2 = auraOf(auras.user_s2_silver, 2);
+  assert.equal(au2.cls, ' aura aura-2');
+  assert.equal(au2.title, ' title="#2 in Season 2"');
+
+  const au3 = auraOf(auras.user_s2_bronze, 2);
+  assert.equal(au3.cls, ' aura aura-3');
+  assert.equal(au3.title, ' title="#3 in Season 2"');
+
+  // Verify someone without an aura gets clean empty classes and titles
+  const noAu = auraOf(auras.user_s1_gold, 2);
+  assert.equal(noAu.cls, '');
+  assert.equal(noAu.title, '');
+  assert.equal(auraName(auras.user_s1_gold, 'S1 Champion'), 'S1 Champion');
+  assert.equal(auraSpark(auras.user_s1_gold), '');
+});
+
 test('the board tries again as soon as the bucket has room, and leaves the entry alone until then', async () => {
   const { waitForRoom, allowed } = await import('../js/board.js');
   const o = { exp: 135, season: 2, seasonExp: 0, bank: 0.27 };

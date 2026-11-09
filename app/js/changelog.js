@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.27', date: '2026-11-09', title: 'Season 2 Champion Glowing Badges & Refined Mobile Layout',
+    note: 'Season 2 has officially wrapped up! The top three champions from Season 2 now wear their exclusive glowing auras throughout Season 3, while old auras from previous seasons have been retired. In addition, sound preview controls and cat touch pickup on mobile devices have been polished for a seamless experience.',
+    tip: 'Check the leaderboard to see who claimed top honors in Season 2 with their new gold, silver, and aurora glowing badges!',
+    items: [
+      'Season 2 Champion Auras: The top three finishers of Season 2 now wear radiant rotating auras, shimmering names, and sparkling stars across the leaderboard and their profiles.',
+      'Previous Season Transition: Outdated glowing badges from Season 1 have been gracefully retired so only the reigning Season 2 champions shine.',
+      'Polished Mobile Settings: Sound preview buttons now display cleanly with generous spacing across all screen sizes without crowding or text clipping.',
+      'Seamless Touch Pickup on Mobile: Picking up and moving your cat on Android and mobile screens now glides smoothly under your finger with zero gesture stutter.',
+    ],
+  },
+  {
     v: '1.26', date: '2026-11-09', title: 'Fair Play Deadline Adjustments & Rescheduling Protection',
     note: 'You can now adjust a quest’s deadline or timing once without penalty. Rescheduling a second time flags the quest and awards half EXP upon completion, keeping your streaks honest and your productivity on track.',
     tip: 'Need to adjust a due date? You always get one free reschedule per quest, while titles, notes, and subtasks can be updated anytime without limits!',

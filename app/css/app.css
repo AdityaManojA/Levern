@@ -970,11 +970,6 @@ label.lbl { display: block; font-size: 13px; font-weight: 700; margin: 16px 0 6p
 @media (max-width: 380px) {
   .srow-sounds .sound-btns { grid-template-columns: repeat(2, 1fr); }
 }
-@media (min-width: 540px) {
-  .srow-sounds { flex-direction: row; align-items: center; justify-content: space-between; }
-  .srow-sounds .sound-btns { width: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; }
-  .srow-sounds .sound-btns .mini { width: auto; padding: 8px 14px; }
-}
 .mini-pair { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 480px) {
   .srow:has(.mini-pair) { flex-direction: column; align-items: stretch; gap: 8px; }

@@ -72,3 +72,11 @@ test('mochi js: startDrag sets up dangling stretch pose and drop lands back onto
     'groundY / bounds must recognize when sheet is open so dropped cat lands back onto sheet edge'
   );
 });
+
+test('mochi js: pointercancel does not cancel active mobile touch drag', () => {
+  const code = fs.readFileSync('app/js/mochi.js', 'utf8');
+  assert.ok(
+    code.includes('if (press && press.touch) return;'),
+    'mochi.js pointercancel must not abort active touch pickup on mobile devices'
+  );
+});

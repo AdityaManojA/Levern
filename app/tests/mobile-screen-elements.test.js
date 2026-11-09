@@ -62,6 +62,7 @@ test('css layout: root html and body have background: var(--cream) and nav has e
   // srow-sounds must define grid / responsive layout
   assert.ok(css.includes('.srow-sounds'), 'app.css contains .srow-sounds responsive rules');
   assert.ok(css.includes('.sound-btns'), 'app.css contains .sound-btns rules');
+  assert.ok(!/\.srow-sounds\s*\{[^}]*flex-direction:\s*row/.test(css), 'srow-sounds must not switch to row layout that squeezes labels');
 
   // nav bar should have elevation box-shadow to stand out crisply above scrolled content
   assert.ok(

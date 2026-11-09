@@ -568,6 +568,10 @@ export function createMochi(env) {
   el.addEventListener('touchstart', e => {
     if (e.cancelable) e.preventDefault();
     e.stopPropagation();
+    const t = e.touches[0];
+    if (t && !press) {
+      press = { x: t.clientX, y: t.clientY, id: t.identifier, drag: false, t: null, touch: true };
+    }
   }, { passive: false });
 
   function onPointerMove(clientX, clientY) {
@@ -607,8 +611,10 @@ export function createMochi(env) {
     if (press) release(null, false);
   });
   document.addEventListener('pointercancel', e => {
-    if (press && press.touch) release(e, false);
-    else release(e, true);
+    // On mobile / Android, pointercancel often fires when touch slop or gesture arbitration triggers.
+    // If touch is active, do not abort; let touchmove/touchend continue to track the drag cleanly.
+    if (press && press.touch) return;
+    release(e, true);
   });
   // phones: no long-press callout, context menu or native image drag fighting the pickup
   el.addEventListener('contextmenu', e => e.preventDefault());
