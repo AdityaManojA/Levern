@@ -28,10 +28,21 @@ export function completeQuest(id) {
   setTimeout(checkDailyCapAndNotify, 400);
   setTimeout(() => maybeLeaderboardNudge(), 700);
   const after = before + 1;
-  // done late: still counts, for half the EXP, and a pop-up says so (with a wink); hitting the target still celebrates
+  // done late or deadline changed more than once: still counts, for half the EXP
   if (r.late) {
     latePopup(q);
     if (after !== st.settings.target) { play('tap', 0.8); mascot.react('suspicious', 'a bit late…'); return; }
+  } else if (r.timeChanged) {
+    if (after === st.settings.target) {
+      sfx('target');
+      toast(`🎉 Daily target hit! ${after} of ${st.settings.target} done. (½ EXP for this quest)`, 'good');
+      mascot.react('startled-jump', "Congrats, you've reached your daily target!");
+      return;
+    }
+    play('tick');
+    toast(`Done: ${q.title} (½ EXP · deadline rescheduled)`);
+    mascot.react('confused', 'rescheduled, but done!');
+    return;
   }
   const openToday = st.quests.filter(x => !x.done && x.due && x.due <= fmtToday()).length;
   // a quest that had steps: finishing the whole questline is a bigger moment than a single tick

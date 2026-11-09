@@ -131,7 +131,8 @@ export function addQuest(data) {
   const q = { id: uid(), title: data.title, tier: data.tier ?? 3, due: data.due || null, time: data.time || null,
     duration: data.duration ? +data.duration : null, notes: data.notes || '',
     subtasks: (data.subtasks || []).map(s => typeof s === 'string' ? { id: uid(), title: s, done: false, tier: data.tier ?? 3 } : s),
-    repeat: anchored(data.repeat, data.due) || null, remind: null, done: false, doneAt: null, createdAt: Date.now() };
+    repeat: anchored(data.repeat, data.due) || null, remind: null, done: false, doneAt: null, createdAt: Date.now(),
+    timingChanges: 0, timeChanged: false, lastTimingChangeAt: null };
   // a quest with a due date always reminds at its due time, unless its alerts say otherwise.
   // A reminder set for several times a day is kept as it is (the default alert used to replace it with one).
   if (q.due && !data.remind?.multi) q.alerts = cleanAlerts(data.alerts ?? DEFAULT_ALERTS);
@@ -167,6 +168,17 @@ export function updateQuest(id, patch, opts) {
   commit(() => {
     const q = findQuest(id); if (!q) return;
     const dueChanged = ('due' in patch && patch.due !== q.due) || ('time' in patch && patch.time !== q.time);
+    const timingChanged = dueChanged || ('duration' in patch && patch.duration !== q.duration);
+    if (timingChanged) {
+      const now = Date.now();
+      if (!q.lastTimingChangeAt || now - q.lastTimingChangeAt > 10000) {
+        q.timingChanges = (q.timingChanges || 0) + 1;
+      }
+      q.lastTimingChangeAt = now;
+      if (q.timingChanges > 1) {
+        q.timeChanged = true;
+      }
+    }
     Object.assign(q, patch);
     state.seeded = false;
     if (q.repeat && !q.due) q.due = todayStr();
@@ -224,19 +236,23 @@ export function toggleDone(id) {
     if (q.repeat && q.due && q.due > todayStr()) return { done: false, blocked: true, next: q.due };
     // done after it was due: it counts for less EXP (stats.js LATE), and the app says so
     const late = dueStatus(q, new Date(Date.now())) === 'overdue';
-    s.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: Date.now(), ...(late ? { late: true } : {}) });
+    const timeChanged = Boolean(q.timeChanged || (q.timingChanges && q.timingChanges > 1));
+    s.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: Date.now(), ...(late ? { late: true } : {}), ...(timeChanged ? { timeChanged: true, half: true } : {}) });
     noteNotif(s, q.id, 'done');
     if (q.repeat && q.due) {
       const next = rollForward(q.due, q.repeat);
       q.due = next;
+      q.timingChanges = 0;
+      q.timeChanged = false;
+      q.lastTimingChangeAt = null;
       q.subtasks.forEach(st => { st.done = false; });
       if (q.remind) q.remind = q.remind.multi ? { ...q.remind, at: nextMultiAt(q.remind.multi, at(q.due, '00:00') - 1), fired: false, dismissed: false } : q.remind.offset != null ? { ...q.remind, at: reminderBase(q) - q.remind.offset, fired: false, dismissed: false } : null;
       if (q.alerts) { q.remind = null; syncNearest(q, at(q.due, '00:00') - 1); }   // the alerts come back for the next occurrence
-      return { done: true, next, late };
+      return { done: true, next, late, timeChanged, half: late || timeChanged };
     }
     q.done = true; q.doneAt = Date.now();
     if (q.remind) q.remind.dismissed = true;
-    return { done: true, late };
+    return { done: true, late, timeChanged, half: late || timeChanged };
   });
 }
 

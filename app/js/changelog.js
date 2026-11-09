@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.26', date: '2026-11-09', title: 'Fair Play Deadline Adjustments & Rescheduling Protection',
+    note: 'You can now adjust a quest’s deadline or timing once without penalty. Rescheduling a second time flags the quest and awards half EXP upon completion, keeping your streaks honest and your productivity on track.',
+    tip: 'Need to adjust a due date? You always get one free reschedule per quest, while titles, notes, and subtasks can be updated anytime without limits!',
+    items: [
+      'One Free Reschedule: Need a little more time? Every quest allows one deadline or timing adjustment with full EXP preserved.',
+      'Second Change Fair Play: Changing a deadline or timing a second time flags the quest with a clear ½ EXP badge so you know exactly where you stand.',
+      'Unrestricted Notes & Details: Edit quest titles, descriptions, priorities, and subtasks as often as you like with zero effect on your EXP.',
+      'Helpful Deadline Hints: The Schedule card now displays your remaining free reschedule status clearly so there are never any surprises.',
+    ],
+  },
+  {
     v: '1.25', date: '2026-11-05', title: 'Flawless Mascot Display Across All Mobile & Desktop Screens',
     note: 'Cookie and Mochi now look crisp, perfectly positioned, and completely glitch-free across every mobile phone and desktop browser.',
     tip: 'Switch between tabs or open any quest—your cat companion stays steadily by your side without visual blurs or interruptions!',

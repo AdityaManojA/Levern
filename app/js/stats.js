@@ -21,7 +21,11 @@ export function applyDailyCap(rawExp, cap = DAILY_EXP_CAP, rate = REDUCED_EXP_RA
 // each day's quests weighed for EXP: 1 on time, LATE when done after it was due (history entries marked late)
 export function weightsByDay(history) {
   const m = new Map();
-  for (const h of history) { const d = toStrIST(h.doneAt); m.set(d, (m.get(d) || 0) + (h.late ? LATE : 1)); }
+  for (const h of history) {
+    const d = toStrIST(h.doneAt);
+    const isHalf = Boolean(h.late || h.timeChanged || h.half);
+    m.set(d, (m.get(d) || 0) + (isHalf ? LATE : 1));
+  }
   return m;
 }
 // Focus EXP: 1 point per 5 focused minutes (a 25 min session = 5 EXP).
