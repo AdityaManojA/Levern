@@ -8,6 +8,7 @@ import { sfx } from './sound.js';
 import { latePopup } from './latepop.js';
 import { checkDailyCapAndNotify } from './dailycappop.js';
 import { maybeLeaderboardNudge } from './leaderboardnudge.js';
+import { publishSoon } from './board.js';
 
 export function completeQuest(id) {
   const q = store.findQuest(id); if (!q) return;
@@ -16,6 +17,7 @@ export function completeQuest(id) {
   // a weekly goal: each time counts, and going past the goal is a bonus
   if (r.goal) {
     const p = r.progress;
+    publishSoon(0);
     play('tick');
     const msg = p.extra ? `Logged. ${p.count} this week, ${p.extra} extra. Amazing!` : p.met ? `Logged. Goal met: ${p.count} of ${p.target} this week.` : `Logged. ${p.count} of ${p.target} this week.`;
     setTimeout(() => maybeLeaderboardNudge(), 700);
@@ -24,7 +26,8 @@ export function completeQuest(id) {
   // a daily (or any repeating) quest is done once for its date: tapping again does nothing and counts nothing
   if (r.blocked) { play('tap', 0.6); return toast(`Already done for today. Next one: ${fmtDate(r.next)}`); }
   const st = store.getState();
-  if (!r.done) { play('tap', 0.8); mascot.react('suspicious', 'hmm… sure?'); return toast('Marked as not done'); }
+  if (!r.done) { play('tap', 0.8); mascot.react('suspicious', 'hmm… sure?'); publishSoon(0); return toast('Marked as not done'); }
+  publishSoon(0);
   setTimeout(checkDailyCapAndNotify, 400);
   setTimeout(() => maybeLeaderboardNudge(), 700);
   const after = before + 1;

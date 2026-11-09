@@ -43,7 +43,26 @@ function announce() {
   }
 }
 // called by the app each time the board is opened
-export function mount() { visit += 1; announce(); }
+export function mount() {
+  visit += 1;
+  const signed = !!account.user();
+  if (rows && all && signed) {
+    const mine = mode === 'season' ? board.mySeasonExp() : board.myExp();
+    const myDoc = all.find(r => r.me);
+    if (myDoc && ((mode === 'season' && myDoc.seasonExp !== mine) || (mode === 'legacy' && myDoc.exp !== mine))) {
+      myDoc.seasonExp = board.mySeasonExp();
+      myDoc.exp = board.myExp();
+      myDoc.season = seasonOf();
+      rows = board.standings(all, mode);
+      swap(render());
+    }
+  }
+  if (signed) {
+    load();
+  } else {
+    announce();
+  }
+}
 
 // a refresh keeps the board on screen (only the Refresh button shows it's working) and swaps the new numbers in
 // without the rise-in; the first load shows a skeleton of the board
@@ -117,6 +136,20 @@ function pastSeasons() {
 
 export function render() {
   const on = board.isOn(), signed = !!account.user(), mine = mode === 'season' ? board.mySeasonExp() : board.myExp();
+  if (rows && signed) {
+    const meRow = rows.find(r => r.me);
+    if (meRow && meRow.exp !== mine) {
+      meRow.exp = mine;
+      if (all) {
+        const myDoc = all.find(r => r.me);
+        if (myDoc) {
+          myDoc.seasonExp = board.mySeasonExp();
+          myDoc.exp = board.myExp();
+          myDoc.season = seasonOf();
+        }
+      }
+    }
+  }
   if (!asked && signed && rows === null && !loading && !failed) { asked = true; setTimeout(load, 0); }
   const list = rows || [];
   const emptySeason = `<div class="card lb-note"><b>Nobody on the board yet</b><p class="small">${mode === 'season' ? 'A new season just started. Earn some EXP and be the first.' : `Turn on "Show me on the board" in Settings above and you'll be the first.`}</p></div>`;

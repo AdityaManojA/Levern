@@ -6,7 +6,10 @@ import { toStr, todayStr, addDays, fromStr, toStrIST, todayStrIST, nextMidnightI
 // after it was due counts as half (LATE) toward the share: on time pays more. The bonus goes by the quests done.
 // count: the day's quests weighed that way; done: how many were done (defaults to count)
 export const LATE = 0.5;
-export const dayExp = (count, target, done = count) => Math.round(20 * Math.min(1, count / target)) + (done >= target ? 10 : 0);
+export const dayExp = (count, target, done = count) => {
+  const t = Math.max(1, target || 5);
+  return Math.round(20 * (count / t)) + (done >= t ? 10 : 0);
+};
 
 // Daily EXP Cap & Fair Play Protection (IST):
 // Users can earn up to 55 points per day at full rate.

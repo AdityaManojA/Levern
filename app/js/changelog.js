@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.28', date: '2026-11-09', title: 'Guaranteed EXP on Every Quest & Real-Time Leaderboard Sync',
+    note: 'Every single quest you complete now steadily powers your EXP progress! Regular quests award full points, and quests rescheduled more than once reliably grant half EXP—never zero. Plus, your leaderboard score syncs instantly whenever you complete a task.',
+    tip: 'Complete extra quests beyond your daily target to keep climbing the leaderboard standings all the way up to the daily fair-play cap!',
+    items: [
+      'Guaranteed EXP Rewards: Completing any quest always increases your total EXP. Every task finished beyond your daily target continues to award full points.',
+      'Reliable Reschedule Half EXP: Quests rescheduled more than once reliably award half their base points upon completion, never dropping to zero.',
+      'Instant Leaderboard Updates: Ticking a quest immediately updates your season rank and standings on the leaderboard without any refresh delay.',
+      'Fair-Play Cap Protection: Generous 55 EXP daily allowance at full rate keeps competition healthy while continuing to reward dedicated daily progress.',
+    ],
+  },
+  {
     v: '1.27', date: '2026-11-09', title: 'Season 2 Champion Glowing Badges & Refined Mobile Layout',
     note: 'Season 2 has officially wrapped up! The top three champions from Season 2 now wear their exclusive glowing auras throughout Season 3, while old auras from previous seasons have been retired. In addition, sound preview controls and cat touch pickup on mobile devices have been polished for a seamless experience.',
     tip: 'Check the leaderboard to see who claimed top honors in Season 2 with their new gold, silver, and aurora glowing badges!',
