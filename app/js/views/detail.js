@@ -92,7 +92,7 @@ export function render(params) {
       <button class="chk${q.done ? ' on' : ''}" data-act="toggle" data-id="${q.id}" aria-label="${q.done ? 'Mark not done' : 'Complete'}"></button>
       <div style="flex:1;min-width:0">
         <input class="title-in" value="${esc(q.title)}" data-input="title" aria-label="Title" maxlength="140">
-        <div class="small" style="color:var(--ink)">${esc(tierLabel(q.tier))}${q.due ? ` · <span style="${st === 'overdue' ? 'color:var(--red);font-weight:700' : ''}">${esc(dueLabel(q))}</span>` : ''}${(q.timeChanged || (q.timingChanges && q.timingChanges > 1)) ? ' · <span style="color:var(--red);font-weight:700">½ EXP (rescheduled)</span>' : ''}${q.duration ? ` · ⏱ ${esc(fmtDuration(q.duration))}` : ''}${q.repeat ? ' · ' + esc(describe(q.repeat, q.due)) : ''}${q.done ? ' · done' : ''}</div>
+        <div class="small" style="color:var(--ink)">${esc(tierLabel(q.tier))}${q.due ? ` · <span style="${st === 'overdue' ? 'color:var(--red);font-weight:700' : ''}">${esc(dueLabel(q))}</span>` : ''}${(q.timeChanged || (q.timingChanges && q.timingChanges > 2)) ? ' · <span style="color:var(--red);font-weight:700">½ EXP (rescheduled)</span>' : ''}${q.duration ? ` · ⏱ ${esc(fmtDuration(q.duration))}` : ''}${q.repeat ? ' · ' + esc(describe(q.repeat, q.due)) : ''}${q.done ? ' · done' : ''}</div>
       </div>
     </div>
     ${q.repeat && history ? `<div class="small" style="margin:6px 2px 0">Completed ${history} time${history === 1 ? '' : 's'}. Ticking it moves it to the next date.</div>` : ''}
@@ -124,11 +124,13 @@ export function render(params) {
           ${q.duration && ![30, 45, 60, 90, 120].includes(q.duration) ? `<button type="button" class="chip chip-btn on" data-act="dur-set" data-dur="${q.duration}">${esc(fmtDuration(q.duration))}</button>` : ''}
         </div>
         <div class="small dt-timing-hint" style="margin-top:10px;font-size:12px;color:var(--muted)">
-          ${(q.timeChanged || (q.timingChanges && q.timingChanges > 1))
-            ? '<span style="color:var(--red);font-weight:700">⚠ Deadline changed more than once: this quest earns ½ EXP.</span>'
-            : (q.timingChanges === 1)
-              ? '<span>Deadline changed once. Changing it again will flag this quest for ½ EXP.</span>'
-              : '<span>Tip: Deadlines can be changed once for free. Changing again gives ½ EXP.</span>'}
+          ${(q.timeChanged || (q.timingChanges && q.timingChanges > 2))
+            ? '<span style="color:var(--red);font-weight:700">⚠ Deadline changed more than twice: this quest earns ½ EXP.</span>'
+            : (q.timingChanges === 2)
+              ? '<span>Deadline changed twice. Changing it again will flag this quest for ½ EXP.</span>'
+              : (q.timingChanges === 1)
+                ? '<span>Deadline changed once. You can change it once more freely.</span>'
+                : '<span>Tip: Deadlines can be changed twice freely. Changing more than twice gives ½ EXP.</span>'}
         </div>
       </div>
     </div>

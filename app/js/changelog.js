@@ -3,6 +3,17 @@
 // as a pop-up (updatepop.js), so bump v for every release. Optional: note (an intro line) and tip (shown at the end).
 export const CHANGELOG = [
   {
+    v: '1.29', date: '2026-11-10', title: 'Two Free Deadline Adjustments & Unrestricted Task Details',
+    note: 'Stay flexible while keeping your goals on track! You can now adjust a quest’s deadline date and time up to twice completely free without any effect on your EXP. Only rescheduling more than twice applies the half EXP penalty, while changes to duration, priority, notes, and titles remain completely unrestricted.',
+    tip: 'Feel free to tweak task durations or priority tiers as much as you like—only repeated changes to the deadline date and time count toward rescheduling.',
+    items: [
+      'Two Free Deadline Changes: Life happens! You can now adjust a quest’s due date and time up to two times with full EXP preserved.',
+      'Fair Rescheduling Protection: Only rescheduling a quest more than twice flags it for half EXP, encouraging you to finish what you set out to do.',
+      'Unrestricted Duration & Priority: Updating how long a quest takes or changing its priority tier never triggers any rescheduling penalties.',
+      'Clear Progress Hints: The schedule card shows your remaining free changes so you always know where you stand.',
+    ],
+  },
+  {
     v: '1.28', date: '2026-11-09', title: 'Guaranteed EXP on Every Quest & Real-Time Leaderboard Sync',
     note: 'Every single quest you complete now steadily powers your EXP progress! Regular quests award full points, and quests rescheduled more than once reliably grant half EXP—never zero. Plus, your leaderboard score syncs instantly whenever you complete a task.',
     tip: 'Complete extra quests beyond your daily target to keep climbing the leaderboard standings all the way up to the daily fair-play cap!',

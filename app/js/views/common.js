@@ -45,14 +45,14 @@ export function reminderChip(q) {
 
 export function questRow(q, now = new Date()) {
   const st = dueStatus(q, now), subs = q.subtasks.length;
-  const isRescheduled = Boolean(q.timeChanged || (q.timingChanges && q.timingChanges > 1));
+  const isRescheduled = Boolean(q.timeChanged || (q.timingChanges && q.timingChanges > 2));
   const meta = [
     `<span>${esc(tierLabel(q.tier))}</span>`,
     q.due ? `<span class="${st === 'overdue' ? 'od' : ''}">${esc(dueLabel(q, now))}</span>` : '',
     // right after the date, so it sits in the same place on every card
     reminderChip(q),
     q.duration ? `<span class="tag" title="Duration">⏱ ${esc(fmtDuration(q.duration))}</span>` : '',
-    isRescheduled ? `<span class="tag od" title="Deadline changed more than once (earns ½ EXP)">½ EXP · Rescheduled</span>` : '',
+    isRescheduled ? `<span class="tag od" title="Deadline changed more than twice (earns ½ EXP)">½ EXP · Rescheduled</span>` : '',
     q.repeat ? `<span class="tag">${ICON.repeat}${repeatShort(q.repeat)}</span>` : '',
     q.goal ? goalChip(q) : '',
     subs ? `<span>${q.subtasks.filter(s => s.done).length}/${subs} subtasks</span>` : '',

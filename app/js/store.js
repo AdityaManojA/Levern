@@ -168,14 +168,13 @@ export function updateQuest(id, patch, opts) {
   commit(() => {
     const q = findQuest(id); if (!q) return;
     const dueChanged = ('due' in patch && patch.due !== q.due) || ('time' in patch && patch.time !== q.time);
-    const timingChanged = dueChanged || ('duration' in patch && patch.duration !== q.duration);
-    if (timingChanged) {
+    if (dueChanged) {
       const now = Date.now();
       if (!q.lastTimingChangeAt || now - q.lastTimingChangeAt > 10000) {
         q.timingChanges = (q.timingChanges || 0) + 1;
       }
       q.lastTimingChangeAt = now;
-      if (q.timingChanges > 1) {
+      if (q.timingChanges > 2) {
         q.timeChanged = true;
       }
     }
@@ -236,7 +235,7 @@ export function toggleDone(id) {
     if (q.repeat && q.due && q.due > todayStr()) return { done: false, blocked: true, next: q.due };
     // done after it was due: it counts for less EXP (stats.js LATE), and the app says so
     const late = dueStatus(q, new Date(Date.now())) === 'overdue';
-    const timeChanged = Boolean(q.timeChanged || (q.timingChanges && q.timingChanges > 1));
+    const timeChanged = Boolean(q.timeChanged || (q.timingChanges && q.timingChanges > 2));
     s.history.push({ questId: q.id, title: q.title, tier: q.tier, doneAt: Date.now(), ...(late ? { late: true } : {}), ...(timeChanged ? { timeChanged: true, half: true } : {}) });
     noteNotif(s, q.id, 'done');
     if (q.repeat && q.due) {
