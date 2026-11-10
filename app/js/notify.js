@@ -27,6 +27,8 @@ export async function registerSW() {
     navigator.serviceWorker.addEventListener('message', e => listeners.forEach(f => f(e.data)));
     await navigator.serviceWorker.ready;
     reg = await navigator.serviceWorker.getRegistration() || reg;
+    reg?.update?.().catch(() => {});
+    setInterval(() => { if (document.visibilityState === 'visible') reg?.update?.().catch(() => {}); }, 60000);
     tryPeriodicSync();
   } catch (e) { console.warn('Levern: service worker not registered', e); }
   return reg;
